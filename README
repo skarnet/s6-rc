@@ -1,0 +1,30 @@
+s6-rc - a dependency-based init script management system
+--------------------------------------------------------
+
+ s6-rc is a suite of programs designed to help Unix distributions manage
+services provided by various software packages, and automate initialization,
+shutdown, and more generally changes to the machine state.
+
+ It keeps track of the complete service dependency tree and automatically
+brings services up or down to reach the desired state.
+
+ In conjunction with s6, it ensures that long-lived services are
+supervised, and that short-lived instructions are run in a reproducible
+manner.
+
+ See http://skarnet.org/software/s6-rc/ for details.
+
+
+* Installation
+  ------------
+
+ See the INSTALL file.
+
+
+* Contact information
+  -------------------
+
+ Laurent Bercot <ska-skaware at skarnet.org>
+
+ Please use the <skaware at list.skarnet.org> mailing-list for
+questions about s6-rc.
