@@ -497,7 +497,6 @@ static inline void add_sources (before_t *be, char const *srcdir)
   }
   if (errno) strerr_diefu2sys(111, "readdir ", srcdir) ;
   dir_close(dir) ;
-  close(fddir) ;
 }
 
 
@@ -946,8 +945,9 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   unsigned int srcdirlen = str_len(srcdir) ;
   unsigned int srclen = str_len(src) ;
   unsigned int dstlen = str_len(dst) ;
+  struct stat st ;
   char dstfn[clen + 19 + dstlen] ;
-  char srcfn[srcdirlen + srclen + 8] ;
+  char srcfn[srcdirlen + srclen + 11] ;
   byte_copy(dstfn, clen, compiled) ;
   byte_copy(dstfn + clen, 13, "/servicedirs/") ;
   byte_copy(dstfn + clen + 13, dstlen + 1, dst) ;
@@ -960,18 +960,43 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   byte_copy(srcfn, srcdirlen, srcdir) ;
   srcfn[srcdirlen] = '/' ;
   byte_copy(srcfn + srcdirlen + 1, srclen, src) ;
-  srcfn[srcdirlen + 1 + srclen] = '/' ;
-  byte_copy(srcfn + srcdirlen + srclen + 2, 5, "/run") ;
+  byte_copy(srcfn + srcdirlen + srclen + 1, 5, "/run") ;
   if (!filecopy(srcfn, dstfn, 0755))
   {
     cleanup(compiled) ;
     strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
   }
+  byte_copy(dstfn + clen + 14 + dstlen, 7, "finish") ;
+  byte_copy(srcfn + srcdirlen + srclen + 2, 7, "finish") ;
+  filecopy(srcfn, dstfn, 0755) ;
+
+  byte_copy(srcfn + srcdirlen + srclen + 2, 9, "nosetsid") ;
+  if (stat(srcfn, &st) < 0)
+  {
+    if (errno != ENOENT)
+    {
+      cleanup(compiled) ;
+      strerr_diefu2sys(111, "stat ", srcfn) ;
+    }
+  }
+  else
+  {
+    int fd ;
+    byte_copy(dstfn + clen + 14 + dstlen, 5, "nosetsid") ;
+    fd = open_trunc(dstfn) ;
+    if (fd < 0)
+    {
+      cleanup(compiled) ;
+      strerr_diefu2sys(111, "touch ", dstfn) ;
+    }
+    close(fd) ;
+  } 
+
   byte_copy(dstfn + clen + 14 + dstlen, 5, "data") ;
-  byte_copy(srcfn + srcdirlen + srclen + 3, 5, "data") ;
+  byte_copy(srcfn + srcdirlen + srclen + 2, 5, "data") ;
   dircopy(compiled, srcfn, dstfn) ;
   byte_copy(dstfn + clen + 14 + dstlen, 4, "env") ;
-  byte_copy(srcfn + srcdirlen + srclen + 3, 4, "env") ;
+  byte_copy(srcfn + srcdirlen + srclen + 2, 4, "env") ;
   dircopy(compiled, srcfn, dstfn) ;
 }
 
