@@ -946,7 +946,7 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   unsigned int srclen = str_len(src) ;
   unsigned int dstlen = str_len(dst) ;
   struct stat st ;
-  char dstfn[clen + 19 + dstlen] ;
+  char dstfn[clen + 23 + dstlen] ;
   char srcfn[srcdirlen + srclen + 11] ;
   byte_copy(dstfn, clen, compiled) ;
   byte_copy(dstfn + clen, 13, "/servicedirs/") ;
@@ -982,7 +982,7 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   else
   {
     int fd ;
-    byte_copy(dstfn + clen + 14 + dstlen, 5, "nosetsid") ;
+    byte_copy(dstfn + clen + 14 + dstlen, 9, "nosetsid") ;
     fd = open_trunc(dstfn) ;
     if (fd < 0)
     {
