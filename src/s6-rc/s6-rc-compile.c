@@ -608,10 +608,12 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
     register nameinfo_t const *p ;
     avltree_search(&names_map, data.s + indices[me->depindex + j], &id) ;
     p = genalloc_s(nameinfo_t, &nameinfo) + id ;
+    DBG("resolve_deps: %s depends on %s", data.s + me->name, data.s + p->pos) ;
     switch (p->type)
     {
       case SVTYPE_ONESHOT :
         bitarray_set(sarray, nlong + p->i) ;
+        DBG("resolve_deps: %s is a oneshot, setting bit %u in sarray for %s", data.s + p->pos, nlong + p->i, data.s + me->name) ;
         if (verbosity >= 4)
         {
           char fmt[UINT_FMT] ;
@@ -621,6 +623,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         break ;
       case SVTYPE_LONGRUN :
         bitarray_set(sarray, p->i) ;
+        DBG("resolve_deps: %s is a longrun, setting bit %u in sarray for %s", data.s + p->pos, p->i, data.s + me->name) ;
         if (verbosity >= 4)
         {
           char fmt[UINT_FMT] ;
@@ -630,6 +633,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         break ;
       case SVTYPE_BUNDLE :
         bitarray_or(sarray, sarray, barray + p->i * nbits, n) ;
+        DBG("resolve_deps: %s is a bundle, ORing barray[%u] into sarray for %s", data.s + p->pos, p->i, data.s + me->name) ;
         if (verbosity >= 4)
         {
           char fmt[UINT_FMT] ;
