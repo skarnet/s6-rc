@@ -199,7 +199,10 @@ static int add_name (before_t *be, char const *srcdir, char const *name, service
     {
       .pos = data.len,
       .kpos = keep.len,
-      .i = type == SVTYPE_ONESHOT ? genalloc_len(oneshot_t, &be->oneshots) : SVTYPE_LONGRUN ? genalloc_len(longrun_t, &be->longruns) : SVTYPE_BUNDLE ? genalloc_len(bundle_t, &be->bundles) : 0,
+      .i = type == SVTYPE_ONESHOT ? genalloc_len(oneshot_t, &be->oneshots) :
+           type == SVTYPE_LONGRUN ? genalloc_len(longrun_t, &be->longruns) :
+           type == SVTYPE_BUNDLE ? genalloc_len(bundle_t, &be->bundles) :
+           0,
       .type = type
     } ;
     unsigned int namelen = str_len(name) ;
