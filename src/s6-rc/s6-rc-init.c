@@ -81,7 +81,7 @@ int main (int argc, char const *const *argv)
 
     byte_copy(lfn, llen, live) ;
     byte_copy(lfn + llen, 6, "/lock") ;
-    fdlock = open_write(lfn) ;
+    fdlock = open_trunc(lfn) ;
     if (fdlock < 0)
     {
       cleanup(live) ;
