@@ -389,12 +389,12 @@ int main (int argc, char const *const *argv)
     fdcompiled = open_readb(dbfn) ;
     if (!s6rc_db_read_sizes(fdcompiled, &dbblob))
       strerr_diefu3sys(111, "read ", dbfn, "/n") ;
+    n = dbblob.nshort + dbblob.nlong ;
 
 
    /* Allocate enough stack for the db */
 
     {
-      unsigned int n = dbblob.nshort + dbblob.nlong ;
       s6rc_service_t serviceblob[n] ;
       char *argvblob[dbblob.nargvs] ;
       uint32 depsblob[dbblob.ndeps << 1] ;
