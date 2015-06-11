@@ -169,12 +169,9 @@ static void broadcast_success (unsigned int, int) ;
 
 static void examine (unsigned int i, int h)
 {
-  char const *name = db->string + db->services[i].name ;
-  if (verbosity >= 3)
-    strerr_warni2x("examining ", name) ;
-
-  if (!pendingdeps[i] && !(state[i] & 4))
+  if (state[i] & 2 && !pendingdeps[i] && !(state[i] & 4))
   {
+    char const *name = db->string + db->services[i].name ;
     state[i] |= 4 ;
     if ((state[i] & 1) == h)
     {
@@ -294,7 +291,7 @@ static int doit (int spfd, int h)
     pendingdeps[i] = db->services[i].ndeps[h] ;
   }
   i = n ;
-  while (i--) if (state[i] & 2) examine(i, h) ;
+  while (i--) examine(i, h) ;
 
   for (;;)
   {

@@ -42,7 +42,7 @@ EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n" \
 S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
 S6_EXTBINPREFIX "s6-notifywhenup -f --\n" \
 S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
-S6_EXTBINPREFIX "s6-ipcserver-access -E -l0 -i data/rules --\n" \
+S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
 S6_EXTBINPREFIX "s6-sudod -t 2000 --\n"
 
 static unsigned int verbosity = 1 ;
