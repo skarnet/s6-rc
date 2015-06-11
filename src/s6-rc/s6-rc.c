@@ -84,7 +84,7 @@ static void print_services (void)
 static pid_t start_oneshot (unsigned int i, int h)
 {
   unsigned int argc = db->services[i].x.oneshot.argc[h] ;
-  char const *const *argv = (char const *const *)db->argvs + h * db->ndeps + db->services[i].x.oneshot.argv[h] ;
+  char const *const *argv = db->argvs + db->services[i].x.oneshot.argv[h] ;
   unsigned int m = 0 ;
   char const *newargv[9 + argc + (!!dryrun[0] << 2)] ;
   char fmt[UINT32_FMT] ;
@@ -390,7 +390,7 @@ int main (int argc, char const *const *argv)
 
     {
       s6rc_service_t serviceblob[n] ;
-      char *argvblob[dbblob.nargvs] ;
+      char const *argvblob[dbblob.nargvs] ;
       uint32 depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
       unsigned char stateblob[n] ;

@@ -52,7 +52,7 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
   unsigned int n = db->nshort + db->nlong ;
   s6rc_service_t *sv = db->services ;
   unsigned int nargvs = db->nargvs ;
-  char **argvs = db->argvs ;
+  unsigned int argvpos = 0 ;
   char type ;
 #ifdef DEBUG
   register unsigned int i = 0 ;
@@ -106,19 +106,19 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
       sv->type = 0 ;
       for (; i < 2 ; i++)
       {
-        uint32 argvpos, argc ;
+        uint32 pos, argc ;
         if (!s6rc_db_read_uint32(b, &argc)) return -1 ;
         DBG("    argc[%u] is %u, nargvs is %u", i, argc, nargvs) ;
         if (argc > nargvs) return 0 ;
-        if (!s6rc_db_read_uint32(b, &argvpos)) return -1 ;
-        DBG("    argvpos[%u] is %u", i, argvpos) ;
-        if (!s6rc_db_check_valid_strings(db->string, db->stringlen, argvpos, argc)) return 0 ;
-        if (!env_make((char const **)argvs, argc, db->string + argvpos, db->stringlen - argvpos)) return -1 ;
-        DBG("    first arg is %s", argvs[0]) ;
+        if (!s6rc_db_read_uint32(b, &pos)) return -1 ;
+        DBG("    pos[%u] is %u", i, pos) ;
+        if (!s6rc_db_check_valid_strings(db->string, db->stringlen, pos, argc)) return 0 ;
+        if (!env_make((char const **)db->argvs + argvpos, argc, db->string + pos, db->stringlen - pos)) return -1 ;
+        DBG("    first arg is %s", db->argvs[argvpos]) ;
         sv->x.oneshot.argv[i] = argvpos ;
         sv->x.oneshot.argc[i] = argc ;
-        argvs += argc ; nargvs -= argc ;
-        if (!nargvs--) return 0 ; *argvs++ = 0 ;
+        argvpos += argc ; nargvs -= argc ;
+        if (!nargvs--) return 0 ; db->argvs[argvpos++] = 0 ;
       }
     }
     if (buffer_get(b, &type, 1) < 1) return -1 ;

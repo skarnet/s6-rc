@@ -211,7 +211,7 @@ static void print_deps (char const *name, int h)
 static void print_script (char const *name, int h)
 {
   unsigned int argc ;
-  char *const *argv ;
+  char const *const *argv ;
   unsigned int n = resolve_service(name) ;
   if (n >= db->nshort + db->nlong)
     strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
@@ -409,7 +409,7 @@ int main (int argc, char const *const *argv)
     {
       unsigned int n = dbblob.nshort + dbblob.nlong ;
       s6rc_service_t serviceblob[n] ;
-      char *argvblob[dbblob.nargvs] ;
+      char const *argvblob[dbblob.nargvs] ;
       uint32 depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
       register int r ;

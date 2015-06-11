@@ -54,7 +54,7 @@ struct s6rc_db_s
   unsigned int nargvs ;
   unsigned int ndeps ;
   char *string ;
-  char **argvs ;
+  char const **argvs ;
   uint32 *deps ;
 } ;
 
