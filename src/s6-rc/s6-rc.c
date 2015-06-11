@@ -114,15 +114,15 @@ static pid_t start_oneshot (unsigned int i, int h)
 
 static pid_t start_longrun (unsigned int i, int h)
 {
-  unsigned int namelen = str_len(db->string + db->services[i].name) ;
+  unsigned int svdlen = str_len(db->string + db->services[i].x.longrun.servicedir) ;
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
-  char servicefn[livelen + namelen + 19] ;
+  char servicefn[livelen + svdlen + 19] ;
   char const *newargv[11 + (!!dryrun[0] << 2)] ;
   byte_copy(servicefn, livelen, live) ;
   byte_copy(servicefn + livelen, 13, "/servicedirs/") ;
-  byte_copy(servicefn + livelen + 13, namelen, db->string + db->services[i].name) ;
-  byte_copy(servicefn + livelen + 13 + namelen, 6, "/down") ;
+  byte_copy(servicefn + livelen + 13, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
+  byte_copy(servicefn + livelen + 13 + svdlen, 6, "/down") ;
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;  
   if (dryrun[0])
   {
@@ -161,7 +161,7 @@ static pid_t start_longrun (unsigned int i, int h)
       else fd_close(fd) ;
     }
   }
-  servicefn[livelen + 13 + namelen] = 0 ;
+  servicefn[livelen + 13 + svdlen] = 0 ;
   return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
 }
 
@@ -230,7 +230,7 @@ static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
   {
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, code)] = 0 ;
-    strerr_warnw6x("service ", db->string + db->services[i].name, h ? " started" : " stopped", " unsuccessfully: ", crashed ? "crashed with signal " : "exited ", fmt) ;
+    strerr_warnwu6x(h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
   }
 }
 
