@@ -20,6 +20,7 @@
 #include <skalibs/iopause.h>
 #include <skalibs/unix-transactional.h>
 #include <s6/config.h>
+#include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
 #define USAGE "s6-rc [ -v verbosity ] [ -n dryruntimeout ] [ -t timeout ] [ -l live ] [ -u | -d ] [ -p ] [ -a ] [ -C ] [ -L ] [ -A ] [ -S ] servicenames..."
@@ -94,13 +95,13 @@ static pid_t start_oneshot (unsigned int i, int h)
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;
   if (dryrun[0])
   {
-    newargv[m++] = S6_BINPREFIX "s6-rc-dryrun" ;
+    newargv[m++] = S6RC_BINPREFIX "s6-rc-dryrun" ;
     newargv[m++] = "-t" ;
     newargv[m++] = dryrun ;
     newargv[m++] = "--" ;
   }
-  newargv[m++] = S6_BINPREFIX "s6-sudo" ;
-  newargv[m++] = verbosity >= 2 ? "-vel0" : "-el0" ;
+  newargv[m++] = S6_EXTBINPREFIX "s6-sudo" ;
+  newargv[m++] = verbosity >= 3 ? "-vel0" : "-el0" ;
   newargv[m++] = "-t" ;
   newargv[m++] = "2000" ;
   newargv[m++] = "-T" ;
@@ -126,18 +127,18 @@ static pid_t start_longrun (unsigned int i, int h)
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;  
   if (dryrun[0])
   {
-    newargv[m++] = S6_BINPREFIX "s6-rc-dryrun" ;
+    newargv[m++] = S6RC_BINPREFIX "s6-rc-dryrun" ;
     newargv[m++] = "-t" ;
     newargv[m++] = dryrun ;
     newargv[m++] = "--" ;
   }
-  newargv[m++] = S6_BINPREFIX "s6-svlisten1" ;
+  newargv[m++] = S6_EXTBINPREFIX "s6-svlisten1" ;
   newargv[m++] = h ? "-U" : "-d" ;
   newargv[m++] = "-t" ;
   newargv[m++] = fmt ;
   newargv[m++] = "--" ;
   newargv[m++] = servicefn ;
-  newargv[m++] = S6_BINPREFIX "s6-svc" ;
+  newargv[m++] = S6_EXTBINPREFIX "s6-svc" ;
   newargv[m++] = h ? "-u" : "-d" ;
   newargv[m++] = "--" ;
   newargv[m++] = servicefn ;
