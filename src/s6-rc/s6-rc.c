@@ -357,7 +357,6 @@ int main (int argc, char const *const *argv)
     if (t) tain_from_millisecs(&deadline, t) ;
     else deadline = tain_infinite_relative ;
   }
-  if (!argc) dieusage() ;
   if (!what.list && !what.listall) what.change = 1 ;
   if (!tain_now_g())
     strerr_warnwu1x("get correct TAI time. (Do you have a valid leap seconds file?)") ;
@@ -448,9 +447,9 @@ int main (int argc, char const *const *argv)
         for (; *argv ; argv++)
         {
           unsigned int len ;
-          register int r = cdb_find(&c, *argv, str_len(*argv)) ;
-          char pack[cdb_datalen(&c) + 1] ;
-          char const *p = pack ;
+          register int r ;
+          if (verbosity >= 4) strerr_warnt2x("looking up ", *argv) ;
+          r = cdb_find(&c, *argv, str_len(*argv)) ;
           if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
           if (!r)
             strerr_dief4x(3, *argv, " is not a recognized identifier in ", dbfn, "/resolve.cdb") ;
@@ -459,15 +458,25 @@ int main (int argc, char const *const *argv)
           len = cdb_datalen(&c) >> 2 ;
           if (len > n)
             strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
-          if (cdb_read(&c, pack, cdb_datalen(&c), cdb_datapos(&c)) < 0)
-          if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
-          while (len--)
           {
-            uint32 x ;
-            uint32_unpack_big(p, &x) ; p += 4 ;
-            if (x >= n)
-              strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
-            state[x] |= 2 ;
+            char pack[cdb_datalen(&c) + 1] ;
+            char const *p = pack ;
+            if (cdb_read(&c, pack, cdb_datalen(&c), cdb_datapos(&c)) < 0)
+            if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
+            while (len--)
+            {
+              uint32 x ;
+              uint32_unpack_big(p, &x) ; p += 4 ;
+              if (x >= n)
+                strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
+              state[x] |= 2 ;
+              if (verbosity >= 4)
+              {
+                char fmt[UINT32_FMT] ;
+                fmt[uint320_fmt(fmt, x)] = 0 ;
+                strerr_warnt2x("adding service ", fmt) ;
+              }
+            }
           }
         }
         cdb_free(&c) ;
