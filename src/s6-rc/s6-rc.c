@@ -473,7 +473,7 @@ int main (int argc, char const *const *argv)
               if (verbosity >= 4)
               {
                 char fmt[UINT32_FMT] ;
-                fmt[uint320_fmt(fmt, x)] = 0 ;
+                fmt[uint32_fmt(fmt, x)] = 0 ;
                 strerr_warnt2x("adding service ", fmt) ;
               }
             }
