@@ -6,9 +6,7 @@
 #include <execline/config.h>
 #include <s6/config.h>
 
-#define SPECIAL_NAME "s6-oneshot-runner"
-
-#define SPECIAL_RUNSCRIPT \
+#define S6RC_ONESHOT_RUNNER_RUNSCRIPT \
 "#!" EXECLINE_EXTBINPREFIX "execlineb -P\n" \
 EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n" \
 S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \

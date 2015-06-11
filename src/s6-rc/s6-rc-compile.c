@@ -20,9 +20,10 @@
 #include <skalibs/skamisc.h>
 #include <skalibs/avltree.h>
 #include <skalibs/unix-transactional.h>
+#include <execline/config.h>
 #include <execline/execline.h>
+#include <s6/config.h>
 #include <s6-rc/s6rc.h>
-#include "s6-rc-compile.h"
 
 #ifdef DEBUG
 # include <skalibs/lolstdio.h>
@@ -34,6 +35,15 @@
 #define USAGE "s6-rc-compile [ -v verbosity ] destdir sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_dief1x(111, "out of memory") ;
+
+#define S6RC_ONESHOT_RUNNER_RUNSCRIPT \
+"#!" EXECLINE_EXTBINPREFIX "execlineb -P\n" \
+EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n" \
+S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
+S6_EXTBINPREFIX "s6-notifywhenup -f --\n" \
+S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
+S6_EXTBINPREFIX "s6-ipcserver-access -E -l0 -i data/rules --\n" \
+S6_EXTBINPREFIX "s6-sudod -t 2000 --\n"
 
 static unsigned int verbosity = 1 ;
 static stralloc keep = STRALLOC_ZERO ;
@@ -235,7 +245,7 @@ static inline void add_specials (before_t *be)
     .logrelated = 0,
     .logtype = 0
   } ;
-  add_name(be, "(s6-rc-compile internals)", SPECIAL_NAME, SVTYPE_LONGRUN, &service.common.name, &service.common.kname) ;
+  add_name(be, "(s6-rc-compile internals)", S6RC_ONESHOT_RUNNER, SVTYPE_LONGRUN, &service.common.name, &service.common.kname) ;
   if (!stralloc_cats(&keep, data.s + service.common.name)
    || !stralloc_0(&keep)) dienomem() ;
   if (!genalloc_append(longrun_t, &be->longruns, &service)) dienomem() ;
@@ -364,7 +374,7 @@ static inline void add_oneshot (before_t *be, int dirfd, char const *srcdir, cha
     service.common.ndeps++ ;
   }
   else if (verbosity)
-    strerr_warnw6x(srcdir, "/", name, "/dependencies", " explicitly lists ", SPECIAL_NAME) ;
+    strerr_warnw6x(srcdir, "/", name, "/dependencies", " explicitly lists ", S6RC_ONESHOT_RUNNER) ;
   if (verbosity >= 4)
   {
     unsigned int i = service.common.ndeps ;
@@ -838,16 +848,16 @@ static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
 
 static inline void write_specials (char const *compiled)
 {
-  auto_dir(compiled, "servicedirs/" SPECIAL_NAME) ;
-  auto_dir(compiled, "servicedirs/" SPECIAL_NAME "/data") ;
-  auto_dir(compiled, "servicedirs/" SPECIAL_NAME "/data/rules") ;
-  auto_dir(compiled, "servicedirs/" SPECIAL_NAME "/data/rules/uid") ;
-  auto_dir(compiled, "servicedirs/" SPECIAL_NAME "/data/rules/uid/default") ;
-  auto_file(compiled, "servicedirs/" SPECIAL_NAME "/data/rules/uid/default/deny", "", 0) ;
-  auto_dir(compiled, "servicedirs/" SPECIAL_NAME "/data/rules/uid/0") ;
-  auto_file(compiled, "servicedirs/" SPECIAL_NAME "/data/rules/uid/0/allow", "", 0) ;
-  auto_file(compiled, "servicedirs/" SPECIAL_NAME "/run", SPECIAL_RUNSCRIPT, sizeof(SPECIAL_RUNSCRIPT) - 1) ;
-  auto_rights(compiled, "servicedirs/" SPECIAL_NAME "/run", 0755) ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER) ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data") ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules") ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid") ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/default") ;
+  auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/default/deny", "", 0) ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/0") ;
+  auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/0/allow", "", 0) ;
+  auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", S6RC_ONESHOT_RUNNER_RUNSCRIPT, sizeof(S6RC_ONESHOT_RUNNER_RUNSCRIPT) - 1) ;
+  auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
 }
 
 static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps)

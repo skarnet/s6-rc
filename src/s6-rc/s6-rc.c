@@ -220,7 +220,7 @@ static void on_success (unsigned int i, int h)
   if (h) state[i] |= 1 ; else state[i] &= 254 ;
   announce() ;
   if (verbosity >= 2)
-    strerr_warni4x("service ", db->string + db->services[i].name, h ? "started" : "stopped", " successfully") ;
+    strerr_warni4x("service ", db->string + db->services[i].name, h ? " started" : " stopped", " successfully") ;
   broadcast_success(i, h) ;
 }
 
@@ -230,7 +230,7 @@ static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
   {
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, code)] = 0 ;
-    strerr_warnw7x("service ", db->string + db->services[i].name, h ? "started" : "stopped", " unsuccessfully", ": ", crashed ? " crashed with signal " : " exited ", fmt) ;
+    strerr_warnw6x("service ", db->string + db->services[i].name, h ? " started" : " stopped", " unsuccessfully: ", crashed ? "crashed with signal " : "exited ", fmt) ;
   }
 }
 
@@ -312,10 +312,6 @@ static int doit (int spfd, int h)
 static void invert_selection (void)
 {
   register unsigned int i = n ;
-
-  if (verbosity >= 3)
-    strerr_warni1x("inverting the selection") ;
-
   while (i--) state[i] ^= 2 ;
 }
 
@@ -369,8 +365,6 @@ int main (int argc, char const *const *argv)
     s6rc_db_t dbblob ;
     char dbfn[livelen + 10] ;
     db = &dbblob ;
-    if (verbosity >= 3)
-      strerr_warni3x("reading services database in ", live, "/compiled") ;
 
 
    /* Take the live lock */
@@ -422,9 +416,6 @@ int main (int argc, char const *const *argv)
       if (what.check)
       {
         unsigned int problem, w ;
-        if (verbosity >= 3)
-          strerr_warni1x("checking database consistency") ;
-
         if (!s6rc_db_check_revdeps(&dbblob))
           strerr_dief3x(4, "invalid service database in ", dbfn, ": direct and reverse dependencies are mismatched") ;
         w = s6rc_db_check_depcycles(&dbblob, 1, &problem) ;
@@ -434,9 +425,6 @@ int main (int argc, char const *const *argv)
 
 
      /* Resolve the args and add them to the selection */
-
-      if (verbosity >= 3)
-        strerr_warni1x("resolving command line arguments") ;
 
       {
         cdb_t c = CDB_ZERO ;
@@ -448,7 +436,6 @@ int main (int argc, char const *const *argv)
         {
           unsigned int len ;
           register int r ;
-          if (verbosity >= 4) strerr_warnt2x("looking up ", *argv) ;
           r = cdb_find(&c, *argv, str_len(*argv)) ;
           if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
           if (!r)
@@ -470,12 +457,6 @@ int main (int argc, char const *const *argv)
               if (x >= n)
                 strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
               state[x] |= 2 ;
-              if (verbosity >= 4)
-              {
-                char fmt[UINT32_FMT] ;
-                fmt[uint32_fmt(fmt, x)] = 0 ;
-                strerr_warnt2x("adding service ", fmt) ;
-              }
             }
           }
         }
@@ -486,9 +467,6 @@ int main (int argc, char const *const *argv)
 
 
      /* Read live state in bit 0 of state */
-
-      if (verbosity >= 3)
-        strerr_warni2x("reading current state in ", live) ;
 
       byte_copy(dbfn + livelen + 1, 6, "state") ;
       {
@@ -517,9 +495,6 @@ int main (int argc, char const *const *argv)
 
 
      /* Compute the closure */
-
-      if (verbosity >= 3)
-        strerr_warni1x("computing the final set of services") ;
 
       s6rc_graph_closure(db, state, 1, what.up) ;
 
