@@ -42,9 +42,9 @@ int main (int argc, char const *const *argv)
       if (opt == -1) break ;
       switch (opt)
       {
-        case 'c' : compiled = optarg ; break ;
-        case 'l' : live = optarg ; break ;
-        case 't' : if (!uint0_scan(optarg, &t)) dieusage() ; break ;
+        case 'c' : compiled = l.arg ; break ;
+        case 'l' : live = l.arg ; break ;
+        case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
         default : dieusage() ;
       }
     }

@@ -23,7 +23,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc [ -v verbosity ] [ -n dryruntimeout ] [ -t timeout ] [ -l live ] [ -u | -d ] [ -p ] [ -a ] [ -C ] [ -L ] [ -A ] [ -S ] servicenames..."
+#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -u | -d ] [ -p ] [ -a ] help|list|listall|change [ servicenames... ]"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 typedef struct pidindex_s pidindex_t ;
@@ -31,18 +31,6 @@ struct pidindex_s
 {
   pid_t pid ;
   unsigned int i ;
-} ;
-
-typedef struct what_s what_t ;
-struct what_s
-{
-  unsigned char up : 1 ;
-  unsigned char prune : 1 ;
-  unsigned char selectlive : 1 ;
-  unsigned char check : 1 ;
-  unsigned char list : 1 ;
-  unsigned char listall : 1 ;
-  unsigned char change : 1 ;
 } ;
 
 static unsigned int verbosity = 1 ;
@@ -61,7 +49,7 @@ static inline void announce (void)
 {
   unsigned int i = n ;
   char fn[livelen + 7] ;
-  char tmpstate[i] ;
+  char tmpstate[n] ;
   if (dryrun[0]) return ;
   byte_copy(fn, livelen, live) ;
   byte_copy(fn + livelen, 7, "/state") ;
@@ -87,15 +75,19 @@ static pid_t start_oneshot (unsigned int i, int h)
   unsigned int argc = db->services[i].x.oneshot.argc[h] ;
   char const *const *argv = db->argvs + db->services[i].x.oneshot.argv[h] ;
   unsigned int m = 0 ;
-  char const *newargv[9 + argc + (!!dryrun[0] << 2)] ;
+  char const *newargv[9 + argc + !!dryrun[0] * 6] ;
   char fmt[UINT32_FMT] ;
+  char vfmt[UINT_FMT] ;
   char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 3] ;
   byte_copy(socketfn, livelen, live) ;
   byte_copy(socketfn + livelen, 16 + S6RC_ONESHOT_RUNNER_LEN, "/servicedirs/" S6RC_ONESHOT_RUNNER "/s") ;
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;
+  vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
   {
     newargv[m++] = S6RC_BINPREFIX "s6-rc-dryrun" ;
+    newargv[m++] = "-v" ;
+    newargv[m++] = vfmt ;
     newargv[m++] = "-t" ;
     newargv[m++] = dryrun ;
     newargv[m++] = "--" ;
@@ -118,16 +110,20 @@ static pid_t start_longrun (unsigned int i, int h)
   unsigned int svdlen = str_len(db->string + db->services[i].x.longrun.servicedir) ;
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
+  char vfmt[UINT_FMT] ;
   char servicefn[livelen + svdlen + 19] ;
-  char const *newargv[11 + (!!dryrun[0] << 2)] ;
+  char const *newargv[11 + !!dryrun[0] * 6] ;
   byte_copy(servicefn, livelen, live) ;
   byte_copy(servicefn + livelen, 13, "/servicedirs/") ;
   byte_copy(servicefn + livelen + 13, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
   byte_copy(servicefn + livelen + 13 + svdlen, 6, "/down") ;
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;  
+  vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
   {
     newargv[m++] = S6RC_BINPREFIX "s6-rc-dryrun" ;
+    newargv[m++] = "-v" ;
+    newargv[m++] = vfmt ;
     newargv[m++] = "-t" ;
     newargv[m++] = dryrun ;
     newargv[m++] = "--" ;
@@ -218,7 +214,7 @@ static void on_success (unsigned int i, int h)
   if (h) state[i] |= 1 ; else state[i] &= 254 ;
   announce() ;
   if (verbosity >= 2)
-    strerr_warni4x("service ", db->string + db->services[i].name, h ? " started" : " stopped", " successfully") ;
+    strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, h ? " started" : " stopped", " successfully") ;
   broadcast_success(i, h) ;
 }
 
@@ -228,7 +224,7 @@ static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
   {
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, code)] = 0 ;
-    strerr_warnwu6x(h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
+    strerr_warnwu7x(dryrun[0] ? "pretend to " : "", h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
   }
 }
 
@@ -313,16 +309,50 @@ static void invert_selection (void)
   while (i--) state[i] ^= 2 ;
 }
 
+static inline unsigned int lookup (char const *const *table, char const *command)
+{
+  register unsigned int i = 0 ;
+  for (; table[i] ; i++) if (!str_diff(command, table[i])) break ;
+  return i ;
+}
+
+static inline unsigned int parse_command (char const *command)
+{
+  static char const *const command_table[5] =
+  {
+    "help",
+    "list",
+    "listall",
+    "change",
+    0
+  } ;
+  register unsigned int i = lookup(command_table, command) ;
+  if (!command_table[i]) dieusage() ;
+  return i ;
+}
+
+static inline void print_help (void)
+{
+  static char const *help =
+"s6-rc help\n"
+"s6-rc [ -l live ] [ -u | -d ] [ -a ] list [ servicenames... ]\n"
+"s6-rc [ -l live ] [ -u | -d ] [ -a ] listall [ servicenames... ]\n"
+"s6-rc [ -l live ] [ -u | -d ] [ -a ] [ -p ] [ -v verbosity ] [ -t timeout ] [ -n dryrunthrottle ] change [ servicenames... ]\n" ;
+  if (buffer_putsflush(buffer_1, help) < 0)
+    strerr_diefu1sys(111, "write to stdout") ;
+}
+
 int main (int argc, char const *const *argv)
 {
-  what_t what = { .up = 1 } ;
+  int up = 1, prune = 0, selectlive = 0 ;
+  unsigned int what ;
   PROG = "s6-rc" ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "v:n:t:l:udpaCLAS", &l) ;
+      register int opt = subgetopt_r(argc, argv, "v:n:t:l:udpa", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -336,14 +366,10 @@ int main (int argc, char const *const *argv)
         }
         case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
         case 'l' : live = l.arg ; break ;
-        case 'u' : what.up = 1 ; break ;
-        case 'd' : what.up = 0 ; break ;
-        case 'p' : what.prune = 1 ; break ;
-        case 'a' : what.selectlive = 1 ; break ;
-        case 'C' : what.check = 1 ; break ;
-        case 'L' : what.list = 1 ; break ;
-        case 'A' : what.listall = 1 ; break ;
-        case 'S' : what.change = 1 ; break ;
+        case 'u' : up = 1 ; break ;
+        case 'd' : up = 0 ; break ;
+        case 'p' : prune = 1 ; break ;
+        case 'a' : selectlive = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -351,10 +377,14 @@ int main (int argc, char const *const *argv)
     if (t) tain_from_millisecs(&deadline, t) ;
     else deadline = tain_infinite_relative ;
   }
-  if (!what.list && !what.listall) what.change = 1 ;
-  if (!tain_now_g())
-    strerr_warnwu1x("get correct TAI time. (Do you have a valid leap seconds file?)") ;
-  tain_add_g(&deadline, &deadline) ;
+  if (!argc) dieusage() ;
+  what = parse_command(argv[0]) ;
+  if (!what)
+  {
+    print_help() ;
+    return 0 ;
+  }
+
   livelen = str_len(live) ;
 
   {
@@ -372,7 +402,8 @@ int main (int argc, char const *const *argv)
     livelock = open_write(dbfn) ;
     if (livelock < 0) strerr_diefu2sys(111, "open ", dbfn) ;
     if (coe(livelock) < 0) strerr_diefu2sys(111, "coe ", dbfn) ;
-    if (lock_ex(livelock) < 0) strerr_diefu2sys(111, "lock ", dbfn) ;
+    if ((what < 3 ? lock_sh(livelock) : lock_ex(livelock)) < 0)
+      strerr_diefu2sys(111, "lock ", dbfn) ;
 
 
    /* Read the sizes of the compiled db */
@@ -387,6 +418,7 @@ int main (int argc, char const *const *argv)
    /* Allocate enough stack for the db */
 
     {
+      int spfd ;
       s6rc_service_t serviceblob[n] ;
       char const *argvblob[dbblob.nargvs] ;
       uint32 depsblob[dbblob.ndeps << 1] ;
@@ -407,19 +439,6 @@ int main (int argc, char const *const *argv)
       r = s6rc_db_read(fdcompiled, &dbblob) ;
       if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/db") ;
       if (!r) strerr_dief3x(4, "invalid service database in ", dbfn, "/db") ;
-
-
-     /* Check the db consistency */
-
-      if (what.check)
-      {
-        unsigned int problem, w ;
-        if (!s6rc_db_check_revdeps(&dbblob))
-          strerr_dief3x(4, "invalid service database in ", dbfn, ": direct and reverse dependencies are mismatched") ;
-        w = s6rc_db_check_depcycles(&dbblob, 1, &problem) ;
-        if (w < n)
-          strerr_dief6x(4, "invalid service database in ", dbfn, ": service ", stringblob + serviceblob[w].name, " has a dependency cycle involving ", stringblob + serviceblob[problem].name) ;
-      }
 
 
      /* Resolve the args and add them to the selection */
@@ -480,7 +499,7 @@ int main (int argc, char const *const *argv)
 
      /* Add live state to selection */
 
-      if (what.selectlive)
+      if (selectlive)
       {
         register unsigned int i = n ;
         while (i--) if (state[i] & 1) state[i] |= 2 ;
@@ -489,39 +508,44 @@ int main (int argc, char const *const *argv)
 
      /* Print the selection before closure */
 
-      if (what.list) print_services() ;
+      if (what == 1)
+      {
+        print_services() ;
+        return 0 ;
+      }
 
-
-     /* Compute the closure */
-
-      s6rc_graph_closure(db, state, 1, what.up) ;
+      s6rc_graph_closure(db, state, 1, up) ;
 
 
      /* Print the selection after closure */
 
-      if (what.listall) print_services() ;
+      if (what == 2)
+      {
+        print_services() ;
+        return 0 ;
+      }
+
+      if (!tain_now_g())
+        strerr_warnwu1x("get correct TAI time. (Do you have a valid leap seconds file?)") ;
+      tain_add_g(&deadline, &deadline) ;
 
 
      /* Perform a state change */
 
-      if (what.change)
-      {
-        int spfd = selfpipe_init() ;
-        if (spfd < 0) strerr_diefu1sys(111, "init selfpipe") ;
-        if (selfpipe_trap(SIGCHLD) < 0)
-            strerr_diefu1sys(111, "trap SIGCHLD") ;
+      spfd = selfpipe_init() ;
+      if (spfd < 0) strerr_diefu1sys(111, "init selfpipe") ;
+      if (selfpipe_trap(SIGCHLD) < 0)
+          strerr_diefu1sys(111, "trap SIGCHLD") ;
 
-        if (what.prune)
-        {
-          if (what.up) invert_selection() ;
-          r = doit(spfd, 0) ;
-          if (r) return r ;
-          invert_selection() ;
-          return doit(spfd, 1) ;
-        }
-        else return doit(spfd, what.up) ;
+      if (prune)
+      {
+        if (up) invert_selection() ;
+        r = doit(spfd, 0) ;
+        if (r) return r ;
+        invert_selection() ;
+        return doit(spfd, 1) ;
       }
+      else return doit(spfd, up) ;
     }
   }
-  return 0 ;
 }
