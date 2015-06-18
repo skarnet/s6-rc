@@ -378,7 +378,7 @@ int main (int argc, char const *const *argv)
     else deadline = tain_infinite_relative ;
   }
   if (!argc) dieusage() ;
-  what = parse_command(argv[0]) ;
+  what = parse_command(*argv++) ;
   if (!what)
   {
     print_help() ;
