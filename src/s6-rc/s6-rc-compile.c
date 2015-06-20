@@ -971,8 +971,8 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   unsigned int srclen = str_len(src) ;
   unsigned int dstlen = str_len(dst) ;
   struct stat st ;
-  char dstfn[clen + 23 + dstlen] ;
-  char srcfn[srcdirlen + srclen + 11] ;
+  char dstfn[clen + 30 + dstlen] ;
+  char srcfn[srcdirlen + srclen + 18] ;
   byte_copy(dstfn, clen, compiled) ;
   byte_copy(dstfn + clen, 13, "/servicedirs/") ;
   byte_copy(dstfn + clen + 13, dstlen + 1, dst) ;
@@ -993,6 +993,9 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   }
   byte_copy(dstfn + clen + 14 + dstlen, 7, "finish") ;
   byte_copy(srcfn + srcdirlen + srclen + 2, 7, "finish") ;
+  filecopy(srcfn, dstfn, 0755) ;
+  byte_copy(dstfn + clen + 14 + dstlen, 16, "notification-fd") ;
+  byte_copy(srcfn + srcdirlen + srclen + 2, 16, "notification-fd") ;
   filecopy(srcfn, dstfn, 0755) ;
 
   byte_copy(srcfn + srcdirlen + srclen + 2, 9, "nosetsid") ;

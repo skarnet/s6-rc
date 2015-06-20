@@ -67,7 +67,6 @@ static void print_services (void)
       buffer_puts(buffer_1, db->string + db->services[i].name) ;
       buffer_put(buffer_1, "\n", 1) ;
     }
-  buffer_putflush(buffer_1, "\n", 1) ;
 }
 
 static pid_t start_oneshot (unsigned int i, int h)
