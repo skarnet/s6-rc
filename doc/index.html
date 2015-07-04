@@ -1,0 +1,142 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc - a service manager for s6</title>
+    <meta name="Description" content="s6-rc - a service manager for s6" />
+    <meta name="Keywords" content="s6 rc unix s6-rc init service management rc.d scripts administration root laurent bercot ska skarnet" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> s6-rc </h1>
+
+<h2> What is it&nbsp;? </h2>
+
+<p>
+ s6-rc is a service manager for
+<a href="http://skarnet.org/software/s6/">s6</a>-based
+systems, i.e. a suite of programs that can start and stop
+services, both long-running daemons and one-time
+initialization scripts, in the proper order according to a
+dependency tree. It ensures that long-running daemons are
+supervised by the s6 infrastructure, and that one-time
+scripts are also run in a controlled environment.
+</p>
+
+<hr />
+
+<ul>
+ <li> <a href="why.html">Why</a> such a program&nbsp;? </li>
+ <li> A <a href="overview.html">high-level overview</a> of s6-rc </li>
+</ul>
+
+<hr />
+
+<h2> Installation </h2>
+
+<h3> Requirements </h3>
+
+<ul>
+ <li> A POSIX-compliant system with a standard C development environment </li>
+ <li> GNU make, version 4.0 or later </li>
+ <li> <a href="http://skarnet.org/software/skalibs/">skalibs</a> version
+2.3.5.1 or later </li>
+ <li> <a href="http://skarnet.org/software/execline/">execline</a> version
+2.1.2.2 or later </li>
+ <li> <a href="http://skarnet.org/software/s6/">s6</a> version
+2.1.6.0 or later </li>
+</ul>
+
+<h3> Licensing </h3>
+
+<p>
+ s6-rc is free software. It is available under the
+<a href="http://opensource.org/licenses/ISC">ISC license</a>.
+</p>
+
+<h3> Download </h3>
+
+<ul>
+ <li> The current released version of s6-rc is
+<a href="s6-rc-0.0.1.0.tar.gz">0.0.1.0</a>. </li>
+ <li> Alternatively, you can checkout a copy of the s6-rc git repository:
+<pre> git clone git://git.skarnet.org/s6-rc </pre> </li>
+ <li> There's also a
+<a href="https://github.com/skarnet/s6-rc">GitHub mirror</a>
+of the s6 git repository. </li>
+</ul>
+
+<h3> Compilation </h3>
+
+<ul>
+ <li> See the enclosed INSTALL file for installation details. </li>
+</ul>
+
+<h3> Upgrade notes </h3>
+
+<ul>
+ <li> <a href="upgrade.html">This page</a> lists the differences to be aware of between
+the previous versions of s6-rc and the current one. </li>
+</ul>
+
+<hr />
+
+<h2> Reference </h2>
+
+<h3> Commands </h3>
+
+<p>
+ All these commands exit 111 if they encounter a temporary error, and
+100 if they encounter a permanent error - such as a misuse.
+</p>
+
+<h4> Offline tools: creating and managing a compiled service database </h4>
+
+<ul>
+ <li> <a href="s6-rc-compile.html">The <tt>s6-rc-compile</tt> program</a> </li>
+ <li> <a href="s6-rc-db.html">The <tt>s6-rc-db</tt> program</a> </li>
+</ul>
+
+<h4> Online tools: managing your live services </h4>
+
+<ul>
+ <li> <a href="s6-rc-init.html">The <tt>s6-rc-init</tt> program</a> </li>
+ <li> <a href="s6-rc.html">The <tt>s6-rc</tt> program</a> </li>
+ <li> <a href="s6-rc-dryrun.html">The <tt>s6-rc-dryrun</tt> internal program</a> </li>
+ <li> <a href="s6-rc-upgrade.html">The <tt>s6-rc-upgrade</tt> program</a> </li>
+</ul>
+
+<h2> Related resources </h2>
+
+<h3> Discussion </h3>
+
+<ul>
+ <li> <tt>s6-rc</tt> is discussed on the
+<a href="http://skarnet.org/lists.html#skaware">skaware</a> mailing-list. </li>
+</ul>
+
+<h3> Similar work </h3>
+
+<ul>
+ <li> <a href="http://jjacky.com/anopa/">anopa</a> is another service manager
+for s6, with a similar design (but no compilation phase). </li>
+ <li> <a href="http://homepage.ntlworld.com/jonathan.deboynepollard/Softwares/nosh.html">nosh</a>
+is a complete init system and service manager for Unix. </li>
+</ul>
+
+<h3> Discussion </h3>
+
+<ul>
+ <li> <tt>s6-rc</tt> is discussed on the
+<a href="http://skarnet.org/lists.html#skaware">skaware</a> mailing-list. </li>
+</ul>
+
+</body>
+</html>

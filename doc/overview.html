@@ -1,0 +1,220 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: an overview</title>
+    <meta name="Description" content="s6-rc: an overview" />
+    <meta name="Keywords" content="s6-rc overview" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> An overview of s6-rc </h1>
+
+<h2> A manager for <em>services</em> </h2>
+
+<p>
+ s6-rc is a service manager, or, in other words, a
+<em>machine state manager</em>: given a database of services,
+with dependencies between them, it can safely bring the
+<em>global machine state</em>, or <em>live state</em>, to
+the desired point, making sure dependencies are never
+broken.
+</p>
+
+<h3> The live state </h3>
+
+<p>
+ The <em>live state</em>, by definition, is the tuple of
+all service states on the machine. Changing the live state
+means bringing services up, or bringing services down.
+</p>
+
+<h3> 2.5 kinds of services </h3>
+
+<p>
+ Supervision suites manage <em>long-lived processes</em>, a.k.a
+<em>daemons</em>, and sometimes call them <em>services</em>.
+With s6-rc, those things are different: a long-lived process is
+also called a <em>longrun</em> and is a service, but a service
+does not have to be a longrun. There is a second kind of service,
+which is called a <em>oneshot</em>, and which represents a change
+of system state that is not embodied by the presence of a
+long-lived process. For instance, "mounting a filesystem" is a
+system state change, but in most cases there is no process hanging
+around while the filesystem is mounted.
+</p>
+
+<p>
+ s6-rc handles both oneshots and longruns.
+</p>
+
+<ul>
+ <li> A <em>longrun</em> is the exact equivalent of a <em>service</em>
+in the supervision sense. It is defined by a
+<a href="http://skarnet.org/software/s6/servicedir.html">service
+directory</a>, with a run script and optional other data. The
+service is considered <em>up</em> as long as the long-lived
+process is alive and, for daemons that support it, has
+<a href="http://skarnet.org/software/s6/notifywhenup.html">notified
+its readiness</a>. It is considered <em>down</em> otherwise. </li>
+ <li> A <em>oneshot</em>, on the other hand, is totally unknown
+from supervision suites, because there is no daemon to manage.
+A oneshot is represented by two short-lived scripts, <em>up</em>
+and <em>down</em>, used to bring the service respectively up and
+down. The service is considered up when the <em>up</em>
+program has exited successfully, and until the <em>down</em>
+program has exited successfully. </li>
+</ul>
+
+<p>
+ Services can depend on one another.
+If service <em>A</em> has been declared as
+depending on service <em>B</em>, then s6-rc will make sure to
+never start <em>A</em> until it knows that <em>B</em> is up,
+and will make sure to never stop <em>B</em> until it knows that
+<em>A</em> is down. This works whether <em>A</em> and <em>B</em>
+are both oneshots, both longruns, or a oneshot and a longrun.
+</p>
+
+<p>
+ s6-rc also handles an additional kind of service: a <em>bundle</em>.
+A bundle is just a collection of oneshots or longruns, described
+under a single name. A bundle definition can even contain other
+bundles, but ultimately a bundle will always represent a set of one
+or more oneshots or longruns. A oneshot or longrun is called an
+<em>atomic service</em>.
+Bundle names can be used anywhere with the s6-rc user
+interface, and they will internally be converted to a set of
+atomic services. An atomic service can depend on a bundle: it will
+simply depend on all the atomic services represented by the bundle.
+A bundle, however, cannot have dependencies.
+</p>
+
+<h2> A two-part operation </h2>
+
+<p>
+ Unlike other service managers such as
+<a href="http://jjacky.com/anopa/">anopa</a>, s6-rc separates the
+work of analyzing a set of service definitions, resolving
+dependencies, and so on, from the work of actually applying the
+dependency graph to perform live state changes. The former is
+the <em>compilation</em> phase, and is done offline; the latter is
+the <em>live</em> phase, and is of course done online - it impacts
+the actual state of the machine.
+</p>
+
+<h3> The compilation phase </h3>
+
+<ul>
+ <li> Users are expected to write their service definitions - be it
+oneshots, longruns or bundles - in one ore more
+<em>source directories</em>, in the s6-rc
+<a href="s6-rc-compile.html#source">source format</a>.
+The source format is simple to parse automatically - which is
+one of the main reasons why it has been designed that way - and
+it is also simple to generate automatically: it is easy to write
+converters from a given service definition format to the s6-rc
+source format. </li>
+ <li> Users then run the
+<a href="s6-rc-compile.html">s6-rc-compile</a> program, that takes
+a set of service definitions in one or more source directories
+and makes a <em>compiled service database</em>, abbreviated as
+<em>compiled</em>. This <em>compiled</em> should be stored by the
+administrator on the root filesystem. </li>
+ <li> The <a href="s6-rc-db.html">s6-rc-db</a> tool can be used
+to examine compiled service databases and extract information from
+them in a human-friendly format. </li>
+</ul>
+
+<h3> The live phase </h3>
+
+<p>
+ When the machine boots up:
+</p>
+
+<ul>
+ <li> First, the chosen init should make sure that a
+<a href="http://skarnet.org/software/s6/">s6</a>
+supervision tree is up and running. s6-rc will only work
+if there is an active
+<a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
+process monitoring a
+<a href="http://skarnet.org/software/s6/scandir.html">scan</a>
+directory. On Linux, for instance, it is possible to achieve such a state
+by using an init created by the
+<a href="http://skarnet.org/software/s6-linux-init/s6-linux-init-maker.html">s6-linux-init-maker</a>
+tool: when control reaches stage 2, s6-svscan is guaranteed to run,
+so using s6-rc in the stage 2 script is the way to go. </li>
+ <li> The boot process, let's name it <em>stage2</em>, should then call the
+<a href="s6-rc-init.html">s6-rc-init</a> program. This program
+will set up an area for s6-rc in a writable directory (which can
+be on a RAM filesystem such as tmpfs) to host its live information
+such as the machine state, a working copy of all service directories
+for longruns, and a link to the current compiled state database.
+<a href="s6-rc-init.html">s6-rc-init</a> initializes the machine state
+as "every declared service is down". </li>
+ <li> <em>stage2</em> should then invoke the
+<a href="s6-rc.html">s6-rc</a> program with the names of the services that
+should be brought up given as arguments. Of course, bundles can be used
+for shortcuts. </li>
+ <li> That's it, the services are up and the initialization should be
+over. If the service database has been properly written, a <em>stage2</em>
+script can actually be really short: an invocation of
+<a href="s6-rc-init.html">s6-rc-init</a> and an invocation of
+<a href="s6-rc.html">s6-rc</a>. </li>
+</ul>
+
+<h3> Other state changes and shutdown </h3>
+
+<p>
+ The administrator can make changes to the live state of the machine
+by manually calling <a href="s6-rc.html">s6-rc</a> again with the
+proper arguments. This is more powerful than the old
+<a href="http://www.tldp.org/LDP/sag/html/run-levels-intro.html">runlevels</a>:
+it is possible to change the live state to <em>any</em> set of
+services, not only predefined ones. The only thing that s6-rc will
+not allow is a state that would break service dependencies; it
+will always respect the dependency graph.
+</p>
+
+<p>
+ The s6-rc command is the central for machine state changes, and it is
+also true for shutdown. When shutting a machine down, all the services
+managed by s6-rc should be brought down in the proper order (via the
+<tt>s6-rc -da change</tt> command). Once all those services have been
+brought down successfully, the final shutdown procedure can take place;
+for instance, if s6-svscan is running as process 1 with the
+<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>
+defaults, <tt>s6-svscanctl -t /run/service</tt> will kill the
+supervision tree and call <tt>/etc/rc.shutdown reboot</tt>, which should
+reboot the machine.
+</p>
+
+<h2> Live updates to the service database </h2>
+
+<p>
+The s6-rc command is a one-stop shop for service management as long as
+the compiled database doesn't change. If an administrator wishes to
+make a new compiled database the current live one, without rebooting
+the machine, a bit more work is needed, and that's the job of the
+<a href="s6-rc-update.html">s6-rc-update</a> command. This command
+has been specifically written with Unix distributions in mind: when
+new packages ship, they come with new service definitions, or upgraded
+ones, and it is necessary to compile a new service database and update
+the live state so it matches; if source definitions for s6-rc are
+provided in the packages, an invocation of
+<a href="s6-rc-compile.html">s6-rc-compile</a> followed by an invocation of
+<a href="s6-rc-update.html">s6-rc-update</a> should be all it takes to
+keep the live state up to date.
+</p>
+
+</body>
+</html>

@@ -1,0 +1,278 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: why?</title>
+    <meta name="Description" content="s6-rc: why?" />
+    <meta name="Keywords" content="s6-rc why reason rationale" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> Why s6-rc&nbsp;? </h1>
+
+<h2> The limits of supervision suites </h2>
+
+<p>
+ Supervision suites such as
+<a href="http://skarnet.org/software/s6/">s6</a>,
+<a href="http://smarden.org/runit/">runit</a>,
+<a href="http://b0llix.net/perp/">perp</a> or
+<a href="http://cr.yp.to/daemontools.html">daemontools</a>
+define a <em>service</em> as a long-lived process, a.k.a a
+daemon. They provide tools to run the daemon in a reproducible
+way in a controlled environment and keep it alive if it dies;
+they also provide daemon management tools to, among others,
+send signals to the daemon without knowing its PID. They can
+control individual long-lived process perfectly well, and
+<a href="http://skarnet.org/software/s6/">s6</a> also provides
+tools to manage a whole supervision tree.
+</p>
+
+<p>
+ However, a supervision suite is not a service manager.
+</p>
+
+<p>
+ Relying on a supervision suite to handle all the service
+management is doable on simple systems, where there aren't
+many dependencies, and where most of the one-time initialization
+can take place in stage 1, before any daemons are launched.
+On embedded systems, for instance, this is perfectly reasonable.
+</p>
+
+<p>
+ On bigger systems, though, it is more problematic. Here are a few
+issues encountered:
+</p>
+
+<ul>
+ <li> With a pure supervision tree, all daemons are launched in
+parallel; if their dependencies are not met, daemons just die, and
+are restarted by the supervisors, and so on; so eventually everything
+is brought up. This is okay with lightweight daemons that do not take
+up too many resources when starting; but with heavyweight daemons,
+bringing them up at the wrong time can significantly expend CPU and
+increase the total booting time. </li>
+ <li> The <a href="http://smarden.org/runit/">runit</a> model of
+separating one-time initialization (stage 1) and daemon management
+(stage 2) does not always work: some one-time initialization may
+depend on a daemon being up. Example: udevd on Linux. Such daemons
+then need to be run in stage 1, unsupervised - which defeats the
+purpose of having a supervision suite. </li>
+ <li> More generally, supervision suites do not perform
+<em>dependency management</em>. Their job is to maintain daemons
+alive and ease their administration; dependency across those
+daemons is not their concern, and one-time initialization scripts
+are entirely foreign to them. So a situation like <tt>udevd</tt>
+where it is necessary to interleave daemons and one-time scripts
+is very badly handled by them. </li>
+</ul>
+
+<p>
+ To manage complex systems, pure supervision suites are insufficient,
+and real <em>service managers</em>, starting and stopping services
+in the proper order and handling both <em>oneshots</em> (one-time
+initialization scripts) and <em>longruns</em> (daemons), are needed.
+</p>
+
+<h2> Previous alternatives </h2>
+
+<p>
+ Unix distributions usually come with their own init systems and
+service managers; all of those have flaws one way or another. No
+widely spread init system gets things right, which is the main
+reason for the recent "init wars" - there are strong, valid reasons
+to support such or such init system, but <em>also</em> strong, valid
+reason to dislike it.
+</p>
+
+<p>
+ Non-supervision init systems usually fall in one of two categories,
+both with pros and cons.
+</p>
+
+<h3> Traditional, sequential starters </h3>
+
+<p>
+ Those are either the historical Unix init systems, or newer systems
+that still favor simplicity. Among them, for instance:
+</p>
+
+<ul>
+ <li> <a href="http://savannah.nongnu.org/projects/sysvinit">sysvinit</a>,
+the historical GNU/Linux init system, and its companion set of
+<tt>/etc/rc.d</tt> init scripts that some distributions like to
+call <tt>sysv-rc</tt>. Note that sysvinit <em>does</em> have
+supervision capabilities, but nobody ever bothered to use them
+for anything else than <tt>getty</tt>s, and all the machine
+initialization, including longruns, is done by the <tt>sysv-rc</tt>
+scripts, in a less than elegant way. </li>
+ <li> <a href="https://www.freebsd.org/cgi/man.cgi?query=init(8)">BSD
+init</a>, which is very similar to sysvinit - including the
+supervision abilities that are only ever used for <tt>getty</tt>s.
+The <tt>/etc/rc</tt> script takes care of all the initialization. </li>
+ <li> <a href="https://wiki.gentoo.org/wiki/Project:OpenRC">OpenRC</a>,
+an alternative, dependency-based rc system. </li>
+</ul>
+
+<p>
+ All these systems run sequentially: they will start services, either
+oneshots or longruns, one by one, even when the dependency graph says
+that some services could be started in parallel. Also, the daemons
+they start are always unsupervised, even when the underlying init
+system provides supervision features. There usually is no
+<a href="http://skarnet.org/software/s6/notifywhenup.html">readiness
+notification</a> support on daemons either, daemons are fire-and-forget
+(but that's more on the
+scripts themselves than on the frameworks). Another common criticism
+of those systems is that the amount of shell scripting is so huge
+that it has a significant performance impact. 
+</p>
+
+<p>
+ Another, less obvious, but important drawback is that service-launching
+scripts run as scions of the shell that invoked the command, and so
+they may exhibit different behaviours when they're run automatically at
+boot time and when they're run manually by an admin, because the
+environment is different. Scripts usually try to run in a clean
+environment, but it's hard to think of everything (open file
+descriptors!) and every script must protect itself with a gigantic
+boilerplate, which adds to the inefficiency problem.
+</p>
+
+<h3> Monolithic init behemoths </h3>
+
+<p>
+ The other category of service managers is made of attempts to cover
+the flaws of traditional service starters, and provide supervision,
+dependency management and sometimes readiness notification, while
+reducing the amount of scripting needed.
+Unfortunately, the results were tightly integrated, monolithic init
+systems straying very far away from Unix core principles, with
+design flaws that make the historical inits' design flaws look like
+a joke.
+</p>
+
+<ul>
+ <li> <a href="http://upstart.ubuntu.com/">Upstart</a> was the first
+one. On the front page, in the "feature highlights" section:
+"Tasks and Services are started and stopped
+by events. Events are generated as tasks and services are started
+and stopped." Do you understand what that means? I don't. </li>
+ <li> <a href="https://en.wikipedia.org/wiki/Launchd">launchd</a>,
+Darwin's init and service manager. The wikipedia page (linked here
+because Apple doesn't see fit to provide a documentation page for
+launchd) is very clear: it replaces init, rc, init.d/rc.d,
+SystemStarter, inetd, crontd, atd and watchdogd. It does all of this
+in process 1. And it uses XML for daemon configuration, so process 1
+has to link in a XML parsing library. </li>
+ <li> <a href="http://www.freedesktop.org/wiki/Software/systemd/">systemd</a>,
+the main protagonist (or antagonist) in the "init wars". It has the same
+problems as launchd, up by an order of magnitude;
+<a href="http://skarnet.org/software/s6/systemd.html">here is why</a>.
+systemd avowedly aims to replace the whole low-level user-space of
+Linux systems, but its design is horrendous. It doesn't even
+<a href="http://ewontfix.com/15/">get readiness notification right</a>. </li>
+</ul>
+
+<p>
+ The problem of integrated init systems is that:
+</p>
+
+<ul>
+ <li> They have been developed by companies and associations, not
+individuals, and despite the licensing, they are for all intents and
+purposes closer to proprietary software than free software; they also
+suffer from many of the technical flaws of enterprise software
+design. </li>
+ <li> As a result, and despite being backed by tremendous manpower,
+they have been very poorly thought out. The manpower goes into the
+coding of features, not into architecture conception; and the
+architects were obviously not Unix experts, which is a shame when
+it's about creating a process 1 for Unix. This is apparent because: </li>
+ <li> They have been designed like <em>application software</em>, not
+<em>system software</em>, which requires a fairly different set of
+skills, and careful attention to details - such as minimal software
+dependencies and shortness of code paths - that are not as important
+in application software. </li>
+</ul>
+
+<p>
+ Pages and pages could be written about the shortcomings of integrated
+init systems; one fact remains - they are not a satisfying solution
+to the problem of service management under Unix.
+</p>
+
+<h2> The best of both worlds </h2>
+
+<p>
+ s6-rc aims to be such a solution: it is small and modular, but offers
+full functionality. Parallel service startup and shutdown with
+correct dependency management (none of the systemd nonsense where
+services are started before their dependencies are met), correct
+readiness notification support, reproducible script execution, and
+<em>short code paths</em>.
+</p>
+
+<ul>
+ <li> s6-rc is a <em>service manager</em>, i.e. the equivalent of
+<tt>sysv-rc</tt> or OpenRC. It is <em>not</em> an init system.
+<strong>You can run s6-rc with any init system of your choosing.</strong>
+Of course, s6-rc requires a s6 supervision tree to be running on
+the system, since it delegates the management of longrun services
+to that supervision tree, but it does not require that s6 be the
+init system itself. s6-rc will work
+<a href="http://skarnet.org/software/s6/s6-svscan-1.html">when s6-svscan
+runs as process 1</a> (on Linux, such a setup can be easily achieved
+via the help of the
+<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>
+package), and it will also work
+<a href="http://skarnet.org/software/s6/s6-svscan-not-1.html">when
+s6-svscan runs under another init process</a>. </li>
+ <li> The service manager runs <em>on top of</em> a supervision
+suite. It does not try to make it perform boot/shutdown operations or
+dependency management itself; and it does not substitute itself to it.
+s6-rc uses the functionality provided by s6, but it is still possible
+to run s6 without s6-rc for systems that do not need a service manager.
+It would also be theoretically possible to run s6-rc on top of another
+supervision suite, if said supervision suite provided the hooks that
+s6-rc needs. </li>
+ <li> A significantly time-consuming part of a service manager is
+the analysis of a set of services and computation of a dependency graph
+for that set. At the time of writing this document, s6-rc is the only
+service manager that performs that work <em>offline</em>, eliminating
+the dependency analysis overhead from boot time, shutdown time, or
+any other time where the machine state changes. </li>
+ <li> The <em>source</em> format for the
+<a href="s6-rc-compile.html">s6-rc-compile</a> tool is purposefully
+simple, in order to allow external tools to automatically write
+service definitions for s6-rc - for instance for conversions between
+service manager formats. </li>
+ <li> Like every
+<a href="http://skarnet.org/software/">skarnet.org tool</a>, s6-rc
+is made of very little code, that does its job and nothing else.
+The binaries are small, it is very light in memory usage, and the
+code paths are extremely short. </li>
+</ul>
+
+
+<p>
+ The combination of s6 and s6-rc makes a complete, full-featured and
+performant init system and service manager, with probably the lowest
+total memory footprint of any service manager out there, and all the
+reliability and ease of administration that a supervision suite can
+provide. It is a real, viable alternative to integrated init
+behemoths, providing equivalent functionality while being much
+smaller and much, much more maintainable.
+</p>
+
+</body>
+</html>

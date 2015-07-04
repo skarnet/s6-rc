@@ -3,9 +3,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta http-equiv="Content-Language" content="en" />
-    <title>s6-rc: the s6-rc program</title>
-    <meta name="Description" content="s6-rc: the s6-rc program" />
-    <meta name="Keywords" content="s6-rc command rc init dependency state management services" />
+    <title>s6-rc: the s6-rc-init program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-init program" />
+    <meta name="Keywords" content="s6-rc command s6-rc-init rc init dependency state management services" />
     <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
   </head>
 <body>
@@ -16,17 +16,22 @@
 <a href="http://skarnet.org/">skarnet.org</a>
 </p>
 
-<h1> The s6-rc program </h1>
+<h1> The s6-rc-init program </h1>
 
 <p>
- s6-rc is a <em>machine state manager</em>: it brings the machine to a
-desired state, by starting or stopping services as needed.
+ s6-rc-init is an initialization tool for the s6-rc
+system. It must be run at boot time, prior to any
+invocation of the
+<a href="s6-rc.html">s6-rc</a> binary.
 </p>
+
+<h2> Requirements </h2>
+
 
 <h2> Interface </h2>
 
 <pre>
-     s6-rc [ -v <em>verbosity</em> ] [ <em>servicenames...</em> ]
+     s6-rc-init [ -v <em>verbosity</em> ] [ <em>servicenames...</em> ]
 </pre>
 
 <ul>

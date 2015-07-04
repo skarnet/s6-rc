@@ -1,0 +1,134 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-db program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-db program" />
+    <meta name="Keywords" content="s6-rc offline database dump command rc init dependency state management services" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-db program </h1>
+
+<p>
+ s6-rc-db is a tool to analyze a compiled service database
+and extract information from it, and print it in a user-friendly
+format.
+</p>
+
+<p>
+ It is an <em>offline tool</em>, i.e. you can run it on any
+compiled service database without actually having a live set
+of services managed by s6-rc. However, if you do have a live
+set, you can still run s6-rc-db on the current database (and
+it is the default); it won't interfere with your normal service
+operation.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-db help
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] check
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] list all|services|oneshots|longruns|bundles
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] type <em>servicename</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] timeout <em>atomicname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] contents <em>bundlename</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] dependencies <em>servicename</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] servicedir <em>longrunname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] script <em>oneshotname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] flags <em>atomicname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] atomics <em>servicename...</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] all-dependencies <em>servicename...</em>
+</pre>
+
+<ul>
+ <li> s6-rc-db expects to find a <em>compiled service database</em>
+in <em>compiled</em>; by default it uses the service database
+used by the live state in <em>live</em>.
+It reads and parses the compiled database it finds. If the
+database is invalid, it exits 4. </li>
+ <li> Depending on the arguments given, it prints the requested
+information to stdout, then exits 0. </li>
+</ul>
+
+<h2> Options </h2>
+
+<ul>
+ <li> <tt>-c&nbsp;<em>compiled</em></tt>&nbsp;: examine a
+compiled service database in <em>compiled</em> instead of
+the current live one. </li>
+ <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: assume the live
+state is in <em>live</em>. Default is
+<tt>/run/s6-rc</tt>. This option is ignored if the
+<tt>-c</tt> option has been given. </li>
+ <li> <tt>-u</tt>&nbsp;: for commands that use different data
+depending on whether it's about bringing the service up or down,
+select the "up" data. This option is ignored when it is irrelevant. </li>
+ <li> <tt>-d</tt>&nbsp;: for commands that use different data
+depending on whether it's about bringing the service up or down,
+select the "down" data. This option is ignored when it is irrelevant. </li>
+</ul>
+
+<h2> Subcommands </h2>
+
+<h3> s6-rc-db help </h3>
+
+<p>
+ Prints a help message on stdout.
+</p>
+
+<h3> s6-rc-db check </h3>
+
+<p>
+ Checks the database consistency. Exits 4 with an error message if
+it finds a problem, such as a mismatch in the direct and reverse
+dependency tables, or a dependency cycle.
+</p>
+
+
+<h2> Usage examples </h2>
+
+<pre> s6-rc <em>myservicebundle</em> </pre>
+<p>
+ Brings up all the services represented by <em>myservicebundle</em>,
+dependencies first.
+</p>
+
+<pre> s6-rc -Sad </pre>
+<p>
+ Brings down all the services in an orderly manner. This is typically
+run at shutdown time.
+</p>
+
+<pre> s6-rc -Au <em>myservicebundle</em> </pre>
+<p>
+ Prints the names of all atomic services represented by
+<em>myservicebundle</em>, as well as everything they depend on.
+</p>
+
+<pre> s6-rc -Ad <em>myservicebundle</em> </pre>
+<p>
+ Prints the names of all atomic services represented by
+<em>myservicebundle</em>, as well as everything that depends on them.
+</p>
+
+<pre> s6-rc -pun0 <em>myservicebundle</em> </pre>
+<p>
+ Prints what s6-rc would do to bring the state to just
+<em>myservicebundle</em> and its dependencies.
+</p>
+
+
+<h2> Internals </h2>
+
+</body>
+</html>
