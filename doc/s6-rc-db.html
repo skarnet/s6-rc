@@ -94,41 +94,158 @@ it finds a problem, such as a mismatch in the direct and reverse
 dependency tables, or a dependency cycle.
 </p>
 
+<h3> s6-rc-db list </h3>
 
-<h2> Usage examples </h2>
-
-<pre> s6-rc <em>myservicebundle</em> </pre>
 <p>
- Brings up all the services represented by <em>myservicebundle</em>,
-dependencies first.
+ Lists all services of a given type. This subcommand takes a second subcommand:
 </p>
 
-<pre> s6-rc -Sad </pre>
+<h4> s6-rc-db list all </h4>
+
 <p>
- Brings down all the services in an orderly manner. This is typically
-run at shutdown time.
+ Lists everything - atomic services and bundles - contained in the database.
 </p>
 
-<pre> s6-rc -Au <em>myservicebundle</em> </pre>
+<h4> s6-rc-db list services </h4>
+
 <p>
- Prints the names of all atomic services represented by
-<em>myservicebundle</em>, as well as everything they depend on.
+ Lists all atomic services.
 </p>
 
-<pre> s6-rc -Ad <em>myservicebundle</em> </pre>
+<h4> s6-rc-db list oneshots </h4>
+
 <p>
- Prints the names of all atomic services represented by
-<em>myservicebundle</em>, as well as everything that depends on them.
+ Lists oneshots.
 </p>
 
-<pre> s6-rc -pun0 <em>myservicebundle</em> </pre>
+<h4> s6-rc-db list longruns </h4>
+
 <p>
- Prints what s6-rc would do to bring the state to just
-<em>myservicebundle</em> and its dependencies.
+ Lists longruns.
 </p>
 
+<h4> s6-rc-db list bundles </h4>
 
-<h2> Internals </h2>
+<p>
+ Lists all bundles.
+</p>
+
+<h3> s6-rc-db type <em>servicename</em> </h3>
+
+<p>
+ Prints the type of <em>servicename</em>: <tt>oneshot</tt>, <tt>longrun</tt>
+or <tt>bundle</tt>. Exits 1 if
+<em>servicename</em> is not a valid identifier in the database.
+</p>
+
+<h3> s6-rc-db timeout <em>atomicname</em> </h3>
+
+<p>
+ Prints the timeout value, in milliseconds, after which bringing
+<em>atomicname</em> up or down is considered a failure if the
+called script still has not succeeded. Exits 1 if <em>atomicname</em>
+isn't a valid atomic service. By default, or if the <tt>-u</tt>
+option has been given to s6-rc-db, the timeout for <em>up</em> is
+printed; the timeout for <em>down</em> is printed instead if the
+<tt>-d</tt> option has been given.
+</p>
+
+<h3> s6-rc-db contents <em>bundlename</em> </h3>
+
+<p>
+ Lists the atomic services represented by bundle <em>bundlename</em>.
+Exits 1 if <em>bundlename</em> is not a valid bundle.
+</p>
+
+<h3> s6-rc-db dependencies <em>servicename</em> </h3>
+
+<p>
+ Prints the list of direct dependencies for <em>servicename</em>.
+Exits 1 if <em>servicename</em> isn't a valid identifier. If
+<em>servicename</em> is a bundle, its set of direct dependencies
+is the union of the direct dependencies of all the atomic services
+contained in the bundle.
+</p>
+
+<p>
+ If the <tt>-d</tt> option has been given to s6-rc-db, the
+reverse dependencies are given instead: services that directly
+depend on <em>servicename</em>, or on one of its components if it
+is a bundle.
+</p>
+
+<h3> s6-rc-db servicedir <em>longrunname</em> </h3>
+
+<p>
+ Prints the service directory for longrun service <em>longrunname</em>;
+this value is <em>relative to the scandir</em>. Exits 1 if
+<em>longrunname</em> is not a valid longrun.
+</p>
+
+<h3> s6-rc-db script <em>oneshotname</em> </h3>
+
+<p>
+ Prints the <em>up</em> script for <em>oneshotname</em>, which is
+an <em>argv</em>, i.e. a Unix command line. Each component of this
+command line is
+<strong>terminated by a null character</strong>, so to print it in
+a human-readable format, pipe the output into something like
+<tt>xargs -0 echo</tt>. The command exits 1 if <em>oneshotname</em>
+is not a valid oneshot.
+</p>
+
+<p>
+ If the <tt>-d</tt> option has been given to s6-rc-db, the
+<em>down</em> script is printed instead.
+</p>
+
+<h3> s6-rc-db flags <em>atomicname</em> </h3>
+
+<p>
+ Prints a hexadecimal number that is the list of all binary flags
+for atomic service <em>atomicname</em>. Exits 1 if <em>atomicname</em>
+is not a valid atomic service.
+</p>
+
+<p>
+ Those binary flags are currently unused, but this may change in a
+future version of s6-rc.
+</p>
+
+<h3> s6-rc-db atomics <em>servicename...</em> </h3>
+
+<p>
+ Prints the fully resolved list of services represented by the
+<em>servicename...</em> arguments, i.e. the union of all
+atomic services contained in <em>servicename...</em>. Each
+argument in <em>servicename...</em> can be an atomic service or
+a bundle. If an argument isn't a valid identifier, the command
+exits 1.
+</p>
+
+<h3> s6-rc-db all-dependencies <em>servicename...</em> </h3>
+
+<p>
+ Prints the list of all atomic services needed to bring up
+all of the <em>servicename...</em> arguments, with all their
+dependencies, recursively. In other words: for
+<em>servicename...</em> to be up, every single service listed
+in the output will need to be up. The output includes the
+atomic services represented by the
+<em>servicename...</em> arguments themselves. If one of those
+arguments isn't a valid identifier, the command exits 1.
+</p>
+
+<p>
+ The list is not topologically sorted.
+</p>
+
+<p>
+ If the <tt>-d</tt> option has been given to s6-rc-db, the
+recursive list of reverse dependencies is printed: for
+<em>servicename...</em> to be down, every single service listed
+in the output will need to be down.
+</p>
 
 </body>
 </html>

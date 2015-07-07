@@ -20,149 +20,75 @@
 
 <p>
  s6-rc-init is an initialization tool for the s6-rc
-system. It must be run at boot time, prior to any
+system. It must be run as root, at boot time, prior to any
 invocation of the
 <a href="s6-rc.html">s6-rc</a> binary.
 </p>
 
-<h2> Requirements </h2>
-
-
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-init [ -v <em>verbosity</em> ] [ <em>servicenames...</em> ]
+     s6-rc-init [ -c <em>compiled</em> ] [ -l <em>live</em> ] [ -t <em>timeout</em> ] <em>scandir</em>
 </pre>
 
 <ul>
- <li> s6-rc expects to find a <em>compiled service database</em>
-in <tt>/etc/s6-rc/compiled</tt> and a <em>live state</em> in
-<tt>/s6/s6-rc</tt>. If it cannot find that data, it complains and
-exits.
- <ul>
-  <li> The <em>compiled service database</em> is built offline
-via the <a href="s6-rc-compile.html">s6-rc-compile</a> tool. </li>
-  <li> The <em>live state</em> should be initialized at boot time
-via the <a href="s6-rc-init.html">s6-rc-init</a> tool. It is then
-maintained by s6-rc itself. </li>
- </ul> </li>
- <li> The command line arguments <em>servicenames...</em> define a set
-of selected services the user wants to act on. </li>
- <li> s6-rc computes the necessary transitions to bring the machine
-to the desired state - by default a state where all the
-services listed on the command line are up. If asked to, it performs
-those transitions. </li>
- <li> s6-rc processes services as soon as they can be processed. It
-will wait until a service is up to start a dependent service, but it
-will start two independent services in parallel. </li>
- <li> If every state transition completes successfully, s6-rc exits 0. </li>
- <li> If a state transition fails, s6-rc will not perform the transitions
-that depend on it. It will wait until all the other independent transitions
-are done, then exit 1. </li>
-</ul>
+ <li> <em>compiled</em>, <em>live</em> and <em>scandir</em> must be
+absolute paths. </li>
+ <li> s6-rc-init expects to find a <em>compiled service database</em>
+in <em>compiled</tt>. It expects to be able to create a directory
+at <em>live</em>. It also expects that an instance of
+<a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
+is running on <em>scandir</em>. </li>
+ <li> s6-rc-init initializes the live state in <em>live</em>. It
+declares <em>compiled</em> as the current service database and
+sets the state as "all services down". </li>
+ <li> It then copies verbatim all
+the service directories declared by <em>compiled</em> into a
+subdirectory of <em>live</em>, adds down files to the live copies
+and links them into <em>scandir</em>. It then triggers
+<a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>,
+which will pick up the new service directories and start
+http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+processes on them - but the service themselves will not be started
+right away, because of the down files. </li>
+ <li> s6-rc-init waits for all s6-supervise processes to be
+operational, then exits 0. </li>
 
 <h2> Options </h2>
 
-<h3> s6-rc control </h3>
-
 <ul>
- <li> <tt>-v&nbsp;<em>verbosity</em></tt>&nbsp;: be more or less
-verbose. Default is 1: warning and error messages will be printed to
-stderr. 0 silences warnings. 2 writes information messages whenever
-s6-rc performs a transition. 3 or more is debug info. </li>
- <li> <tt>-n&nbsp;<em>dryruntimeout</em></tt>&nbsp;: dry run.
-s6-rc will pretend to perform transitions, but will replace all its
-program invocations by a call to
-<a href="s6-rc-dryrun">s6-rc-dryrun</a>, which will do nothing but
-print the command line s6-rc would have executed, then sleep for
-<em>dryruntimeout</em> milliseconds before reporting success. </li>
- <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: timeout. If s6-rc
-isn't done after <em>timeout</em> milliseconds, it will exit, leaving
-the live state as it is at exit time. It does not kill its children, so
-a child may successfully complete afterwards and the live state will
-not be updated; in that case, subsequent s6-rc invocations will notice
-and correctly update it. </li>
- <li> <tt>-c&nbsp;<em>compiled</em></tt>&nbsp;: look for the
-compiled service database in <em>compiled</em>. Default is
-<tt>/etc/s6-rc/compiled</tt> </li>
- <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
-live state in <em>live</em>. Default is
-<tt>/s6/s6-rc</tt> </li>
+ <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: if all
+s6-supervise processes are not up and running after <em>timeout</em>
+milliseconds, s6-rc-init will complain and exit 111. This is a
+safety feature so s6-rc-init doesn't hang indefinitely on a
+nonworking installation; normally this initialization should not take
+more than a few milliseconds. </li>
+ <li> <tt>-c&nbsp;<em>compiled</em></tt>&nbsp;: declare <em>compiled</em>
+as the current compiled service database for the upcoming live state.
+Default is <tt>/etc/s6-rc/compiled</tt>. </li>
+ <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: Store the live state into
+the <em>live</em> directory, which should not exist prior to running
+s6-rc-init, but should be under a writable filesystem - likely a RAM
+filesystem. Default is
+<tt>/run/s6-rc</tt>. </li>
 </ul>
 
-<h3> Up or down </h3>
+<h2> Typical usage </h2>
 
-<ul>
- <li> <tt>-u</tt>&nbsp;: selected services are interpreted
-as to be brought <em>up</em>. This is the default. </li>
- <li> <tt>-d</tt>&nbsp;: selected services are interpreted
-as to be brought <em>down</em>. </li>
-</ul>
-
-<h3> Service selection </h3>
-
-<ul>
- <li> <tt>-p</tt>&nbsp;: prune. The state will be brought to
-<em>exactly</em> <em>servicenames...</em>, plus their dependencies, and
-the other services will be brought down. With the <tt>-d</tt> option,
-the meaning is reversed: the state will be brought to the maximum
-possible set that does not include <em>servicenames...</em>. </li>
- <li> <tt>-a</tt>&nbsp;: all. Add the current set of active services to
-the selected set. This is useful to ensure consistency of the machine
-state, for instance, and also at shutdown time: <tt>s6-rc -da</tt>
-will stop all the currently active services. </li>
-</ul>
-
-<h3> Actions </h3>
-
-<ul>
- <li> <tt>-C</tt>&nbsp;: check. s6-rc will check the consistency of the
-database, and exit with an error message if it finds errors. </li>
- <li> <tt>-L</tt>&nbsp;: list. s6-rc will resolve the given names, then
-print the list of corresponding atomic services to stdout, without taking their
-dependencies into account. It will print an empty line afterwards. </li>
- <li> <tt>-A</tt>&nbsp;: list all. s6-rc will print the list of selected
-atomic services to stdout, after computing dependencies. Note that with
-the <tt>-d</tt> option, it computes reverse dependencies instead. </li>
- <li> <tt>-S</tt>&nbsp;: state change. A state change will be performed
-for the selected services.
-This is the default if no other action option has been given. </li>
-</ul>
-
-<h2> Usage examples </h2>
-
-<pre> s6-rc <em>myservicebundle</em> </pre>
 <p>
- Brings up all the services represented by <em>myservicebundle</em>,
-dependencies first.
+ Administrators should invoke <tt>s6-rc-init</tt> once, in their
+early boot scripts, after s6-svscan is functional but before any
+other initialization. (The rest of the initialization can be
+written as a set of s6-rc services, and performed by just one
+invocation of the <a href="s6-rc.html">s6-rc change</a> command.)
 </p>
 
-<pre> s6-rc -Sad </pre>
 <p>
- Brings down all the services in an orderly manner. This is typically
-run at shutdown time.
+ For instance, when using an init created by
+<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>,
+<tt>s6-rc-init</tt> should be the first command in the
+<em>stage2</em> (by default <tt>/etc/rc.init</tt>) script.
 </p>
-
-<pre> s6-rc -Au <em>myservicebundle</em> </pre>
-<p>
- Prints the names of all atomic services represented by
-<em>myservicebundle</em>, as well as everything they depend on.
-</p>
-
-<pre> s6-rc -Ad <em>myservicebundle</em> </pre>
-<p>
- Prints the names of all atomic services represented by
-<em>myservicebundle</em>, as well as everything that depends on them.
-</p>
-
-<pre> s6-rc -pun0 <em>myservicebundle</em> </pre>
-<p>
- Prints what s6-rc would do to bring the state to just
-<em>myservicebundle</em> and its dependencies.
-</p>
-
-
-<h2> Internals </h2>
 
 </body>
 </html>

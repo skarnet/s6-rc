@@ -67,6 +67,8 @@ static void print_services (void)
       buffer_puts(buffer_1, db->string + db->services[i].name) ;
       buffer_put(buffer_1, "\n", 1) ;
     }
+  if (!buffer_flush(buffer_1))
+    strerr_diefu1sys(111, "write to stdout") ;
 }
 
 static pid_t start_oneshot (unsigned int i, int h)
@@ -111,7 +113,7 @@ static pid_t start_longrun (unsigned int i, int h)
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
   char servicefn[livelen + svdlen + 19] ;
-  char const *newargv[11 + !!dryrun[0] * 6] ;
+  char const *newargv[7 + !!dryrun[0] * 6] ;
   byte_copy(servicefn, livelen, live) ;
   byte_copy(servicefn + livelen, 13, "/servicedirs/") ;
   byte_copy(servicefn + livelen + 13, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
@@ -127,14 +129,10 @@ static pid_t start_longrun (unsigned int i, int h)
     newargv[m++] = dryrun ;
     newargv[m++] = "--" ;
   }
-  newargv[m++] = S6_EXTBINPREFIX "s6-svlisten1" ;
-  newargv[m++] = h ? "-U" : "-d" ;
+  newargv[m++] = S6_EXTBINPREFIX "s6-svc" ;
+  newargv[m++] = h ? "-Uu" : "-Dd" ;
   newargv[m++] = "-t" ;
   newargv[m++] = fmt ;
-  newargv[m++] = "--" ;
-  newargv[m++] = servicefn ;
-  newargv[m++] = S6_EXTBINPREFIX "s6-svc" ;
-  newargv[m++] = h ? "-u" : "-d" ;
   newargv[m++] = "--" ;
   newargv[m++] = servicefn ;
   newargv[m++] = 0 ;
@@ -292,7 +290,6 @@ static int doit (int spfd, int h)
   for (;;)
   {
     register int r ;
-    buffer_flush(buffer_1) ;
     if (!npids) break ;
     r = iopause_g(&x, 1, &deadline) ;
     if (r < 0) strerr_diefu1sys(111, "iopause") ;
@@ -334,9 +331,9 @@ static inline void print_help (void)
 {
   static char const *help =
 "s6-rc help\n"
-"s6-rc [ -l live ] [ -u | -d ] [ -a ] list [ servicenames... ]\n"
-"s6-rc [ -l live ] [ -u | -d ] [ -a ] listall [ servicenames... ]\n"
-"s6-rc [ -l live ] [ -u | -d ] [ -a ] [ -p ] [ -v verbosity ] [ -t timeout ] [ -n dryrunthrottle ] change [ servicenames... ]\n" ;
+"s6-rc [ -l live ] [ -a ] list [ servicenames... ]\n"
+"s6-rc [ -l live ] [ -a ] [ -u | -d ] listall [ servicenames... ]\n"
+"s6-rc [ -l live ] [ -a ] [ -u | -d ] [ -p ] [ -v verbosity ] [ -t timeout ] [ -n dryrunthrottle ] change [ servicenames... ]\n" ;
   if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
 }

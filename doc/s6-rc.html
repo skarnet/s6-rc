@@ -19,46 +19,85 @@
 <h1> The s6-rc program </h1>
 
 <p>
- s6-rc is a <em>machine state manager</em>: it brings the machine to a
-desired state, by starting or stopping services as needed.
+ s6-rc is a <em>service manager</em>, a.k.a <em>machine state manager</em>:
+a program to manage the <em>live state</em> of a machine -
+what services are currently up and what services are currently down. It
+can list active services, or change the live state.
+</p>
+
+<p>
+ s6-rc is meant to be the one-stop shop of service management: once
+service definitions have been made into a compiled service database
+via <a href="s6-rc-compile.html">s6-rc-compile</a>, and the machine
+state has been initialized via <a href="s6-rc-init.html">s6-rc-init</a>,
+any state change - be it initial startup, shutdown, or anything else -
+should be achieved by a single <tt>s6-rc change</tt> invocation.
+</p>
+
+<p>
+ s6-rc should only be run as root, especially when asking for a state
+change.
 </p>
 
 <h2> Interface </h2>
 
 <pre>
-     s6-rc [ -v <em>verbosity</em> ] [ <em>servicenames...</em> ]
+     s6-rc help
+     s6-rc [ -l live ] [ -a ] list <em>servicenames...</em>
+     s6-rc [ -l live ] [ -a ] [ -u | -d ] listall <em>servicenames...</em>
+     s6-rc [ -l live ] [ -a ] [ -u | -d ] [ -p ] [ -v <em>verbosity</em> ] [ -n <em>dryrunthrottle</em> ] [ -t timeout ] change [ <em>servicenames...</em> ]
 </pre>
 
 <ul>
- <li> s6-rc expects to find a <em>compiled service database</em>
-in <tt>/etc/s6-rc/compiled</tt> and a <em>live state</em> in
-<tt>/s6/s6-rc</tt>. If it cannot find that data, it complains and
-exits.
- <ul>
-  <li> The <em>compiled service database</em> is built offline
-via the <a href="s6-rc-compile.html">s6-rc-compile</a> tool. </li>
-  <li> The <em>live state</em> should be initialized at boot time
-via the <a href="s6-rc-init.html">s6-rc-init</a> tool. It is then
-maintained by s6-rc itself. </li>
- </ul> </li>
- <li> The command line arguments <em>servicenames...</em> define a set
-of selected services the user wants to act on. </li>
- <li> s6-rc computes the necessary transitions to bring the machine
-to the desired state - by default a state where all the
-services listed on the command line are up. If asked to, it performs
-those transitions. </li>
- <li> s6-rc processes services as soon as they can be processed. It
-will wait until a service is up to start a dependent service, but it
-will start two independent services in parallel. </li>
- <li> If every state transition completes successfully, s6-rc exits 0. </li>
- <li> If a state transition fails, s6-rc will not perform the transitions
-that depend on it. It will wait until all the other independent transitions
-are done, then exit 1. </li>
+ <li> s6-rc expects to find a functional <em>live state</em> in
+<em>live</em> (by default <tt>/run/s6-rc</tt>). The live state is
+normally created at boot time by
+<a href="s6-rc-init.html">s6-rc-init</a>. If the live state is
+invalid, s6-rc complains and exits 4. </li>
+ <li> Depending on the arguments given, it prints the requested
+information to stdout, then exits 0; or it performs a machine
+state change. </li>
 </ul>
+
+<h2> Service selection </h2>
+
+<p>
+The arguments <em>servicenames...</em> may be atomic services or
+bundles; they are resolved into a set of atomic services, which is
+called the <em>selection</em>. If the <tt>-a</tt> option is present,
+the current set of <em>up</em> services is added to the selection.
+The s6-rc command operates on the selection.
+</p>
 
 <h2> Options </h2>
 
-<h3> s6-rc control </h3>
+<h3> General options </h3>
+
+<ul>
+ <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
+live state in <em>live</em>. Default is
+<tt>/run/s6-rc</tt>. </li>
+ <li> <tt>-a</tt>&nbsp;: add the current set of active services to
+the selection. This is useful for instance at
+shutdown time: <tt>s6-rc -da change</tt>
+will stop all services. </li>
+</ul>
+
+<h3> Up or down </h3>
+
+<p>
+ These options control what is to be done: bring selected services
+up or down (for <tt>s6-rc change</tt>) or whether to use the
+forward or reverse dependency graph (for <tt>s6-rc listall</tt>).
+Default is <em>up</em>.
+</p>
+
+<ul>
+ <li> <tt>-u</tt>&nbsp;: up. </li>
+ <li> <tt>-d</tt>&nbsp;: down. </li>
+</ul>
+
+<h3> <tt>s6-rc change</tt> control </h3>
 
 <ul>
  <li> <tt>-v&nbsp;<em>verbosity</em></tt>&nbsp;: be more or less
@@ -68,83 +107,197 @@ s6-rc performs a transition. 3 or more is debug info. </li>
  <li> <tt>-n&nbsp;<em>dryruntimeout</em></tt>&nbsp;: dry run.
 s6-rc will pretend to perform transitions, but will replace all its
 program invocations by a call to
-<a href="s6-rc-dryrun">s6-rc-dryrun</a>, which will do nothing but
+<a href="s6-rc-dryrun.html">s6-rc-dryrun</a>, which will do nothing but
 print the command line s6-rc would have executed, then sleep for
 <em>dryruntimeout</em> milliseconds before reporting success. </li>
  <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: timeout. If s6-rc
 isn't done after <em>timeout</em> milliseconds, it will exit, leaving
 the live state as it is at exit time. It does not kill its children, so
 a child may successfully complete afterwards and the live state will
-not be updated; in that case, subsequent s6-rc invocations will notice
+not be updated; in that case, subsequent <tt>s6-rc change</tt>
+invocations will notice
 and correctly update it. </li>
- <li> <tt>-c&nbsp;<em>compiled</em></tt>&nbsp;: look for the
-compiled service database in <em>compiled</em>. Default is
-<tt>/etc/s6-rc/compiled</tt> </li>
- <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
-live state in <em>live</em>. Default is
-<tt>/s6/s6-rc</tt> </li>
-</ul>
-
-<h3> Up or down </h3>
-
-<ul>
- <li> <tt>-u</tt>&nbsp;: selected services are interpreted
-as to be brought <em>up</em>. This is the default. </li>
- <li> <tt>-d</tt>&nbsp;: selected services are interpreted
-as to be brought <em>down</em>. </li>
-</ul>
-
-<h3> Service selection </h3>
-
-<ul>
  <li> <tt>-p</tt>&nbsp;: prune. The state will be brought to
-<em>exactly</em> <em>servicenames...</em>, plus their dependencies, and
+<em>exactly</em> the set of selected services, plus their dependencies, and
 the other services will be brought down. With the <tt>-d</tt> option,
 the meaning is reversed: the state will be brought to the maximum
-possible set that does not include <em>servicenames...</em>. </li>
- <li> <tt>-a</tt>&nbsp;: all. Add the current set of active services to
-the selected set. This is useful to ensure consistency of the machine
-state, for instance, and also at shutdown time: <tt>s6-rc -da</tt>
-will stop all the currently active services. </li>
+possible set that does not include selected services. The change, however,
+is always performed in the same manner: first the unwanted services are
+all brought down, then the wanted services are all brought up. </li>
 </ul>
 
-<h3> Actions </h3>
+<h2> Subcommands </h2>
+
+<h3> s6-rc help <h3>
+
+<p>
+ Prints a short help message.
+</p>
+
+<h3> s6-rc list <em>servicenames...</em> </h3>
+
+<p>
+ Prints the selection.
+</p>
+
+<p>
+ This is mostly useful as <tt>s6-rc -a list</tt>, which simply prints
+the list of currently active services.
+</p>
+
+<h3> s6-rc listall <em>servicenames...</em> </h3>
 
 <ul>
- <li> <tt>-C</tt>&nbsp;: check. s6-rc will check the consistency of the
-database, and exit with an error message if it finds errors. </li>
- <li> <tt>-L</tt>&nbsp;: list. s6-rc will resolve the given names, then
-print the list of corresponding atomic services to stdout, without taking their
-dependencies into account. It will print an empty line afterwards. </li>
- <li> <tt>-A</tt>&nbsp;: list all. s6-rc will print the list of selected
-atomic services to stdout, after computing dependencies. Note that with
-the <tt>-d</tt> option, it computes reverse dependencies instead. </li>
- <li> <tt>-S</tt>&nbsp;: state change. A state change will be performed
-for the selected services.
-This is the default if no other action option has been given. </li>
+ <li> s6-rc computes the complete dependency tree of the
+selection: the selection, plus the dependencies of every service
+in the selection, and recursively down. With the <tt>-d</tt>
+option, it computes the reverse dependency tree: the selection,
+plus what depends on it, and recursively up. The result is
+called the <em>closed selection</em>. </li>
+ <li> It prints the closed selection to its standard output.
+Note that the closed selection may be a very long list of services,
+including the most basic ones. </li>
 </ul>
+
+<h3> s6-rc change </h3>
+
+<p>
+ <tt>s6-rc change</tt> is the service state engine. It will bring the
+machine to a state where:
+</p>
+
+<ul>
+ <li> <tt>-u</tt> (default): all the services in the selection are up </li>
+ <li> <tt>-d</tt>: all the services in the selection are down </li>
+ <li> <tt>-pu</tt>: all the services in the selection, and <em>only</em> them, are up </li>
+ <li> <tt>-pd</tt>: all the services in the selection, and <em>only</em> them, are down </li>
+</ul>
+
+<p>
+ To do so:
+</p>
+
+<ul>
+ <li> From the selection, s6-rc computes the closed selection </li>
+ <li> It then computes the necessary transitions so that all the
+services in the closed selection can match the desired state </li>
+ <li> It then performs the transitions - or simulates them if the
+<tt>-n</tt> option has been given. </li>
+ <li> s6-rc processes services as soon as they can be processed:
+as soon as a service that needs to change state has all its dependencies
+fulfilled, it undergoes its transition. Independent services are processed
+in parallel: s6-rc parallelizes the transitions as much as it can, and
+there is no useless waiting time. </li>
+ <li> s6-rc updates the live state in <em>live</em> after every
+successful transition. </li>
+ <li> If every transition completes successfully, the live state
+eventually matches the desired state, and s6-rc exits 0. </li>
+ <li> If a transition fails, s6-rc will not perform the transitions
+that depend on it. It will keep processing all the other independent
+transitions, though, until there is no more work it can complete; then
+it will exit 1. </li>
+</ul>
+
+<h4> Longrun transitions </h4>
+
+<p>
+ Transitions for longrun services are simple: s6-rc removes or create
+a down file, then sends a command
+to the supervision tree to start or stop the service. (A service that
+is considered down by s6-rc will have a down file in its live service
+directory; a service that is considered up by s6-rc will not.) The
+transition is considered successful as soon as the daemon dies (for
+down transitions), or becomes up and
+<a href="http://skarnet.org/software/s6/notifywhenup.html">ready</a>
+(for up transitions). If a longrun service does not support
+readiness notification, the
+<a href="http://skarnet.org/software/s6/s6-svc.html">s6-svc</a>
+command that is invoked by s6-rc will print a warning message, and
+the transition will be considered successful as soon as the daemon
+is up.
+</p>
+
+<p>
+ Transitions are supposed to be idempotent, but it is a general
+rule of supervision that <tt>run</tt> and <tt>finish</tt> scripts
+must be idempotent, so a properly designed service directory
+should work with s6-rc with no additional effort.
+</p>
+
+<h4> Oneshot transitions </h4>
+
+<p>
+ Transitions for oneshot services involve running the <em>up</em>
+or <em>down</em> script for the service; those scripts are stored
+in the compiled service database that is linked from the live state.
+The transition is considered successful if the script exits zero,
+and unsuccessful otherwise.
+</p>
+
+<p>
+ s6-rc performs some black magic so that <em>up</em> and <em>down</em>
+scripts are always run in a reproducible way, no matter when or how
+<tt>s6-rc change</tt> is invoked. That black magic involves a special
+longrun service, <tt>s6rc-oneshot-runner</tt>, that every oneshot
+service automatically depends on, and that is actually used to fork
+the <em>up</em> or <em>down</em> scripts as scions of the s6 supervision
+tree, instead of children of the s6-rc process.
+</p>
+
+<p>
+ Transitions should be ideally transactional, or at the very least
+idempotent. If a
+transition fails, it should leave the machine in the same state as
+before the transition was attempted; at the very least, it should not
+prevent a subsequent run of the same transition from completing
+successfully. If an <tt>s6-rc change</tt> invocation fails because
+some transition experienced a temporary failure, it should be possible
+to run the exact same <tt>s6-rc change</tt> invocation later, and be
+met with success.
+</p>
+
+<p>
+ This is important: it means that oneshot scripts should be treated
+as atoms, and that some care should be taken when writing them.
+</p>
+
+<h4> Dry runs </h4>
+
+<p>
+ For any manual change, is it recommended to perform a dry run before
+the state change itself: add the <tt>-n <em>dryrunthrottle</em></tt>
+option to the s6-rc command line. s6-rc will then simulate all the
+transitions, but not actually perform them or change the real live
+state.
+ The command lines that s6-rc would have run will be printed to stdout
+instead, and
+each simulated transition will take <em>dryrunthrottle</em>
+milliseconds to complete successfully.
+</p>
 
 <h2> Usage examples </h2>
 
-<pre> s6-rc <em>myservicebundle</em> </pre>
+<pre> s6-rc change <em>myservicebundle</em> </pre>
 <p>
  Brings up all the services represented by <em>myservicebundle</em>,
-dependencies first.
+bringing up all its dependencies first (recursively).
 </p>
 
-<pre> s6-rc -Sad </pre>
+<pre> s6-rc -ad change </pre>
 <p>
- Brings down all the services in an orderly manner. This is typically
-run at shutdown time.
+ Brings down all the currently running services in an orderly manner.
+This is typically run at shutdown time.
 </p>
 
-<pre> s6-rc -Au <em>myservicebundle</em> </pre>
+<pre> s6-rc -l /zork -ua listall <em>myservicebundle</em> </pre>
 <p>
  Prints the names of all atomic services represented by
-<em>myservicebundle</em>, as well as everything they depend on.
+<em>myservicebundle</em> plus the current live services, as well as
+everything they depend on, recursively. Assumes the live state is
+stored in the <tt>/zork</tt> directory instead of <tt>/run/s6-rc</tt>.
 </p>
 
-<pre> s6-rc -Ad <em>myservicebundle</em> </pre>
+<pre> s6-rc -d listall <em>myservicebundle</em> </pre>
 <p>
  Prints the names of all atomic services represented by
 <em>myservicebundle</em>, as well as everything that depends on them.
@@ -152,12 +305,11 @@ run at shutdown time.
 
 <pre> s6-rc -pun0 <em>myservicebundle</em> </pre>
 <p>
- Prints what s6-rc would do to bring the state to just
-<em>myservicebundle</em> and its dependencies.
+ Prints what s6-rc would do to bring the state to <em>exactly</em>
+the contents of <em>myservicebundle</em> as well as its recursive
+dependencies, and pruning all the rest. Do not wait any extra time
+between simulated transitions.
 </p>
-
-
-<h2> Internals </h2>
 
 </body>
 </html>
