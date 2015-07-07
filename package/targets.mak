@@ -5,7 +5,8 @@ s6-rc-db
 
 SBIN_TARGETS := \
 s6-rc-init \
-s6-rc
+s6-rc \
+s6-rc-update
 
 
 LIBEXEC_TARGETS :=

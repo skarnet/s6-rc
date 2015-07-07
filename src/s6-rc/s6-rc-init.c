@@ -18,7 +18,6 @@
 
 #define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
-#define dienomem() strerr_diefu1sys(111, "stralloc_catb") ;
 
 static void cleanup (char const *live)
 {
