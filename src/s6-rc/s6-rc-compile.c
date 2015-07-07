@@ -25,13 +25,6 @@
 #include <s6/config.h>
 #include <s6-rc/s6rc.h>
 
-// #ifdef DEBUG
-// # include <skalibs/lolstdio.h>
-// # define DBG(...) do { buffer_puts(buffer_2, PROG) ; buffer_puts(buffer_2, ": debug: ") ; bprintf(buffer_2, __VA_ARGS__) ; buffer_putflush(buffer_2, "\n", 1) ; } while (0)
-// #else
-// # define DBG(...)
-// #endif
-
 #define USAGE "s6-rc-compile [ -v verbosity ] destdir sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_dief1x(111, "out of memory") ;
@@ -267,7 +260,6 @@ static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const
   if (fd < 0) return 0 ;
   buffer_init(&b, &fd_readsv, fd, buf, 2048) ;
   *listindex = genalloc_len(unsigned int, &be->indices) ;
-  // DBG("add_namelist %s %s: *listindex is %u", name, list, *listindex) ;
   while (cont)
   {
     register int r = skagetln(&b, &satmp, '\n') ;
@@ -300,7 +292,6 @@ static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const
   }
   close(fd) ;
   *n = genalloc_len(unsigned int, &be->indices) - *listindex ;
-  // DBG("add_namelist %s %s: *n is %u", name, list, *n) ;
   return 1 ;
 }
 
@@ -547,20 +538,16 @@ static void resolve_bundle_rec (bundle_recinfo_t *recinfo, unsigned int i)
       register nameinfo_t const *p ;
       avltree_search(&names_map, data.s + listindex[j], &id) ;
       p = genalloc_s(nameinfo_t, &nameinfo) + id ;
-//      DBG("resolve_bundle_rec: %s depends on %s", data.s + me->name, data.s + p->pos) ;
       switch (p->type)
       {
         case SVTYPE_ONESHOT :
           bitarray_set(recinfo->barray + i * recinfo->nbits, recinfo->nlong + p->i) ;
-//          DBG("resolve_bundle_rec: %s is a oneshot, setting bit %u in barray[%u]", data.s + p->pos, recinfo->nlong + p->i, i) ;
           break ;
         case SVTYPE_LONGRUN :
           bitarray_set(recinfo->barray + i * recinfo->nbits, p->i) ;
-//          DBG("resolve_bundle_rec: %s is a longrun, setting bit %u in barray[%u]", data.s + p->pos, p->i, i) ;
           break ;
         case SVTYPE_BUNDLE :
           resolve_bundle_rec(recinfo, p->i) ;
-//          DBG("resolve_bundle_rec: %s is a bundle, adding barray[%u] to barray[%u]", data.s + p->pos, p->i, i) ;
           bitarray_or(recinfo->barray + i * recinfo->nbits, recinfo->barray + i * recinfo->nbits, recinfo->barray + p->i * recinfo->nbits, recinfo->n) ;
           break ;
         default :
@@ -604,11 +591,7 @@ static inline void flatlist_bundles (bundle_t *bundles, unsigned int nbundles, u
     uint32 *mydeps = bdeps + bundles[i].listindex ;
     unsigned int j = 0, k = 0 ;
     for (; k < bundles[i].n ; j++)
-      if (bitarray_peek(mybits, j))
-      {
-        mydeps[k++] = j ;
-//        DBG("flatlist_bundles: bundle %u contains service %u", i, j) ;
-      }
+      if (bitarray_peek(mybits, j)) mydeps[k++] = j ;
   }
 }
 
@@ -621,12 +604,10 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
     register nameinfo_t const *p ;
     avltree_search(&names_map, data.s + indices[me->depindex + j], &id) ;
     p = genalloc_s(nameinfo_t, &nameinfo) + id ;
-//    DBG("resolve_deps: %s depends on %s", data.s + me->name, data.s + p->pos) ;
     switch (p->type)
     {
       case SVTYPE_ONESHOT :
         bitarray_set(sarray, nlong + p->i) ;
-//        DBG("resolve_deps: %s is a oneshot, setting bit %u in sarray for %s", data.s + p->pos, nlong + p->i, data.s + me->name) ;
         if (verbosity >= 4)
         {
           char fmt[UINT_FMT] ;
@@ -636,7 +617,6 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         break ;
       case SVTYPE_LONGRUN :
         bitarray_set(sarray, p->i) ;
-//        DBG("resolve_deps: %s is a longrun, setting bit %u in sarray for %s", data.s + p->pos, p->i, data.s + me->name) ;
         if (verbosity >= 4)
         {
           char fmt[UINT_FMT] ;
@@ -646,7 +626,6 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         break ;
       case SVTYPE_BUNDLE :
         bitarray_or(sarray, sarray, barray + p->i * nbits, n) ;
-//        DBG("resolve_deps: %s is a bundle, ORing barray[%u] into sarray for %s", data.s + p->pos, p->i, data.s + me->name) ;
         if (verbosity >= 4)
         {
           char fmt[UINT_FMT] ;

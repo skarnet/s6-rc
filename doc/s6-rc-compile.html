@@ -19,145 +19,270 @@
 <h1> The s6-rc-compile program </h1>
 
 <p>
- s6-rc is a <em>machine state manager</em>: it brings the machine to a
-desired state, by starting or stopping services as needed.
+ s6-rc-compile is a service database compiler. It takes a series
+of service definitions in the <em>source</em> format, and compiles
+them into a directory, which is the <em>compiled</em> format.
+</p>
+
+<p>
+ The administrator can then examine that compiled database via
+<a href="s6-rc-db.html">s6-rc-db</a>, put it into a place where
+it will be registered at boot time as the current compiled database
+by <a href="s6-rc-init.html">s6-rc-init</a>, or even live update
+the current service database via
+<a href="s6-rc-update.html">s6-rc-update</a>.
 </p>
 
 <h2> Interface </h2>
 
 <pre>
-     s6-rc [ -v <em>verbosity</em> ] [ <em>servicenames...</em> ]
+     s6-rc-compile [ -v <em>verbosity</em> ] <em>compiled</em> <em>source...</em>
 </pre>
 
 <ul>
- <li> s6-rc expects to find a <em>compiled service database</em>
-in <tt>/etc/s6-rc/compiled</tt> and a <em>live state</em> in
-<tt>/s6/s6-rc</tt>. If it cannot find that data, it complains and
-exits.
- <ul>
-  <li> The <em>compiled service database</em> is built offline
-via the <a href="s6-rc-compile.html">s6-rc-compile</a> tool. </li>
-  <li> The <em>live state</em> should be initialized at boot time
-via the <a href="s6-rc-init.html">s6-rc-init</a> tool. It is then
-maintained by s6-rc itself. </li>
- </ul> </li>
- <li> The command line arguments <em>servicenames...</em> define a set
-of selected services the user wants to act on. </li>
- <li> s6-rc computes the necessary transitions to bring the machine
-to the desired state - by default a state where all the
-services listed on the command line are up. If asked to, it performs
-those transitions. </li>
- <li> s6-rc processes services as soon as they can be processed. It
-will wait until a service is up to start a dependent service, but it
-will start two independent services in parallel. </li>
- <li> If every state transition completes successfully, s6-rc exits 0. </li>
- <li> If a state transition fails, s6-rc will not perform the transitions
-that depend on it. It will wait until all the other independent transitions
-are done, then exit 1. </li>
+ <li> s6-rc-compile analyzes every directory <em>source</em> in its
+arguments. For every subdirectory <em>service</em> in <em>source</em>,
+it expects to find a valid service definition in <em>service</em>. </li>
+ <li> s6-rc-compile outputs a compiled version of the service database
+into <em>compiled</em>. This database contains information for all the
+services declared in every <em>source</em> argument. </li>
+ <li> s6-rc-compile exits 0. </li>
 </ul>
 
 <h2> Options </h2>
 
-<h3> s6-rc control </h3>
-
 <ul>
  <li> <tt>-v&nbsp;<em>verbosity</em></tt>&nbsp;: be more or less
 verbose. Default is 1: warning and error messages will be printed to
-stderr. 0 silences warnings. 2 writes information messages whenever
-s6-rc performs a transition. 3 or more is debug info. </li>
- <li> <tt>-n&nbsp;<em>dryruntimeout</em></tt>&nbsp;: dry run.
-s6-rc will pretend to perform transitions, but will replace all its
-program invocations by a call to
-<a href="s6-rc-dryrun">s6-rc-dryrun</a>, which will do nothing but
-print the command line s6-rc would have executed, then sleep for
-<em>dryruntimeout</em> milliseconds before reporting success. </li>
- <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: timeout. If s6-rc
-isn't done after <em>timeout</em> milliseconds, it will exit, leaving
-the live state as it is at exit time. It does not kill its children, so
-a child may successfully complete afterwards and the live state will
-not be updated; in that case, subsequent s6-rc invocations will notice
-and correctly update it. </li>
- <li> <tt>-c&nbsp;<em>compiled</em></tt>&nbsp;: look for the
-compiled service database in <em>compiled</em>. Default is
-<tt>/etc/s6-rc/compiled</tt> </li>
- <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
-live state in <em>live</em>. Default is
-<tt>/s6/s6-rc</tt> </li>
+stderr. 0 silences warnings. 2 adds a bit more information about
+what s6-rc-compile is doing. 3 or more is heavy debug output. </li>
 </ul>
 
-<h3> Up or down </h3>
+<h2> Source format </h2>
+
+<p>
+ s6-rc-compile scans every <em>source</em> directory to find
+<em>service definition directories</em> in it. It ignores every
+file that is not a directory, or that starts with a dot. For
+every service definition directory that it finds, it creates a
+service with the same name as the directory. Names cannot be
+duplicated and cannot contain a slash or a newline; they can
+contain spaces and tabs, but using anything else than alphanumerical
+characters, underscores and dashes is discouraged - the s6-rc programs
+will handle weird names just fine, but other tools, especially
+shell scripts, may not.
+</p>
+
+<p>
+ Every service
+definition directory <em>service</em> is expected to contain the following files:
+</p>
+
+<h3> For every service </h3>
 
 <ul>
- <li> <tt>-u</tt>&nbsp;: selected services are interpreted
-as to be brought <em>up</em>. This is the default. </li>
- <li> <tt>-d</tt>&nbsp;: selected services are interpreted
-as to be brought <em>down</em>. </li>
+ <li> A regular file named <tt>type</tt>, that contains only the text
+<tt>oneshot</tt>, <tt>longrun</tt> or <tt>bundle</tt>, and a terminating
+newline. This file declares the type of service defined by the
+directory. </li>
 </ul>
 
-<h3> Service selection </h3>
+<h3> For bundles </h3>
 
 <ul>
- <li> <tt>-p</tt>&nbsp;: prune. The state will be brought to
-<em>exactly</em> <em>servicenames...</em>, plus their dependencies, and
-the other services will be brought down. With the <tt>-d</tt> option,
-the meaning is reversed: the state will be brought to the maximum
-possible set that does not include <em>servicenames...</em>. </li>
- <li> <tt>-a</tt>&nbsp;: all. Add the current set of active services to
-the selected set. This is useful to ensure consistency of the machine
-state, for instance, and also at shutdown time: <tt>s6-rc -da</tt>
-will stop all the currently active services. </li>
+ <li> A regular file named <tt>contents</tt>. This file must be a list
+of service names, one per line. Whitespace at the beginning of a line
+is ignored, but trailing whitespace is not. Lines starting with a <tt>#</tt>
+character are ignored. The file defines the services that will be
+represented by the bundle named <em>service</em>.
 </ul>
 
-<h3> Actions </h3>
+<p>
+ It is possible to use bundle names in a <tt>contents</tt> file.
+However, if s6-rc-compile detects a cycle in bundle definitions, it will
+complain and exit 1.
+</p>
+
+<h3> For atomic services </h3>
 
 <ul>
- <li> <tt>-C</tt>&nbsp;: check. s6-rc will check the consistency of the
-database, and exit with an error message if it finds errors. </li>
- <li> <tt>-L</tt>&nbsp;: list. s6-rc will resolve the given names, then
-print the list of corresponding atomic services to stdout, without taking their
-dependencies into account. It will print an empty line afterwards. </li>
- <li> <tt>-A</tt>&nbsp;: list all. s6-rc will print the list of selected
-atomic services to stdout, after computing dependencies. Note that with
-the <tt>-d</tt> option, it computes reverse dependencies instead. </li>
- <li> <tt>-S</tt>&nbsp;: state change. A state change will be performed
-for the selected services.
-This is the default if no other action option has been given. </li>
+ <li> An optional regular file named <tt>timeout-up</tt>. This file, if it exists,
+must contain an integer, which is the maximum number of milliseconds
+<a href="s6-rc.html">s6-rc</a> will wait for successful completion of the service
+start; if starting the service takes longer than this value, s6-rc will declare
+the transition a failure. If the file does not exist, or contains 0, no timeout
+is defined and s6-rc will wait indefinitely for the service to start. </li>
+ <li> An optional regular file named <tt>timeout-down</tt>. This file, if it exists,
+must contain an integer, which is the maximum number of milliseconds
+<a href="s6-rc.html">s6-rc</a> will wait for successful completion of the service
+stop; if stopping the service takes longer than this value, s6-rc will declare
+the transition a failure. If the file does not exist, or contains 0, no timeout
+is defined and s6-rc will wait indefinitely for the service to stop. </li>
+ <li> An optional regular file named <tt>dependencies</tt>. This file must be a list
+of service names, one per line. Whitespace at the beginning of a line
+is ignored, but trailing whitespace is not. Lines starting with a <tt>#</tt>
+character are ignored. The file defines the <em>direct dependencies</em> of
+<em>service</em>, i.e. the services that must be up in order for
+<em>service</em> to work properly. </li>
 </ul>
 
-<h2> Usage examples </h2>
-
-<pre> s6-rc <em>myservicebundle</em> </pre>
 <p>
- Brings up all the services represented by <em>myservicebundle</em>,
-dependencies first.
+ It is unnecessary to manually define complete sets of dependencies in the
+<tt>dependency</tt> file, because
+<a href="s6-rc.html">s6-rc</a> will properly handle dependency chains.
+anyway. If <em>A</em> depends on <em>B</em>, no matter the underlying
+implementation of <em>B</em>, and the current implementation of <em>B</em>
+depends on <em>C</em>, then you should just put <em>B</em> in
+<tt><em>A</em>/dependencies</tt>; when starting the set,
+<a href="s6-rc.html">s6-rc</a> will start <em>C</em> first, then
+<em>B</em>, then <em>A</em>. If the underlying implementation of <em>B</em>
+changes and does not depend on <em>C</em>, then you will just have to
+modify the dependencies for <em>B</em>, not for <em>A</em>
 </p>
 
-<pre> s6-rc -Sad </pre>
 <p>
- Brings down all the services in an orderly manner. This is typically
-run at shutdown time.
+ Of course, if <em>A</em> depends on <em>C</em> anyway, you should add
+both <em>B</em> and <em>C</em> to <tt><em>A</em>/dependencies</tt>.
 </p>
 
-<pre> s6-rc -Au <em>myservicebundle</em> </pre>
 <p>
- Prints the names of all atomic services represented by
-<em>myservicebundle</em>, as well as everything they depend on.
+ If s6-rc-compile detects a cycle in dependencies across services, it will
+complain and exit 1.
 </p>
 
-<pre> s6-rc -Ad <em>myservicebundle</em> </pre>
+<h4> For oneshots </h4>
+
+<ul>
+ <li> Two mandatory regular files named <tt>up</tt> and <tt>down</tt>, which
+must each contain a single Unix command line. The files will be interpreted by the
+<a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>
+lexer at compile time and the results will be stored into the
+compiled database in an internal form. <tt>up</tt> will be run when
+the service is started, and <tt>down</tt> will be executed when the service
+is stopped. </li>
+</ul>
+
+
 <p>
- Prints the names of all atomic services represented by
-<em>myservicebundle</em>, as well as everything that depends on them.
+ <tt>up</tt> and <tt>down</tt> are interpreted by
+<a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>, but
+that does not mean they have to be entirely written in the 
+<a href="http://skarnet.org/software/execline/">execline</a> language. The
+<a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>
+lexer is only used because it can compile a Unix command line from a text file
+and store the compiled result, whereas a shell would have to be invoked
+everytime the script is run. There are many ways to write <tt>up</tt> and
+<tt>down</tt> scripts:
 </p>
 
-<pre> s6-rc -pun0 <em>myservicebundle</em> </pre>
+<ul>
+ <li> They can be written as standard execline scripts, without the
+initial shebang line or positional parameter management. </li>
+ <li> They can be written in any scripting language by invoking the interpreter
+directly: for instance
+<tt>/bin/sh -c "<em>script</em>"</tt>, where <em>script</em> is
+a shell script. </li>
+ <li> They can also just call a script that will actually be stored somewhere else:
+for instance, <tt>up</tt> can contain <tt>/etc/init.d/<em>service</em> start</tt>
+while <tt>down</tt> contains <tt>/etc/init.d/<em>service</em> stop</tt>, and
+<tt>/etc/init.d/<em>service</em></tt> is a System V-style init script. </li>
+</ul>
+
 <p>
- Prints what s6-rc would do to bring the state to just
-<em>myservicebundle</em> and its dependencies.
+ Don't think you have to learn all the intricacies of the execline language
+just because the <tt>up</tt> and <tt>down</tt> scripts get lexed by it.
+You don't.
 </p>
 
+<h4> For longruns </h4>
 
-<h2> Internals </h2>
+<p>
+ The s6-rc service definition directory for a longrun service is similar to
+a <a href="http://skarnet.org/software/s6/servicedir.html">s6 service
+directory</a>, but there are a few differences:
+</p>
+
+<ul>
+ <li> s6-rc-compile crafts the servicedir itself, based on what it
+finds in the service definition directory. It does not copy everything
+directly from the definition directory to the servicedir; only two
+subdirectories will be copied as is, <tt>data</tt> and <tt>env</tt>.
+So if you want to store service configuration data, to be used
+by the run script, in the service directory, make sure it is in a
+<tt>data/</tt> or <tt>env/</tt> subdirectory. </li>
+ <li> Definition directories cannot have a <tt>log</tt> subdirectory -
+or if they do, it will be ignored. From s6-rc-compile's point of view,
+logged s6 services must actually be defined as <em>two</em> separate
+s6-rc services, one for the producer and one for the logger; there is
+specific syntax to link those two services. </li>
+</ul>
+
+<p>
+ The following files must or may appear in a longrun definition directory:
+</p>
+
+<ul>
+ <li> A mandatory regular file named <tt>run</tt>, as well as optional files
+named <tt>finish</tt>, <tt>notification-fd</tt> and <tt>nosetsid</tt>. These
+files will be copied, or recreated, in the generated
+<a href="http://skarnet.org/software/s6/servicedir.html">service directory</a>.
+ <li> Optional directories named <tt>data</tt> and <tt>env</tt>. These will
+be copied verbatim into the generated service directory. </li>
+ <li> An optional file named <tt>logger</tt>. If this file exists, then
+<em>service</em> will be flagged as a producer, and the file must
+contain the name of another longrun service <em>servicelog</em>, which will
+be declared as a logger for <em>service</em>. <em>service</em> must also
+be declared as a producer in <em>servicelog</em>'s definition directory. </li>
+ <li> An optional file named <tt>producer</tt>. If this file exists, then
+<em>service</em> will be flagged as a logger, and the file must
+contain the name of another longrun service <em>serviceprod</em>, which will
+be declared as a producer for <em>service</em>. <em>service</em> must also
+be declared as a logger in <em>serviceprod</em>'s definition directory. </li>
+</ul>
+
+<p>
+ Be aware that service directories will be relocated, and copied at boot time,
+so if your run or finish scripts refer to files in the service directory
+(probably in the <tt>data</tt> or <tt>env</tt> subdirectories!), they should
+use relative paths, not absolute ones.
+</p>
+
+<p>
+ Note that you cannot create a <tt>down</tt> file in a generated service
+directory. Even if such a file exists in the definition directory, it will
+be ignored. This is intentional:
+<a href="s6-rc.html">s6-rc</a> internally uses down files to mark longrun
+services that are down.
+</p>
+
+<p>
+ The <tt>logger</tt> and <tt>producer</tt> files are support for logged services:
+A service defined as a logger for producer <em>p</em> will have its s6 service
+directory set to <em>p</em><tt>/log</tt>. Logged service definitions must be consistent:
+</p>
+
+<ul>
+ <li> It is impossible to have a both a <tt>logger</tt> and a <tt>producer</tt> file
+in the same definition directory: loggers cannot have loggers, producers cannot have
+producers. </li>
+ <li> The logger must be declared in the <tt>logger</tt> file in its producer's
+definition directory, and the producer must be declared in the <tt>producer</tt> file
+in its logger's definition directory. If it sees an inconsistency, s6-rc-compile
+will complain and exit 1. </li>
+</ul>
+
+<h2> A complete example </h2>
+
+<p>
+ The <tt>examples/source</tt> subdirectory of the s6-rc package contains a set
+of service definition directories, which is actually a working, valid set for a
+Linux system running
+<a href="http://busybox.net/">busybox</a> and the
+<a href="http://skarnet.org/software/">skarnet.org</a> packages. You can compile
+it with <tt>s6-rc-compile /tmp/compiled examples/source</tt>, then examine the
+resulting compiled database with
+<tt><a href="s6-rc-db.html">s6-rc-db</a> -c /tmp/compiled <em>subcommand</em></tt>.
+</p>
 
 </body>
 </html>
