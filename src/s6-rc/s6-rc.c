@@ -131,7 +131,7 @@ static pid_t start_longrun (unsigned int i, int h)
   }
   newargv[m++] = S6_EXTBINPREFIX "s6-svc" ;
   newargv[m++] = h ? "-Uu" : "-Dd" ;
-  newargv[m++] = "-t" ;
+  newargv[m++] = "-T" ;
   newargv[m++] = fmt ;
   newargv[m++] = "--" ;
   newargv[m++] = servicefn ;
