@@ -1,0 +1,206 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: FAQ</title>
+    <meta name="Description" content="s6-rc: FAQ" />
+    <meta name="Keywords" content="s6-rc faq frequently asked questions" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> s6-rc: FAQ </h1>
+
+<h2> The s6-rc-compile source format </h2>
+
+<h3> The source format for
+<a href="s6-rc-compile.html">s6-rc-compile</a> is not very convenient.
+Why not put all the information for a service in a single file? </h3>
+
+<p>
+ Because parsing sucks. Writing parsers is an annoying, ungrateful task;
+and automatic parser generators produce big and inefficient code. For
+security, efficiency and maintainability reasons, I prefer to focus my
+efforts on code that actually does stuff, not parsing code.
+</p>
+
+<p>
+Using the filesystem as a key-value store is
+a good technique to avoid parsing, and skarnet.org packages do it
+everywhere: for instance, look at
+<a href="http://skarnet.org/software/s6/s6-envdir.html">s6-envdir</a>.
+The s6-rc-compile source format is just another instance of this
+technique.
+</p>
+
+<p>
+ This format generally plays well with automated tools, be it for
+reading, as s6-rc-compile does, as for writing.
+I fully expect the s6-rc-compile source format
+to be used as the input (resp. the output) of some automated tools that
+would convert
+service definitions to (resp. from) another format, such as systemd
+unit files, sysv-rc scripts or OpenRC scripts; at least the
+s6-rc source format will make it easy on those tools.
+</p>
+
+<p>
+ And if you love configuration files, don't mind writing a parser (which is
+indubitably easier to do in other languages than C), and want to write
+a program that takes a text file, parses it and outputs a service
+definition directory, it should also be rather easy.
+</p>
+
+<h3> There are no "Provides:", no virtual services. What do I do
+if I have several implementations for a service? </h3>
+
+<p>
+ Use bundles. Bundles are awesome.
+</p>
+
+<p>
+ Let's say you want to provide a ssh daemon, and have two possible
+implementations, <em>opensshd</em> and <em>dropbear</em>, but you
+want to provide a virtual service named <em>sshd</em>.
+</p>
+
+<p>
+ Define your two longruns, <em>opensshd</em> and <em>dropbear</em>;
+then define a bundle named <em>sshd</em> that only contains your
+default implementation, <em>opensshd</em>. Use the name <em>sshd</em>
+in your dependencies. When you run
+<a href="s6-rc-compile.html">s6-rc-compile</a>, all the dependencies
+will resolve to <em>opensshd</em>, and the compiled service database
+will consider <em>opensshd</em> to be the "real" service; but users
+will still be able to run
+<a href="s6-rc.html">s6-rc</a> commands involving <em>sshd</em>.
+And if users want to change the default to <em>dropbear</em>, just
+change the <em>sshd</em><tt>/contents</tt> file to <tt>dropbear</tt>,
+recompile the database, and
+run <a href="s6-rc-update.html">s6-rc-update</a>.
+</p>
+
+<p>
+ The advantage of proceeding this way is that online service
+dependencies are kept very simple: dependencies are a directed
+acyclic graph, which is easy to handle - that is the reason why
+the compiled database is small, and why the
+<a href="s6-rc.html">s6-rc</a> program is so small and fast.
+There are "AND" dependencies, but no "OR" dependencies, which
+would introduce great complexity both in data structures and in
+the dependency resolution engine. s6-rc handles this complexity
+<em>offline</em>.
+</p>
+
+<p>
+ You can use bundles to represent any collection of services, and
+write all your dependencies using only bundle names if you want.
+Bundles have multiple uses, and virtual services are definitely
+one of them.
+</p>
+
+<h2> Switching from another service manager </h2>
+
+<h3> I have a collection of init scripts in another format,
+but don't want to wait until the whole collection is converted
+before switching to s6-rc. Is there a smooth way in? </h3>
+
+<p>
+ Yes.
+</p>
+
+<p>
+ If you are using a service manager such as sysv-rc or OpenRC,
+you have a collection of init scripts that can be called with
+at least <tt>start</tt> and <tt>stop</tt> arguments. You also
+know dependencies between those scripts, or at least a
+reasonable ordering.
+</p>
+
+<p>
+ You can automatically generate a source directory for
+<a href="s6-rc-compile.html">s6-rc-compile</a>. For every
+init script <tt>/etc/init.d/<em>foo</em></tt> that you have,
+create a service definition directory named <em>foo</em>:
+</p>
+
+<ul>
+ <li> <tt><em>foo</em>/type</tt> contains <tt>oneshot</tt> </li>
+ <li> <tt><em>foo</em>/dependencies</tt> contains the list of
+dependencies for <em>foo</em> </li>
+ <li> <tt><em>foo</em>/up</tt> contains <tt>/etc/init.d/<em>foo</em> start</tt> </li>
+ <li> <tt><em>foo</em>/down</tt> contains <tt>/etc/init.d/<em>foo</em> stop</tt> </li>
+</ul>
+
+<p>
+ You can now run compile your s6-rc service database, and use the
+<a href="s6-rc.html">s6-rc</a> engine as your service manager.
+Transitions will use your original init scripts, and the supervision
+features of <a href="http://skarnet.org/software/s6/">s6</a> will
+not be used, but you will get proper dependency tracking and
+easy state changes.
+</p>
+
+<p>
+ Then, you can improve the database by changing services one by one, turning
+them into longruns so daemons get supervised when applicable, rewriting them
+into bundles calling more atomic services if needed, etc. That can be done
+at your own pace, one service at a time, while still getting some benefits
+from s6-rc; and if an iteration doesn't work, you can always roll back while
+you fix it.
+</p>
+
+<h3> There are no runlevels in s6-rc. I like runlevels. </h3>
+
+<p>
+ You have better than runlevels. <em>You have bundles.</em>
+</p>
+
+<p>
+ When writing your service database in source format, take note of
+the common sets of services that you like to run together, what
+other init systems sometimes call runlevels. For each of those
+sets, define a bundle containing all those services. For instance,
+you could define a <tt>runlevel-1</tt> bundle that contains only
+a single getty, a <tt>runlevel-2</tt> bundle that contains only
+your local services and no network, a <tt>runlevel-3</tt> bundle
+that contains <tt>runlevel-2</tt> as well as network services,
+and a <tt>runlevel-5</tt> bundle that contains <tt>runlevel-3</tt>
+and your desktop. You can even create a <tt>runlevel-0</tt>
+bundle that contains nothing at all!
+</p>
+
+<p>
+ In your boot script (<tt>/etc/rc.init</tt>, for instance, if
+you're using
+<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>),
+after invoking
+<a href="s6-rc-init.html">s6-rc-init</a>, just ask
+<a href="s6-rc.html">s6-rc</a> to start the set of services you want up
+by default: <tt>s6-rc change runlevel-5</tt>.
+</p>
+
+<p>
+ If you later want to change your current set of services, you can then tell
+s6-rc to switch, using the <tt>-p</tt> option to make sure to stop services
+you don't want up anymore: <tt>s6-rc -p change runlevel-2</tt>.
+</p>
+
+<p>
+ Bundles are easy to use, they're flexible, and they're powerful.
+They give you the same level of functionality as runlevels would, and more.
+</p>
+
+<p>
+ Use bundles.
+</p>
+
+</body>
+</html>
