@@ -32,8 +32,8 @@
 #define S6RC_ONESHOT_RUNNER_RUNSCRIPT \
 "#!" EXECLINE_EXTBINPREFIX "execlineb -P\n" \
 EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n" \
+EXECLINE_EXTBINPREFIX "fdmove -c 1 3\n" \
 S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
-S6_EXTBINPREFIX "s6-notifywhenup -f --\n" \
 S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
 S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
 S6_EXTBINPREFIX "s6-sudod -t 2000 --\n"
@@ -828,6 +828,7 @@ static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
 static inline void write_specials (char const *compiled)
 {
   auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER) ;
+  auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/notification-fd", "3\n", 2) ;
   auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data") ;
   auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules") ;
   auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid") ;

@@ -269,6 +269,11 @@ producers. </li>
 definition directory, and the producer must be declared in the <tt>producer</tt> file
 in its logger's definition directory. If it sees an inconsistency, s6-rc-compile
 will complain and exit 1. </li>
+ <li> The producer will automatically have a dependency to its logger (because,
+as much as systemd would have you believe the opposite, it is
+not safe to start a service while its logger is not up). This means that a
+<a href="s6-rc.html">s6-rc change</a> command to start the service will
+automatically start the logger beforehand if it's not already up. </li>
 </ul>
 
 <h2> A complete example </h2>
