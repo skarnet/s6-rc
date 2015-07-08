@@ -9,5 +9,5 @@
 int main (int argc, char const *const *argv)
 {
   PROG = "s6-rc-update" ;
-  return 0 ;
+  strerr_dief1x(100, "this utility has not been written yet.") ;
 }
