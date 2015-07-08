@@ -32,7 +32,7 @@
 #define S6RC_ONESHOT_RUNNER_RUNSCRIPT \
 "#!" EXECLINE_EXTBINPREFIX "execlineb -P\n" \
 EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n" \
-EXECLINE_EXTBINPREFIX "fdmove -c 1 3\n" \
+EXECLINE_EXTBINPREFIX "fdmove 1 3\n" \
 S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
 S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
 S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
