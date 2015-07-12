@@ -1,0 +1,11 @@
+dns-cache
+dns-server-tcp-4
+dns-server-udp
+httpd-4
+identd-4
+qmtpd-4
+smtpd-4
+sshd-4
+taiclockd-4
+hostapd
+udhcpd-wlan0

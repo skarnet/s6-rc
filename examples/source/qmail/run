@@ -1,0 +1,4 @@
+#!/command/execlineb -P
+
+fdmove -c 2 1
+qmail-start ./Maildir/

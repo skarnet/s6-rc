@@ -1,0 +1,11 @@
+multisubstitute
+{
+  import -i ETH0_IP4
+  import -i ETH1_IP4
+  import -i ETH2_IP4
+}
+
+if { ifconfig lo 127.0.0.1 netmask 255.0.0.0 }
+if { ifconfig eth0 ${ETH0_IP4} netmask 255.255.255.0 }
+if { ifconfig eth1 ${ETH1_IP4} netmask 255.255.255.0 }
+if { ifconfig eth2 ${ETH2_IP4} netmask 255.255.255.0 }

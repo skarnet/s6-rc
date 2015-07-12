@@ -1,0 +1,3 @@
+s6-envdir -i /run/disk-devices
+import -i rwfs
+s6-mount -wt ext4 -o barrier=0,nodev /dev/${rwfs} /mnt/rwfs

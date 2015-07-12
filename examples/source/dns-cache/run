@@ -1,0 +1,14 @@
+#!/command/execlineb -P
+fdmove -c 2 1
+s6-envuidgid dnscache
+s6-envdir env
+import ETH0_IP4
+export IP ${ETH0_IP4}
+s6-softlimit -m 4000000
+pipeline -d
+{
+  redirfd -r 0 /dev/urandom
+  s6-head -c 128
+}
+unexport LASTPID
+dnscache

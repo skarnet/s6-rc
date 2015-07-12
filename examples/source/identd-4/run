@@ -1,0 +1,7 @@
+#!/command/execlineb -P
+fdmove -c 2 1
+s6-envuidgid ident
+import -ui ETH0_IP4
+fdmove 1 3
+s6-tcpserver4 -v 1 -U -c 512 -1 -- ${ETH0_IP4} 113
+minidentd -vt 10000

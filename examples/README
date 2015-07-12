@@ -1,0 +1,13 @@
+ An example set of service definition directories.
+
+ ok-all is the bundle containing all the services used
+for normal operation of the machine this set has been taken
+out of; the stage 2 init script of this machine is basically
+"s6-rc-init && s6-rc change ok-all".
+
+ ok-all contains ok-local, ok-lan and ok-wan, all bundles
+each containing their own services.
+
+ "00" is the service at the bottom of the dependency graph.
+So 00/up is the first script that is run by the initial
+"s6-rc change ok-all" command.

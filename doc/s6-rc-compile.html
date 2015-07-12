@@ -283,10 +283,15 @@ automatically start the logger beforehand if it's not already up. </li>
 of service definition directories, which is actually a working, valid set for a
 Linux system running
 <a href="http://busybox.net/">busybox</a> and the
-<a href="http://skarnet.org/software/">skarnet.org</a> packages. You can compile
-it with <tt>s6-rc-compile /tmp/compiled examples/source</tt>, then examine the
+<a href="http://skarnet.org/software/">skarnet.org</a> packages; of course, only
+the service definition set has been kept, and private information has been
+removed, so it won't work out-of-the-box without the proper specific files,
+notably configuration in <tt>/etc/</tt> - but nevertheless, you can browse the
+source and understand what it does, and adapt it to your own needs. It will
+compile as is with
+<tt>s6-rc-compile</tt>, and you can examine the
 resulting compiled database with
-<tt><a href="s6-rc-db.html">s6-rc-db</a> -c /tmp/compiled <em>subcommand</em></tt>.
+<tt><a href="s6-rc-db.html">s6-rc-db</a></tt>.
 </p>
 
 </body>

@@ -1,0 +1,5 @@
+foreground { modprobe ath9k blink=1 }
+unexport ?
+if { iw reg set FR }
+import -i WLAN0_IP4
+ifconfig wlan0 ${WLAN0_IP4} netmask 255.255.255.0
