@@ -1,5 +1,8 @@
 /* ISC license. */
 
+/* for fdopendir() on BSD. Fuck you, BSD. */
+#include <skalibs/nonposix.h>
+
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
