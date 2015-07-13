@@ -27,7 +27,7 @@ s6-rc-db: private EXTRA_LIBS :=
 s6-rc-db: src/s6-rc/s6-rc-db.o ${LIBS6RC} -lskarnet
 s6-rc-dryrun: private EXTRA_LIBS := ${TAINNOW_LIB}
 s6-rc-dryrun: src/s6-rc/s6-rc-dryrun.o -lskarnet
-s6-rc-init: private EXTRA_LIBS := ${TAINNOW_LIB}
+s6-rc-init: private EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
 s6-rc-init: src/s6-rc/s6-rc-init.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-update: private EXTRA_LIBS := ${TAINNOW_LIB}
 s6-rc-update: src/s6-rc/s6-rc-update.o ${LIBS6RC} -ls6 -lskarnet
