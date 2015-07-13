@@ -2,3 +2,4 @@ ${LIBS6RC}
 -ls6
 -lskarnet
 ${TAINNOW_LIB}
+${SOCKET_LIB}

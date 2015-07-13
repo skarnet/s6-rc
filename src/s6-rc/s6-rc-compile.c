@@ -486,21 +486,19 @@ static inline void add_sources (before_t *be, char const *srcdir)
     struct stat st ;
     int fd ;
     direntry *d ;
+    satmp.len = cur ;
     errno = 0 ;
     d = readdir(dir) ;
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
     if (d->d_name[str_chr(d->d_name, '\n')])
       strerr_dief3x(2, "subdirectory of ", srcdir, " contains a newline character") ;
-    if (!stralloc_catb(&satmp, d->d_name, str_len(d->d_name + 1))
-     || !stralloc_0(&satmp))
-      dienomem() ;
+    if (!stralloc_catb(&satmp, d->d_name, str_len(d->d_name + 1)) dienomem() ;
     if (lstat(satmp.s + start, &st) < 0)
       strerr_diefu2sys(111, "lstat ", satmp.s + start) ;
     if (!S_ISDIR(st.st_mode)) continue ;
     fd = open_readb(satmp.s + start) ;
     if (fd < 0) strerr_diefu2sys(111, "open ", satmp.s + start) ;
-    satmp.len = cur ;
     add_source(be, fd, srcdir, d->d_name) ;
     close(fd) ;
   }
