@@ -50,7 +50,8 @@ static void print_bundle_contents (char const *name)
       strerr_dief2x(4, "invalid database in ", compiled) ;
     if (!str_diff(name, db->string + db->services[x].name))
       strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents an atomic service") ;
-    if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0)
+    if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
+     || buffer_put(buffer_1, "\n", 1) < 0)
       strerr_diefu1sys(111, "write to stdout") ;
   }
   else

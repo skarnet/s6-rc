@@ -43,7 +43,7 @@ change.
 
 <pre>
      s6-rc help
-     s6-rc [ -l live ] [ -a ] list <em>servicenames...</em>
+     s6-rc [ -l live ] [ -a ] [ -u | -d ] list <em>servicenames...</em>
      s6-rc [ -l live ] [ -a ] [ -u | -d ] listall <em>servicenames...</em>
      s6-rc [ -l live ] [ -a ] [ -u | -d ] [ -p ] [ -v <em>verbosity</em> ] [ -n <em>dryrunthrottle</em> ] [ -t timeout ] change [ <em>servicenames...</em> ]
 </pre>
@@ -137,12 +137,15 @@ all brought down, then the wanted services are all brought up. </li>
 <h3> s6-rc list <em>servicenames...</em> </h3>
 
 <p>
- Prints the selection.
+ Prints the selection. If the <tt>-d</tt> option has been given,
+the selection is inverted before it is printed, i.e. all the
+services but <em>servicenames...</em> will be printed.
 </p>
 
 <p>
  This is mostly useful as <tt>s6-rc -a list</tt>, which simply prints
-the list of currently active services.
+the list of currently active services. <tt>s6-rc -da list</tt>
+will print the list of currently down services.
 </p>
 
 <h3> s6-rc listall <em>servicenames...</em> </h3>

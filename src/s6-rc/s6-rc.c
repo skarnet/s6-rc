@@ -516,6 +516,7 @@ int main (int argc, char const *const *argv)
 
       if (what == 1)
       {
+        if (!up) invert_selection() ;
         print_services() ;
         return 0 ;
       }
