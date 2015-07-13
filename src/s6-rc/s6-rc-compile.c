@@ -1,8 +1,5 @@
 /* ISC license. */
 
-/* for fdopendir() on BSD. Fuck you, BSD. */
-#include <skalibs/nonposix.h>
-
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -478,11 +475,12 @@ static inline void add_source (before_t *be, int dirfd, char const *srcdir, char
 
 static inline void add_sources (before_t *be, char const *srcdir)
 {
-  DIR *dir ;
-  int fddir = open_readb(srcdir) ;
-  if (fddir < 0) strerr_diefu2sys(111, "open ", srcdir) ;
-  dir = fdopendir(fddir) ;
-  if (!dir) strerr_diefu2sys(111, "fdopendir ", srcdir) ;
+  unsigned int start = satmp.len ;
+  unsigned int cur ;
+  DIR *dir = opendir(srcdir) ;
+  if (!dir) strerr_diefu2sys(111, "opendir ", srcdir) ;
+  if (!stralloc_cats(&satmp, srcdir) || !stralloc_catb(&satmp, "/", 1)) dienomem() ;
+  cur = satmp.len ;
   for (;;)
   {
     struct stat st ;
@@ -492,18 +490,23 @@ static inline void add_sources (before_t *be, char const *srcdir)
     d = readdir(dir) ;
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
-    if (lstat_at(fddir, d->d_name, &st) < 0)
-      strerr_diefu4sys(111, "lstat ", srcdir, "/", d->d_name) ;
-    if (!S_ISDIR(st.st_mode)) continue ;
     if (d->d_name[str_chr(d->d_name, '\n')])
       strerr_dief3x(2, "subdirectory of ", srcdir, " contains a newline character") ;
-    fd = open_readatb(fddir, d->d_name) ;
-    if (fd < 0) strerr_diefu4sys(111, "open ", srcdir, "/", d->d_name) ;
+    if (!stralloc_catb(&satmp, d->d_name, str_len(d->d_name + 1))
+     || !stralloc_0(&satmp))
+      dienomem() ;
+    if (lstat(satmp.s + start, &st) < 0)
+      strerr_diefu2sys(111, "lstat ", satmp.s + start) ;
+    if (!S_ISDIR(st.st_mode)) continue ;
+    fd = open_readb(satmp.s + start) ;
+    if (fd < 0) strerr_diefu2sys(111, "open ", satmp.s + start) ;
+    satmp.len = cur ;
     add_source(be, fd, srcdir, d->d_name) ;
     close(fd) ;
   }
   if (errno) strerr_diefu2sys(111, "readdir ", srcdir) ;
   dir_close(dir) ;
+  satmp.len = start ;
 }
 
 
