@@ -19,10 +19,13 @@
 #define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
 
+static int keepdir = 0 ;
+
 static void cleanup (char const *live)
 {
   int e = errno ;
-  rm_rf(live) ;
+  if (keepdir) rmstar(live) ;
+  else rm_rf(live) ;
   errno = e ;
 }
 
@@ -86,6 +89,7 @@ int main (int argc, char const *const *argv)
   {
     if (errno != EEXIST) strerr_diefu2sys(111, "mkdir ", live) ;
     check_emptydir(live) ;
+    keepdir = 1 ;
   }
 
   {
