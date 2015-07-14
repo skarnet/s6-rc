@@ -41,7 +41,6 @@ struct s6rc_service_s
   uint32 ndeps[2] ;
   uint32 timeout[2] ;
   s6rc_longshot_t x ;
-  unsigned char type : 1 ;
 } ;
 
 typedef struct s6rc_db_s s6rc_db_t, *s6rc_db_t_ref ;

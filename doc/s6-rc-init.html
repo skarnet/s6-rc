@@ -77,7 +77,9 @@ filesystem. Default is
 
 <p>
  Administrators should invoke <tt>s6-rc-init</tt> once, in their
-early boot scripts, after s6-svscan is functional but before any
+early boot scripts, after s6-svscan is functional and ready to
+supervise longrun services (and after its catch-all logger, if
+any, has started), but before any
 other initialization. (The rest of the initialization can be
 written as a set of s6-rc services, and performed by just one
 invocation of the <a href="s6-rc.html">s6-rc change</a> command.)

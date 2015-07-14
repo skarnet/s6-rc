@@ -694,7 +694,6 @@ static inline unsigned int resolve_services (s6rc_db_t *db, before_t const *be, 
   byte_zero(sarray, nbits * n) ;
   for (; i < db->nlong ; i++)
   {
-    db->services[i].type = 1 ;
     db->services[i].name = longruns[i].common.kname ;
     db->services[i].flags = longruns[i].common.annotation_flags ;
     db->services[i].timeout[0] = longruns[i].common.timeout[0] ;
@@ -706,7 +705,6 @@ static inline unsigned int resolve_services (s6rc_db_t *db, before_t const *be, 
   }
   for (i = 0 ; i < db->nshort ; i++)
   {
-    db->services[db->nlong + i].type = 0 ;
     db->services[db->nlong + i].name = oneshots[i].common.kname ;
     db->services[db->nlong + i].flags = oneshots[i].common.annotation_flags ;
     db->services[db->nlong + i].timeout[0] = oneshots[i].common.timeout[0] ;
@@ -1037,9 +1035,9 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
   }
 }
 
-static inline int write_service (buffer *b, s6rc_service_t const *sv)
+static inline int write_service (buffer *b, s6rc_service_t const *sv, int type)
 {
-  char pack[50] ;
+  char pack[49] ;
   unsigned int m ;
   uint32_pack_big(pack, sv->name) ;
   uint32_pack_big(pack + 4, sv->flags) ;
@@ -1049,19 +1047,18 @@ static inline int write_service (buffer *b, s6rc_service_t const *sv)
   uint32_pack_big(pack + 20, sv->ndeps[1]) ;
   uint32_pack_big(pack + 24, sv->deps[0]) ;
   uint32_pack_big(pack + 28, sv->deps[1]) ;
-  pack[32] = sv->type ;
-  if (sv->type)
+  if (type)
   {
-    uint32_pack_big(pack + 33, sv->x.longrun.servicedir) ;
-    m = 37 ;
+    uint32_pack_big(pack + 32, sv->x.longrun.servicedir) ;
+    m = 36 ;
   }
   else
   {
-    uint32_pack_big(pack + 33, sv->x.oneshot.argc[0]) ;
-    uint32_pack_big(pack + 37, sv->x.oneshot.argv[0]) ;
-    uint32_pack_big(pack + 41, sv->x.oneshot.argc[1]) ;
-    uint32_pack_big(pack + 45, sv->x.oneshot.argv[1]) ;
-    m = 49 ;
+    uint32_pack_big(pack + 32, sv->x.oneshot.argc[0]) ;
+    uint32_pack_big(pack + 36, sv->x.oneshot.argv[0]) ;
+    uint32_pack_big(pack + 40, sv->x.oneshot.argc[1]) ;
+    uint32_pack_big(pack + 44, sv->x.oneshot.argv[1]) ;
+    m = 48 ;
   }
   pack[m++] = '\376' ;
   return (buffer_put(b, pack, m) == m) ;
@@ -1107,9 +1104,11 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
   }
 
   {
-    unsigned int i = db->nshort + db->nlong ;
+    unsigned int i = db->nlong ;
     s6rc_service_t const *sv = db->services ;
-    while (i--) if (!write_service(&b, sv++)) goto err ;
+    while (i--) if (!write_service(&b, sv++, 1)) goto err ;
+    i = db->nshort ;
+    while (i--) if (!write_service(&b, sv++, 0)) goto err ;
   }
 
   if (buffer_putflush(&b, S6RC_DB_BANNER_END, S6RC_DB_BANNER_END_LEN) < 0)

@@ -53,13 +53,10 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
   s6rc_service_t *sv = db->services ;
   unsigned int nargvs = db->nargvs ;
   unsigned int argvpos = 0 ;
-  char type ;
-#ifdef DEBUG
   register unsigned int i = 0 ;
-#endif
-  while (n--)
+  for (; i < n ; i++)
   {
-    DBG("iteration %u - %u remaining", i++, n) ;
+    DBG("iteration %u/%u remaining", i+1, n) ;
     if (!s6rc_db_read_uint32(b, &sv->name)) return -1 ;
     DBG("  name is %u: %s", sv->name, db->string + sv->name) ;
     if (sv->name >= db->stringlen) return 0 ;
@@ -91,10 +88,8 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
         DBG("   dep on %u", db->deps[db->ndeps + sv->deps[1] + k]) ;
     }
 #endif
-    if (buffer_get(b, &type, 1) < 1) return -1 ;
-    if (type)
+    if (i < db->nlong)
     {
-      sv->type = 1 ;
       if (!s6rc_db_read_uint32(b, &sv->x.longrun.servicedir)) return -1 ;
       DBG("  longrun - servicedir is %u: %s", sv->x.longrun.servicedir, db->string + sv->x.longrun.servicedir) ;
       if (!s6rc_db_check_valid_string(db->string, db->stringlen, sv->x.longrun.servicedir)) return 0 ;
@@ -103,7 +98,6 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
     {
       unsigned int i = 0 ;
       DBG("  oneshot") ;
-      sv->type = 0 ;
       for (; i < 2 ; i++)
       {
         uint32 pos, argc ;
@@ -121,8 +115,11 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
         if (!nargvs--) return 0 ; db->argvs[argvpos++] = 0 ;
       }
     }
-    if (buffer_get(b, &type, 1) < 1) return -1 ;
-    if (type != '\376') return 0 ;
+    {
+      char c ;
+      if (buffer_get(b, &c, 1) < 1) return -1 ;
+      if (c != '\376') return 0 ;
+    }
     sv++ ;
   }
   if (nargvs) return 0 ;

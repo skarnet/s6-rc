@@ -138,7 +138,6 @@ static unsigned int resolve_service (char const *name)
   int fd = open_readatb(fdcompiled, "resolve.cdb") ;
   uint32 x ;
   char pack[4] ;
-  unsigned int len ;
   register int r ;
   if (fd < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
   if (!cdb_init_map(&c, fd, 1))
@@ -146,7 +145,6 @@ static unsigned int resolve_service (char const *name)
   r = cdb_find(&c, name, str_len(name)) ;
   if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
   if (!r) strerr_dief3x(1, name, " is not a valid identifier in ", compiled) ;
-  len = cdb_datalen(&c) >> 2 ;
   if (cdb_datalen(&c) != 4) return db->nshort + db->nlong ;
   if (cdb_read(&c, pack, 4, cdb_datapos(&c)) < 0)
     strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
@@ -163,7 +161,7 @@ static unsigned int resolve_service (char const *name)
 static void print_type (char const *name)
 {
   unsigned int n = resolve_service(name) ;
-  char const *s = n >= db->nshort + db->nlong ? "bundle" : db->services[n].type ? "longrun" : "oneshot" ;
+  char const *s = n >= db->nshort + db->nlong ? "bundle" : n < db->nlong ? "longrun" : "oneshot" ;
   if (buffer_puts(buffer_1, s) < 0
    || buffer_putflush(buffer_1, "\n", 1) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
@@ -189,23 +187,6 @@ static void print_servicedir (char const *name)
     strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " does not represent a longrun service") ;
   if (buffer_puts(buffer_1, db->string + db->services[n].x.longrun.servicedir) < 0
    || buffer_putflush(buffer_1, "\n", 1) < 0)
-    strerr_diefu1sys(111, "write to stdout") ;
-}
-
-static void print_deps (char const *name, int h)
-{
-  uint32 const *p ;
-  unsigned int ndeps ;
-  unsigned int n = resolve_service(name) ;
-  if (n >= db->nshort + db->nlong)
-    strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
-  p = db->deps + h * db->ndeps + db->services[n].deps[h] ;
-  ndeps = db->services[n].ndeps[h] ;
-  while (ndeps--)
-    if (buffer_puts(buffer_1, db->string + db->services[*p++].name) < 0
-     || buffer_put(buffer_1, "\n", 1) < 0)
-      strerr_diefu1sys(111, "write to stdout") ;
-  if (!buffer_flush(buffer_1))
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
@@ -239,7 +220,7 @@ static inline void print_flags (char const *name)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static void print_atomics (char const *const *argv, int h, int doclosure)
+static void print_union (char const *const *argv, int h, int isdeps, int doclosure)
 {
   unsigned int n = db->nshort + db->nlong ;
   cdb_t c = CDB_ZERO ;
@@ -266,7 +247,13 @@ static void print_atomics (char const *const *argv, int h, int doclosure)
         uint32_unpack_big(p, &x) ; p += 4 ;
         if (x >= db->nshort + db->nlong)
           strerr_dief2x(4, "invalid database in ", compiled) ;
-        state[x] |= 1 ;
+        if (isdeps)
+        {
+          register uint32 ndeps = db->services[x].ndeps[h] ;
+          register uint32 const *deps = db->deps + h * db->ndeps + db->services[x].deps[h] ;
+          while (ndeps--) state[*deps++] |= 1 ;
+        }
+        else state[x] |= 1 ;
       }
     }
   }
@@ -290,7 +277,7 @@ static inline void print_help (void)
 "s6-rc-db type servicename\n"
 "s6-rc-db [ -u | -d ] timeout atomicname\n"
 "s6-rc-db contents bundlename\n"
-"s6-rc-db [ -u | -d ] dependencies servicename\n"
+"s6-rc-db [ -u | -d ] dependencies servicename...\n"
 "s6-rc-db servicedir longrunname\n"
 "s6-rc-db [ -u | -d ] script oneshotname\n"
 "s6-rc-db flags atomicname\n"
@@ -461,7 +448,7 @@ int main (int argc, char const *const *argv)
           print_bundle_contents(argv[1]) ;
           break ;
         case 6 : /* dependencies */
-          print_deps(argv[1], up) ;
+          print_union(argv + 1, up, 1, 0) ;
           break ;
         case 7 : /* servicedir */
           print_servicedir(argv[1]) ;
@@ -473,10 +460,10 @@ int main (int argc, char const *const *argv)
           print_flags(argv[1]) ;
           break ;
         case 10 : /* atomics */
-          print_atomics(argv + 1, 1, 0) ;
+          print_union(argv + 1, 1, 0, 0) ;
           break ;
         case 11 : /* all-dependencies */
-          print_atomics(argv + 1, up, 1) ;
+          print_union(argv + 1, up, 0, 1) ;
           break ;
       }
     }

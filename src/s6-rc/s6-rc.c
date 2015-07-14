@@ -127,7 +127,7 @@ static pid_t start_longrun (unsigned int i, int h)
         strerr_warnwu2sys("access ", servicefn) ;
     }
   }
-  byte_copy(servicefn + livelen + 13 + svdlen, 6, "/down") ;
+  servicefn[livelen + 13 + svdlen] = 0 ;
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;  
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
@@ -146,27 +146,35 @@ static pid_t start_longrun (unsigned int i, int h)
   newargv[m++] = "--" ;
   newargv[m++] = servicefn ;
   newargv[m++] = 0 ;
+  return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
+}
 
+static void success_longrun (unsigned int i, int h)
+{
   if (!dryrun[0])
   {
+    unsigned int svdlen = str_len(db->string + db->services[i].x.longrun.servicedir) ;
+    char fn[livelen + svdlen + 19] ;
+    byte_copy(fn, livelen, live) ;
+    byte_copy(fn + livelen, 13, "/servicedirs/") ;
+    byte_copy(fn + livelen + 13, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
+    byte_copy(fn + livelen + 13 + svdlen, 6, "/down") ;
     if (h)
     {
-      if (unlink(servicefn) < 0 && verbosity)
-        strerr_warnwu2sys("unlink ", servicefn) ;
+      if (unlink(fn) < 0 && verbosity)
+        strerr_warnwu2sys("unlink ", fn) ;
     }
     else
     {
-      int fd = open_trunc(servicefn) ;
+      int fd = open_trunc(fn) ;
       if (fd < 0)
       {
         if (verbosity)
-          strerr_warnwu2sys("touch ", servicefn) ;
+          strerr_warnwu2sys("touch ", fn) ;
       }
       else fd_close(fd) ;
     }
   }
-  servicefn[livelen + 13 + svdlen] = 0 ;
-  return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
 }
 
 static void broadcast_success (unsigned int, int) ;
@@ -185,7 +193,7 @@ static void examine (unsigned int i, int h)
     }
     else
     {
-      pidindex[npids].pid = db->services[i].type ? start_longrun(i, h) : start_oneshot(i, h) ;
+      pidindex[npids].pid = i < db->nlong ? start_longrun(i, h) : start_oneshot(i, h) ;
       if (pidindex[npids].pid)
       {
         pidindex[npids++].i = i ;
@@ -218,6 +226,7 @@ static void broadcast_success (unsigned int i, int h)
 
 static void on_success (unsigned int i, int h)
 {
+  if (i < db->nlong) success_longrun(i, h) ;
   if (h) state[i] |= 1 ; else state[i] &= 254 ;
   announce() ;
   if (verbosity >= 2)

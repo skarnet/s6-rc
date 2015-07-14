@@ -217,7 +217,16 @@ readiness notification, the
 <a href="http://skarnet.org/software/s6/s6-svc.html">s6-svc</a>
 command that is invoked by s6-rc will print a warning message, and
 the transition will be considered successful as soon as the daemon
-is up.
+is up, i.e. as soon as the <tt>run</tt> script is executed by
+<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>.
+</p>
+
+<p>
+ When a longrun service supports readiness notification, unless
+a nonzero timeout has been declared in the <tt>timeout-up</tt> file
+in the service definition directory,
+s6-rc will wait forever on an "up" transition for the notification
+to arrive. The transition will fail if a timeout occurs.
 </p>
 
 <p>
