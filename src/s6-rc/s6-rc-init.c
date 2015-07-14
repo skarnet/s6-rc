@@ -26,6 +26,28 @@ static void cleanup (char const *live)
   errno = e ;
 }
 
+static inline void check_emptydir (char const *path)
+{
+  DIR *dir = opendir(path) ;
+  if (!dir)
+  {
+    if (errno == ENOTDIR) strerr_diefu2sys(100, "create live directory at ", path) ;
+    else strerr_diefu2sys(111, "opendir ", path) ;
+  }
+  for (;;)
+  {
+    direntry *d ;
+    errno = 0 ;
+    d = readdir(dir) ;
+    if (!d) break ;
+    if (d->d_name[0] == '.' && (!d->d_name[1] || (d->d_name[1] == '.' && !d->d_name[2])))
+      continue ;
+    strerr_diefu3x(100, "create live directory at ", path, ": directory not empty") ;
+  }
+  if (errno) strerr_diefu2sys(111, "readdir ", path) ;
+  dir_close(dir) ;
+}
+
 int main (int argc, char const *const *argv)
 {
   tain_t deadline, tto ;
@@ -61,7 +83,10 @@ int main (int argc, char const *const *argv)
     strerr_dief2x(100, "scandir", " must be an absolute path") ;
 
   if (mkdir(live, 0755) < 0)
-    strerr_diefu2sys(111, "mkdir ", live) ;
+  {
+    if (errno != EEXIST) strerr_diefu2sys(111, "mkdir ", live) ;
+    check_emptydir(live) ;
+  }
 
   {
     int fdlock ;
@@ -96,7 +121,11 @@ int main (int argc, char const *const *argv)
   /* compiled */
 
     fdcompiled = open_readb(compiled) ;
-    if (fdcompiled < 0) strerr_diefu2sys(111, "open ", compiled) ;
+    if (fdcompiled < 0)
+    {
+      cleanup(live) ;
+      strerr_diefu2sys(111, "open ", compiled) ;
+    }
     byte_copy(lfn + llen + 1, 9, "compiled") ;
     if (symlink(compiled, lfn) < 0)
     {
