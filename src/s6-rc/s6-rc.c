@@ -117,13 +117,13 @@ static pid_t start_longrun (unsigned int i, int h)
   byte_copy(servicefn, livelen, live) ;
   byte_copy(servicefn + livelen, 13, "/servicedirs/") ;
   byte_copy(servicefn + livelen + 13, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
-  if (h && verbosity < 2)
+  if (h)
   {
     byte_copy(servicefn + livelen + 13 + svdlen, 17, "/notification-fd") ;
     if (access(servicefn, F_OK) < 0)
     {
       h = 2 ;
-      if (verbosity && errno == ENOENT)
+      if (verbosity >= 2 && errno == ENOENT)
         strerr_warnwu2sys("access ", servicefn) ;
     }
   }
