@@ -140,7 +140,7 @@ static pid_t start_longrun (unsigned int i, int h)
     newargv[m++] = "--" ;
   }
   newargv[m++] = S6_EXTBINPREFIX "s6-svc" ;
-  newargv[m++] = h ? h == 2 ? "-u" : "-Uu" : "-Dd" ;
+  newargv[m++] = h ? h == 2 ? "-uwu" : "-uwU" : "-dwD" ;
   newargv[m++] = "-T" ;
   newargv[m++] = fmt ;
   newargv[m++] = "--" ;
