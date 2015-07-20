@@ -79,9 +79,9 @@ static pid_t start_oneshot (unsigned int i, int h)
   char const *newargv[9 + argc + !!dryrun[0] * 6] ;
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
-  char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 3] ;
+  char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 12] ;
   byte_copy(socketfn, livelen, live) ;
-  byte_copy(socketfn + livelen, 16 + S6RC_ONESHOT_RUNNER_LEN, "/servicedirs/" S6RC_ONESHOT_RUNNER "/s") ;
+  byte_copy(socketfn + livelen, 12 + S6RC_ONESHOT_RUNNER_LEN, "/scandir/" S6RC_ONESHOT_RUNNER "/s") ;
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
