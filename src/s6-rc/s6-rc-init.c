@@ -220,7 +220,7 @@ int main (int argc, char const *const *argv)
       unsigned int i = 0 ;
       int r ;
       uint16 ids[ndirs] ;
-      char srcfn[llen + 23 + maxlen] ;
+      char srcfn[llen + 23 + maxlen] ; /* XXX: unsafe is dir is writable by non-root */
       char dstfn[llen + 9 + sizeof(S6_SVSCAN_CTLDIR "/control") + maxlen] ;
       rewinddir(dir) ;
       byte_copy(srcfn, llen + 12, lfn) ;

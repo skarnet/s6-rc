@@ -112,14 +112,14 @@ static pid_t start_longrun (unsigned int i, int h)
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
-  char servicefn[livelen + svdlen + 30] ;
+  char servicefn[livelen + svdlen + 26] ;
   char const *newargv[7 + !!dryrun[0] * 6] ;
   byte_copy(servicefn, livelen, live) ;
-  byte_copy(servicefn + livelen, 13, "/servicedirs/") ;
-  byte_copy(servicefn + livelen + 13, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
+  byte_copy(servicefn + livelen, 9, "/scandir/") ;
+  byte_copy(servicefn + livelen + 9, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
   if (h)
   {
-    byte_copy(servicefn + livelen + 13 + svdlen, 17, "/notification-fd") ;
+    byte_copy(servicefn + livelen + 9 + svdlen, 17, "/notification-fd") ;
     if (access(servicefn, F_OK) < 0)
     {
       h = 2 ;
@@ -154,11 +154,11 @@ static void success_longrun (unsigned int i, int h)
   if (!dryrun[0])
   {
     unsigned int svdlen = str_len(db->string + db->services[i].x.longrun.servicedir) ;
-    char fn[livelen + svdlen + 19] ;
+    char fn[livelen + svdlen + 15] ;
     byte_copy(fn, livelen, live) ;
-    byte_copy(fn + livelen, 13, "/servicedirs/") ;
-    byte_copy(fn + livelen + 13, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
-    byte_copy(fn + livelen + 13 + svdlen, 6, "/down") ;
+    byte_copy(fn + livelen, 9, "/scandir/") ;
+    byte_copy(fn + livelen + 9, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
+    byte_copy(fn + livelen + 9 + svdlen, 6, "/down") ;
     if (h)
     {
       if (unlink(fn) < 0 && verbosity)
