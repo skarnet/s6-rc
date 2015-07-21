@@ -30,7 +30,7 @@
 #define dienomem() strerr_dief1x(111, "out of memory") ;
 
 #define S6RC_ONESHOT_RUNNER_RUNSCRIPT \
-"#!" EXECLINE_EXTBINPREFIX "execlineb -P\n" \
+"#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
 EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n" \
 EXECLINE_EXTBINPREFIX "fdmove 1 3\n" \
 S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
@@ -295,23 +295,29 @@ static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const
   return 1 ;
 }
 
-static void read_script (before_t *be, int dirfd, char const *srcdir, char const *name, char const *script, unsigned int *argvindex, unsigned int *argc)
+static void read_script (before_t *be, int dirfd, char const *srcdir, char const *name, char const *script, unsigned int *argvindex, unsigned int *argc, int mandatory)
 {
-  buffer b ;
-  int r ;
-  char buf[4096] ;
+  int r = 0 ;
   int fd = open_readatb(dirfd, script) ;
-  if (fd < 0) strerr_diefu6sys(111, "open ", srcdir, "/", name, "/", script) ;
-  buffer_init(&b, &fd_readsv, fd, buf, 4096) ;
   *argvindex = keep.len ;
-  r = el_parse_from_buffer(&keep, &b) ;
-  switch (r)
+  if (fd < 0)
   {
-    case -3 : strerr_dief7x(1, "syntax error in ", srcdir, "/", name, "/", script, ": missing }");
-    case -2 : strerr_dief6x(1, "syntax error in ", srcdir, "/", name, "/", script) ;
-    case -1 : strerr_diefu6sys(111, "parse ", srcdir, "/", name, "/", script) ;
+    if (errno != ENOENT || mandatory)
+      strerr_diefu6sys(111, "open ", srcdir, "/", name, "/", script) ;
   }
-  close(fd) ;
+  else
+  {
+    char buf[4096] ;
+    buffer b = BUFFER_INIT(&fd_readsv, fd, buf, 4096) ;
+    r = el_parse_from_buffer(&keep, &b) ;
+    switch (r)
+    {
+      case -3 : strerr_dief7x(1, "syntax error in ", srcdir, "/", name, "/", script, ": missing }");
+      case -2 : strerr_dief6x(1, "syntax error in ", srcdir, "/", name, "/", script) ;
+      case -1 : strerr_diefu6sys(111, "parse ", srcdir, "/", name, "/", script) ;
+    }
+    close(fd) ;
+  }
   *argc = r ;
   be->nargvs += r+1 ;
 }
@@ -357,8 +363,8 @@ static inline void add_oneshot (before_t *be, int dirfd, char const *srcdir, cha
   oneshot_t service ;
   if (verbosity >= 3) strerr_warni3x(name, " has type ", "oneshot") ;
   add_common(be, dirfd, srcdir, name, &service.common, SVTYPE_ONESHOT) ;
-  read_script(be, dirfd, srcdir, name, "up", &service.argvindex[1], &service.argc[1]) ;
-  read_script(be, dirfd, srcdir, name, "down", &service.argvindex[0], &service.argc[0]) ;
+  read_script(be, dirfd, srcdir, name, "up", &service.argvindex[1], &service.argc[1], 1) ;
+  read_script(be, dirfd, srcdir, name, "down", &service.argvindex[0], &service.argc[0], 0) ;
   if (uint_uniq(genalloc_s(unsigned int, &be->indices) + service.common.depindex, service.common.ndeps, 0))
   {
     if (!genalloc_append(unsigned int, &be->indices, &special_dep)) dienomem() ;
@@ -494,8 +500,8 @@ static inline void add_sources (before_t *be, char const *srcdir)
       strerr_dief3x(2, "subdirectory of ", srcdir, " contains a newline character") ;
     satmp.len = cur ;
     if (!stralloc_catb(&satmp, d->d_name, str_len(d->d_name) + 1)) dienomem() ;
-    if (lstat(satmp.s + start, &st) < 0)
-      strerr_diefu2sys(111, "lstat ", satmp.s + start) ;
+    if (stat(satmp.s + start, &st) < 0)
+      strerr_diefu2sys(111, "stat ", satmp.s + start) ;
     if (!S_ISDIR(st.st_mode)) continue ;
     fd = open_readb(satmp.s + start) ;
     if (fd < 0) strerr_diefu2sys(111, "open ", satmp.s + start) ;
