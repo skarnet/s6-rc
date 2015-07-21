@@ -14,7 +14,7 @@ src/s6-rc/s6-rc-compile.o src/s6-rc/s6-rc-compile.lo: src/s6-rc/s6-rc-compile.c 
 src/s6-rc/s6-rc-db.o src/s6-rc/s6-rc-db.lo: src/s6-rc/s6-rc-db.c src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-dryrun.o src/s6-rc/s6-rc-dryrun.lo: src/s6-rc/s6-rc-dryrun.c
 src/s6-rc/s6-rc-init.o src/s6-rc/s6-rc-init.lo: src/s6-rc/s6-rc-init.c src/include/s6-rc/s6rc.h
-src/s6-rc/s6-rc-update.o src/s6-rc/s6-rc-update.lo: src/s6-rc/s6-rc-update.c
+src/s6-rc/s6-rc-update.o src/s6-rc/s6-rc-update.lo: src/s6-rc/s6-rc-update.c src/include/s6-rc/s6rc-constants.h
 src/s6-rc/s6-rc.o src/s6-rc/s6-rc.lo: src/s6-rc/s6-rc.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 
 libs6rc.a: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_db_check_revdeps.o src/libs6rc/s6rc_graph_closure.o

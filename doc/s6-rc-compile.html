@@ -36,7 +36,7 @@ the current service database via
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-compile [ -v <em>verbosity</em> ] <em>compiled</em> <em>source...</em>
+     s6-rc-compile [ -v <em>verbosity</em> ] [ -u <em>uids</em> ] [ -g <em>gids</em> ] <em>compiled</em> <em>source...</em>
 </pre>
 
 <ul>
@@ -56,7 +56,22 @@ services declared in every <em>source</em> argument. </li>
 verbose. Default is 1: warning and error messages will be printed to
 stderr. 0 silences warnings. 2 adds a bit more information about
 what s6-rc-compile is doing. 3 or more is heavy debug output. </li>
+ <li> <tt>-u&nbsp;<em>uids</em></tt>&nbsp;: list users allowed to
+use this database with <a href="s6-rc.html">s6-rc</a> to start and
+stop services. <em>uids</em> must be a comma-separated list of
+numerical UIDs. </li>
+ <li> <tt>-g&nbsp;<em>gids</em></tt>&nbsp;: list groups allowed to
+use this database with <a href="s6-rc.html">s6-rc</a> to start and
+stop services. <em>gids</em> must be a comma-separated list of
+numerical GIDs. </li>
 </ul>
+
+<p>
+ If the <tt>-u</tt> or <tt>-g</tt> option is used, then <tt>0</tt>
+must be explicitly listed in <em>uids</em> in order to allow root
+to operate the database. If neither option is used, then root
+(and only root) is implicitly allowed.
+</p>
 
 <h2> Source format </h2>
 

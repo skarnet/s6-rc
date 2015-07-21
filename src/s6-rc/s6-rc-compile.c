@@ -5,7 +5,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <skalibs/uint32.h>
+#include <skalibs/uint64.h>
 #include <skalibs/uint.h>
+#include <skalibs/gidstuff.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/bitarray.h>
 #include <skalibs/strerr2.h>
@@ -25,7 +27,7 @@
 #include <s6/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-compile [ -v verbosity ] destdir sources..."
+#define USAGE "s6-rc-compile [ -v verbosity ] [ -u okuid,okuid... ] [ -g okgid,okgid... ] destdir sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_dief1x(111, "out of memory") ;
 
@@ -37,6 +39,8 @@ S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
 S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
 S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
 S6_EXTBINPREFIX "s6-sudod -t 2000 --\n"
+
+#define BASE_RULES "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/gid"
 
 static unsigned int verbosity = 1 ;
 static stralloc keep = STRALLOC_ZERO ;
@@ -833,19 +837,38 @@ static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
   auto_file(compiled, "n", pack, 20) ;
 }
 
-static inline void write_specials (char const *compiled)
+static inline void write_specials (char const *compiled, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn)
 {
+  unsigned int i = uidn ;
+  char fn[sizeof(BASE_RULES) + UINT64_FMT + 6] = BASE_RULES ;
   auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER) ;
   auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/notification-fd", "3\n", 2) ;
-  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data") ;
-  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules") ;
-  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid") ;
-  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/default") ;
-  auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/default/deny", "", 0) ;
-  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/0") ;
-  auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/uid/0/allow", "", 0) ;
   auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", S6RC_ONESHOT_RUNNER_RUNSCRIPT, sizeof(S6RC_ONESHOT_RUNNER_RUNSCRIPT) - 1) ;
   auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data") ;
+  auto_dir(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules") ;
+  if (gidn) auto_dir(compiled, fn) ;
+  fn[sizeof(BASE_RULES) - 4] = 'u' ;
+  auto_dir(compiled, fn) ;
+  fn[sizeof(BASE_RULES) - 1] = '/' ;
+  while (i--)
+  {
+    unsigned int len = uint64_fmt(fn + sizeof(BASE_RULES), uids[i]) ;
+    fn[sizeof(BASE_RULES) + len] = 0 ;
+    auto_dir(compiled, fn) ;
+    byte_copy(fn + sizeof(BASE_RULES) + len, 7, "/allow") ;
+    auto_file(compiled, fn, "", 0) ;
+  }
+  fn[sizeof(BASE_RULES) - 4] = 'g' ;
+  i = gidn ;
+  while (i--)
+  {
+    unsigned int len = gid_fmt(fn + sizeof(BASE_RULES), gids[i]) ;
+    fn[sizeof(BASE_RULES) + len] = 0 ;
+    auto_dir(compiled, fn) ;
+    byte_copy(fn + sizeof(BASE_RULES) + len, 7, "/allow") ;
+    auto_file(compiled, fn, "", 0) ;
+  }
 }
 
 static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps)
@@ -1128,14 +1151,14 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
   strerr_diefu2sys(111, "write to ", dbfn) ;
 }
 
-static inline void write_compiled (char const *compiled, s6rc_db_t const *db, char const *const *srcdirs, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps, unsigned int maxnamelen)
+static inline void write_compiled (char const *compiled, s6rc_db_t const *db, char const *const *srcdirs, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps, unsigned int maxnamelen, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn)
 {
   if (verbosity >= 2) strerr_warni2x("writing compiled information to ", compiled) ;
   init_compiled(compiled) ;
   write_sizes(compiled, db) ;
   write_resolve(compiled, db, bundles, nbundles, bdeps) ;
   write_db(compiled, db) ;
-  write_specials(compiled) ;
+  write_specials(compiled, uids, uidn, gids, gidn) ;
   write_servicedirs(compiled, db, srcdirs, maxnamelen) ;
 }
 
@@ -1143,22 +1166,28 @@ int main (int argc, char const *const *argv)
 {
   before_t before = BEFORE_ZERO ;
   char const *compiled ;
+  unsigned int uidn = 0, gidn = 0 ;
+  uint64 uids[256] ;
+  gid_t gids[256] ;
   PROG = "s6-rc-compile" ;
   {
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "v:", &l) ;
+      register int opt = subgetopt_r(argc, argv, "v:u:g:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
         case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
+        case 'u' : if (!uint64_scanlist(uids, 255, l.arg, &uidn)) dieusage() ; break ;
+        case 'g' : if (!gid_scanlist(gids, 255, l.arg, &gidn)) dieusage() ; break ;
         default : dieusage() ;
       }
     }
     argc -= l.ind ; argv += l.ind ;
   }
   if (argc < 2) dieusage() ;
+  if (!uidn && !gidn) uids[uidn++] = 0 ;
   compiled = *argv++ ;
   add_specials(&before) ;
   for (; *argv ; argv++) add_sources(&before, *argv) ;
@@ -1197,7 +1226,7 @@ int main (int argc, char const *const *argv)
       uint32 deps[db.ndeps << 1] ;
       db.deps = deps ;
       flatlist_services(&db, sarray) ;
-      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, maxnamelen) ;
+      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, maxnamelen, uids, uidn, gids, gidn) ;
     }
   }
 
