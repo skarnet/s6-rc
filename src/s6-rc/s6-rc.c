@@ -127,7 +127,7 @@ static pid_t start_longrun (unsigned int i, int h)
         strerr_warnwu2sys("access ", servicefn) ;
     }
   }
-  servicefn[livelen + 13 + svdlen] = 0 ;
+  servicefn[livelen + 9 + svdlen] = 0 ;
   fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;  
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
