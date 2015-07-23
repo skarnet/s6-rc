@@ -1005,11 +1005,14 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   byte_copy(dstfn + clen + 14 + dstlen, 7, "finish") ;
   byte_copy(srcfn + srcdirlen + srclen + 2, 7, "finish") ;
   filecopy(srcfn, dstfn, 0755) ;
+  byte_copy(dstfn + clen + 14 + dstlen, 15, "timeout-finish") ;
+  byte_copy(srcfn + srcdirlen + srclen + 2, 15, "timeout-finish") ;
+  filecopy(srcfn, dstfn, 0644) ;
   byte_copy(dstfn + clen + 14 + dstlen, 16, "notification-fd") ;
   byte_copy(srcfn + srcdirlen + srclen + 2, 16, "notification-fd") ;
-  filecopy(srcfn, dstfn, 0755) ;
+  filecopy(srcfn, dstfn, 0644) ;
 
-  byte_copy(srcfn + srcdirlen + srclen + 2, 9, "nosetsid") ;
+  byte_copy(srcfn + srcdirlen + srclen + 4, 7, "setsid") ;
   if (stat(srcfn, &st) < 0)
   {
     if (errno != ENOENT)
@@ -1021,7 +1024,7 @@ static void write_servicedir (char const *compiled, char const *srcdir, char con
   else
   {
     int fd ;
-    byte_copy(dstfn + clen + 14 + dstlen, 9, "nosetsid") ;
+    byte_copy(dstfn + clen + 16 + dstlen, 7, "setsid") ;
     fd = open_trunc(dstfn) ;
     if (fd < 0)
     {

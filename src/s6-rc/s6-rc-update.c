@@ -6,12 +6,15 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
+#include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/skamisc.h>
 #include <s6/s6-supervise.h>
 #include <s6-rc/s6rc-constants.h>
 
 #define USAGE "s6-rc-update [ -l live ]"
 #define dieusage() strerr_dieusage(100, USAGE)
+#define dienomem() strerr_diefu1sys(111, "build string") ;
 
 static char const *live = S6RC_LIVE_BASE ;
 
@@ -80,9 +83,9 @@ static int safe_servicedir_update (char const *dst, char const *src, int h)
     s6_svc_write(dstfn, "u", 1) ;
   }
   byte_copy(dstfn + dstlen + 1, 9, "data.old") ;
-  rm_rf(dstfn) ;
+  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
   byte_copy(dstfn + dstlen + 1, 8, "env.old") ;
-  rm_rf(dstfn) ;
+  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
   return 1 ;
 
  err:
@@ -98,6 +101,17 @@ static int safe_servicedir_update (char const *dst, char const *src, int h)
 
 static int servicedir_name_change (char const *live, char const *oldname, char const *newname)
 {
+  unsigned int livelen = str_len(live) ;
+  unsigned int oldlen = str_len(oldname) ;
+  unsigned int newlen = str_len(oldname) ;
+  char oldfn[livelen + oldlen + 2] ;
+  char newfn[livelen + newlen + 2] ;
+  byte_copy(oldfn, livelen, live) ;
+  oldfn[livelen] = '/' ;
+  byte_copy(oldfn + livelen + 1, oldlen + 1, oldname) ;
+  byte_copy(newfn, livelen + 1, oldfn) ;
+  byte_copy(newfn + livelen + 1, newlen + 1, newname) ;
+  if (rename(oldfn, newfn) < 0) return 0 ;
   return 1 ;
 } 
 

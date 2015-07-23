@@ -71,6 +71,19 @@ static void print_services (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
+static unsigned int compute_timeout (unsigned int i, int h)
+{
+  unsigned int t = db->services[i].timeout[h] ;
+  int globalt ;
+  tain_t globaltto ;
+  tain_sub(&globaltto, &deadline, &STAMP) ;
+  globalt = tain_to_millisecs(&globaltto) ;
+  if (!globalt) globalt = 1 ;
+  if (globalt > 0 && (!t || (unsigned int)globalt < t))
+    t = (unsigned int)globalt ;
+  return t ;
+}
+
 static pid_t start_oneshot (unsigned int i, int h)
 {
   unsigned int argc = db->services[i].x.oneshot.argc[h] ;
@@ -82,7 +95,7 @@ static pid_t start_oneshot (unsigned int i, int h)
   char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 12] ;
   byte_copy(socketfn, livelen, live) ;
   byte_copy(socketfn + livelen, 12 + S6RC_ONESHOT_RUNNER_LEN, "/scandir/" S6RC_ONESHOT_RUNNER "/s") ;
-  fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;
+  fmt[uint32_fmt(fmt, compute_timeout(i, h))] = 0 ;
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
   {
@@ -128,7 +141,7 @@ static pid_t start_longrun (unsigned int i, int h)
     }
   }
   servicefn[livelen + 9 + svdlen] = 0 ;
-  fmt[uint32_fmt(fmt, db->services[i].timeout[h])] = 0 ;  
+  fmt[uint32_fmt(fmt, compute_timeout(i, h))] = 0 ;  
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
   {
