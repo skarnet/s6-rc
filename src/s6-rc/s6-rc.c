@@ -372,7 +372,7 @@ static inline void print_help (void)
 
 int main (int argc, char const *const *argv)
 {
-  int up = 1, prune = 0, selectlive = 0 ;
+  int up = 1, prune = 0, selectlive = 0, takelock = 1 ;
   unsigned int what ;
   PROG = "s6-rc" ;
   {
@@ -380,7 +380,7 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "v:n:t:l:udpa", &l) ;
+      register int opt = subgetopt_r(argc, argv, "v:n:t:l:udpaX", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -398,6 +398,7 @@ int main (int argc, char const *const *argv)
         case 'd' : up = 0 ; break ;
         case 'p' : prune = 1 ; break ;
         case 'a' : selectlive = 1 ; break ;
+        case 'X' : takelock = 0 ; break ;
         default : dieusage() ;
       }
     }
@@ -416,7 +417,6 @@ int main (int argc, char const *const *argv)
   livelen = str_len(live) ;
 
   {
-    int livelock ;
     int fdcompiled ;
     s6rc_db_t dbblob ;
     char dbfn[livelen + 10] ;
@@ -425,18 +425,23 @@ int main (int argc, char const *const *argv)
 
    /* Take the live lock */
 
-    byte_copy(dbfn, livelen, live) ;
-    byte_copy(dbfn + livelen, 6, "/lock") ;
-    livelock = open_write(dbfn) ;
-    if (livelock < 0) strerr_diefu2sys(111, "open ", dbfn) ;
-    if (coe(livelock) < 0) strerr_diefu2sys(111, "coe ", dbfn) ;
-    if ((what < 3 ? lock_sh(livelock) : lock_ex(livelock)) < 0)
-      strerr_diefu2sys(111, "lock ", dbfn) ;
+    if (takelock)
+    {
+      int livelock ;
+      byte_copy(dbfn, livelen, live) ;
+      byte_copy(dbfn + livelen, 6, "/lock") ;
+      livelock = open_write(dbfn) ;
+      if (livelock < 0) strerr_diefu2sys(111, "open ", dbfn) ;
+      if (coe(livelock) < 0) strerr_diefu2sys(111, "coe ", dbfn) ;
+      if ((what < 3 ? lock_sh(livelock) : lock_ex(livelock)) < 0)
+        strerr_diefu2sys(111, "lock ", dbfn) ;
+     /* livelock leaks, but we don't care */
+    }
 
 
    /* Read the sizes of the compiled db */
 
-    byte_copy(dbfn + livelen + 1, 9, "compiled") ;
+    byte_copy(dbfn + livelen, 10, "/compiled") ;
     fdcompiled = open_readb(dbfn) ;
     if (!s6rc_db_read_sizes(fdcompiled, &dbblob))
       strerr_diefu3sys(111, "read ", dbfn, "/n") ;
@@ -459,7 +464,19 @@ int main (int argc, char const *const *argv)
       dbblob.deps = depsblob ;
       dbblob.string = stringblob ;
       state = stateblob ;
-      byte_zero(state, n) ;
+
+
+     /* Read live state in bit 0 of state */
+
+      byte_copy(dbfn + livelen + 1, 6, "state") ;
+      {
+        r = openreadnclose(dbfn, (char *)state, n) ;
+        if (r != n) strerr_diefu2sys(111, "read ", dbfn) ;
+        {
+          register unsigned int i = n ;
+          while (i--) state[i] &= 1 ;
+        }
+      }
 
 
      /* Read the db from the file */
@@ -509,20 +526,6 @@ int main (int argc, char const *const *argv)
         close(fd) ;
       }
       close(fdcompiled) ;
-
-
-     /* Read live state in bit 0 of state */
-
-      byte_copy(dbfn + livelen + 1, 6, "state") ;
-      {
-        char tmpstate[n] ;
-        r = openreadnclose(dbfn, tmpstate, n) ;
-        if (r != n) strerr_diefu2sys(111, "read ", dbfn) ;
-        {
-          register unsigned int i = n ;
-          while (i--) if (tmpstate[i]) state[i] |= 1 ;
-        }
-      }
 
 
      /* Add live state to selection */

@@ -38,7 +38,7 @@ static void print_bundle_contents (char const *name)
     strerr_diefu3sys(111, "cdb_init ", compiled, "/resolve.cdb") ;
   r = cdb_find(&c, name, str_len(name)) ;
   if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
-  if (!r) strerr_dief3x(1, name, " is not a valid identifier in ", compiled) ;
+  if (!r) strerr_dief3x(3, name, " is not a valid identifier in ", compiled) ;
   if (cdb_datalen(&c) == 4)
   {
     uint32 x ;
@@ -49,7 +49,7 @@ static void print_bundle_contents (char const *name)
     if (x >= db->nshort + db->nlong)
       strerr_dief2x(4, "invalid database in ", compiled) ;
     if (!str_diff(name, db->string + db->services[x].name))
-      strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents an atomic service") ;
+      strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents an atomic service") ;
     if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
      || buffer_put(buffer_1, "\n", 1) < 0)
       strerr_diefu1sys(111, "write to stdout") ;
@@ -144,7 +144,7 @@ static unsigned int resolve_service (char const *name)
     strerr_diefu3sys(111, "cdb_init ", compiled, "/resolve.cdb") ;
   r = cdb_find(&c, name, str_len(name)) ;
   if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
-  if (!r) strerr_dief3x(1, name, " is not a valid identifier in ", compiled) ;
+  if (!r) strerr_dief3x(3, name, " is not a valid identifier in ", compiled) ;
   if (cdb_datalen(&c) != 4) return db->nshort + db->nlong ;
   if (cdb_read(&c, pack, 4, cdb_datapos(&c)) < 0)
     strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
@@ -173,7 +173,7 @@ static void print_timeout (char const *name, int h)
   unsigned int len ;
   char fmt[UINT32_FMT] ;
   if (n >= db->nshort + db->nlong)
-    strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
+    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
   len = uint32_fmt(fmt, db->services[n].timeout[h]) ;
   fmt[len++] = '\n' ;
   if (buffer_putflush(buffer_1, fmt, len) < 0)
@@ -184,7 +184,7 @@ static void print_servicedir (char const *name)
 {
   unsigned int n = resolve_service(name) ;
   if (n >= db->nlong)
-    strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " does not represent a longrun service") ;
+    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " does not represent a longrun service") ;
   if (buffer_puts(buffer_1, db->string + db->services[n].x.longrun.servicedir) < 0
    || buffer_putflush(buffer_1, "\n", 1) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
@@ -196,9 +196,9 @@ static void print_script (char const *name, int h)
   char const *const *argv ;
   unsigned int n = resolve_service(name) ;
   if (n >= db->nshort + db->nlong)
-    strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
+    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
   if (n < db->nlong)
-    strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents a longrun service") ;
+    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents a longrun service") ;
   argv = db->argvs + db->services[n].x.oneshot.argv[h] ;
   argc = db->services[n].x.oneshot.argc[h] ;
   while (argc--)
@@ -214,7 +214,7 @@ static inline void print_flags (char const *name)
   unsigned int n = resolve_service(name) ;
   char fmt[9] = "00000000\n" ;
   if (n >= db->nshort + db->nlong)
-    strerr_dief5x(1, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
+    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
   uint320_xfmt(fmt, db->services[n].flags, 8) ;
   if (buffer_putflush(buffer_1, fmt, 9) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
@@ -234,7 +234,7 @@ static void print_union (char const *const *argv, int h, int isdeps, int doclosu
   {
     register int r = cdb_find(&c, *argv, str_len(*argv)) ;
     if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
-    if (!r) strerr_dief3x(1, *argv, " is not a valid identifier in ", compiled) ;
+    if (!r) strerr_dief3x(3, *argv, " is not a valid identifier in ", compiled) ;
     {
       unsigned int len = cdb_datalen(&c) >> 2 ;
       char pack[cdb_datalen(&c) + 1] ;

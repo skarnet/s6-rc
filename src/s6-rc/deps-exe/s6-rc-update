@@ -1,4 +1,5 @@
 ${LIBS6RC}
 -ls6
+-lexecline
 -lskarnet
 ${TAINNOW_LIB}
