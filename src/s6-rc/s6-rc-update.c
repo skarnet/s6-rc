@@ -26,115 +26,19 @@
 #define dienomem() strerr_diefu1sys(111, "build string") ;
 
 static char const *live = S6RC_LIVE_BASE ;
+static unsigned int livelen = sizeof(S6RC_LIVE_BASE) - 1 ;
 static unsigned int verbosity = 1 ;
-
-static int safe_servicedir_update (char const *dst, char const *src, int h)
-{
-  unsigned int dstlen = str_len(dst) ;
-  unsigned int srclen = str_len(src) ;
-  int fd ;
-  int hasdata = 1, hasenv = 1, ok = 1 ;
-  char dstfn[dstlen + 15 + sizeof(S6_SUPERVISE_CTLDIR)] ;
-  char srcfn[srclen + 17] ;
-  char tmpfn[dstlen + 21] ;
-  byte_copy(dstfn, dstlen, dst) ;
-  byte_copy(srcfn, srclen, src) ;
-
-  byte_copy(dstfn + dstlen, 6, "/down") ;
-  fd = open_trunc(dstfn) ;
-  if (fd < 0) strerr_warnwu2sys("touch ", dstfn) ;
-  else close(fd) ;
-  byte_copy(dstfn + dstlen + 1, 5, "data") ;
-  byte_copy(tmpfn, dstlen + 5, dstfn) ;
-  byte_copy(tmpfn + dstlen + 5, 5, ".old") ;
-  if (rename(dstfn, tmpfn) < 0)
-  {
-    if (errno == ENOENT) hasdata = 0 ;
-    else goto err ;
-  }
-  byte_copy(dstfn + dstlen + 1, 4, "env") ;
-  byte_copy(tmpfn + dstlen + 1, 8, "env.old") ;
-  if (rename(dstfn, tmpfn) < 0)
-  {
-    if (errno == ENOENT) hasenv = 0 ;
-    else goto err ;
-  }
-  byte_copy(dstfn + dstlen + 1, 9, "nosetsid") ;
-  if (unlink(dstfn) < 0 && errno != ENOENT) goto err ;
-  byte_copy(dstfn + dstlen + 3, 14, "tification-fd") ;
-  if (unlink(dstfn) < 0 && errno != ENOENT) goto err ;
-
-  byte_copy(srcfn + srclen, 17, "/notification-fd") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 3, 7, "setsid") ;
-  byte_copy(dstfn + dstlen + 3, 7, "setsid") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 1, 5, "data") ;
-  byte_copy(dstfn + dstlen + 1, 5, "data") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 1, 4, "env") ;
-  byte_copy(dstfn + dstlen + 1, 4, "env") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 1, 4, "run") ;
-  byte_copy(dstfn + dstlen + 1, 4, "run") ;
-  if (!hiercopy(srcfn, dstfn)) goto err ;
-  byte_copy(srcfn + srclen + 1, 4, "run") ;
-  byte_copy(dstfn + dstlen + 1, 4, "finish") ;
-  hiercopy(srcfn, dstfn) ;
-  if (h)
-  {
-    byte_copy(dstfn + dstlen + 1, 5, "down") ;
-    if (unlink(dstfn) < 0)
-    {
-      strerr_warnwu2sys("unlink ", dstfn) ;
-      ok = 0 ;
-    }
-    byte_copy(dstfn + dstlen + 1, 8 + sizeof(S6_SUPERVISE_CTLDIR), S6_SUPERVISE_CTLDIR "/control") ;
-    s6_svc_write(dstfn, "u", 1) ;
-  }
-  byte_copy(dstfn + dstlen + 1, 9, "data.old") ;
-  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
-  byte_copy(dstfn + dstlen + 1, 8, "env.old") ;
-  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
-  return 1 ;
-
- err:
-  if (h)
-  {
-    int e = errno ;
-    byte_copy(dstfn + dstlen + 1, 5, "down") ;
-    unlink(dstfn) ;
-    errno = e ;
-  }
-  return 0 ;
-}
-
-static int servicedir_name_change (char const *live, char const *oldname, char const *newname)
-{
-  unsigned int livelen = str_len(live) ;
-  unsigned int oldlen = str_len(oldname) ;
-  unsigned int newlen = str_len(oldname) ;
-  char oldfn[livelen + oldlen + 2] ;
-  char newfn[livelen + newlen + 2] ;
-  byte_copy(oldfn, livelen, live) ;
-  oldfn[livelen] = '/' ;
-  byte_copy(oldfn + livelen + 1, oldlen + 1, oldname) ;
-  byte_copy(newfn, livelen + 1, oldfn) ;
-  byte_copy(newfn + livelen + 1, newlen + 1, newname) ;
-  if (rename(oldfn, newfn) < 0) return 0 ;
-  return 1 ;
-} 
 
 static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
 {
   unsigned int base = sa->len ;
   unsigned int oldn = olddb->nshort + olddb->nlong ;
   unsigned int max ;
-  register int r ;
+  int n ;
   if (!stralloc_readyplus(sa, slen)) dienomem() ;
   sa->len += slen ;
-  r = el_parse_from_string(sa, s) ;
-  switch (r)
+  n = el_parse_from_string(sa, s) ;
+  switch (n)
   {
     case -1 : dienomem() ;
     case -2 : strerr_dief2x(100, "syntax error in conversion file: ", s) ; 
@@ -143,12 +47,12 @@ static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, u
   }
   max = sa->len ;
   sa->len = base ;
-  if (r >= 2)
+  if (n--)
   {
     char pack[4] ;
     uint32 x ;
     unsigned int cur ;
-    int r = cdb_find(oldc, sa->s + base + slen, str_len(sa->s + base + slen)) ;
+    register int r = cdb_find(oldc, sa->s + base + slen, str_len(sa->s + base + slen)) ;
     if (r < 0) strerr_diefu3sys(111, "read ", live, "/compiled/resolve.cdb") ;
     if (!r) strerr_dief5x(3, "unknown identifier in ", live, "/compiled/resolve.cdb", ": ", sa->s + base + slen) ;
     if (cdb_datalen(oldc) != 4) strerr_dief5x(5, "identifier ", sa->s + base + slen, " does not represent an atomic service in ", live, "/compiled") ;
@@ -156,8 +60,23 @@ static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, u
       strerr_diefu3sys(111, "read ", live, "/compiled/resolve.cdb") ;
     uint32_unpack_big(pack, &x) ;
     if (x >= oldn) strerr_dief3x(4, "invalid database in ", live, "/compiled") ;
-    cur = base + slen + str_len(sa->s + base + slen) ;
-    
+    cur = base + slen + str_len(sa->s + base + slen) + 1 ;
+    if (n >= 2 && !str_diff(sa->s + cur, "->"))
+    {
+      register unsigned int newnamelen = str_len(sa->s + cur + 3) ;
+      byte_copy(sa->s + sa->len, newnamelen + 1, sa->s + cur + 3) ;
+      newnames[x] = sa->len ; oldstate[x] |= 16 ;
+      sa->len += newnamelen + 1 ;
+      cur += newnamelen + 4 ;
+      n -= 2 ;
+    }
+    while (n--)
+    {
+      if (!str_diff(sa->s + cur, "restart")) oldstate[x] |= 4 ;
+      else
+        strerr_dief2x(100, "unknown keyword in conversion file: ", sa->s + cur) ;
+      cur += str_len(sa->s + cur) + 1 ;
+    }
   }
 }
 
@@ -282,6 +201,131 @@ static void compute_transitions (unsigned char *oldstate, int fdoldc, s6rc_db_t 
   adjust_newalreadyup(oldstate, oldn, newstate, newn, conversion_table) ;
 }
 
+static int safe_servicedir_update (char const *dst, char const *src, int h)
+{
+  unsigned int dstlen = str_len(dst) ;
+  unsigned int srclen = str_len(src) ;
+  int fd ;
+  int hasdata = 1, hasenv = 1, ok = 1 ;
+  char dstfn[dstlen + 15 + sizeof(S6_SUPERVISE_CTLDIR)] ;
+  char srcfn[srclen + 17] ;
+  char tmpfn[dstlen + 21] ;
+  byte_copy(dstfn, dstlen, dst) ;
+  byte_copy(srcfn, srclen, src) ;
+
+  byte_copy(dstfn + dstlen, 6, "/down") ;
+  fd = open_trunc(dstfn) ;
+  if (fd < 0) strerr_warnwu2sys("touch ", dstfn) ;
+  else close(fd) ;
+  byte_copy(dstfn + dstlen + 1, 5, "data") ;
+  byte_copy(tmpfn, dstlen + 5, dstfn) ;
+  byte_copy(tmpfn + dstlen + 5, 5, ".old") ;
+  if (rename(dstfn, tmpfn) < 0)
+  {
+    if (errno == ENOENT) hasdata = 0 ;
+    else goto err ;
+  }
+  byte_copy(dstfn + dstlen + 1, 4, "env") ;
+  byte_copy(tmpfn + dstlen + 1, 8, "env.old") ;
+  if (rename(dstfn, tmpfn) < 0)
+  {
+    if (errno == ENOENT) hasenv = 0 ;
+    else goto err ;
+  }
+  byte_copy(dstfn + dstlen + 1, 9, "nosetsid") ;
+  if (unlink(dstfn) < 0 && errno != ENOENT) goto err ;
+  byte_copy(dstfn + dstlen + 3, 14, "tification-fd") ;
+  if (unlink(dstfn) < 0 && errno != ENOENT) goto err ;
+
+  byte_copy(srcfn + srclen, 17, "/notification-fd") ;
+  hiercopy(srcfn, dstfn) ;
+  byte_copy(srcfn + srclen + 3, 7, "setsid") ;
+  byte_copy(dstfn + dstlen + 3, 7, "setsid") ;
+  hiercopy(srcfn, dstfn) ;
+  byte_copy(srcfn + srclen + 1, 5, "data") ;
+  byte_copy(dstfn + dstlen + 1, 5, "data") ;
+  hiercopy(srcfn, dstfn) ;
+  byte_copy(srcfn + srclen + 1, 4, "env") ;
+  byte_copy(dstfn + dstlen + 1, 4, "env") ;
+  hiercopy(srcfn, dstfn) ;
+  byte_copy(srcfn + srclen + 1, 4, "run") ;
+  byte_copy(dstfn + dstlen + 1, 4, "run") ;
+  if (!hiercopy(srcfn, dstfn)) goto err ;
+  byte_copy(srcfn + srclen + 1, 4, "run") ;
+  byte_copy(dstfn + dstlen + 1, 4, "finish") ;
+  hiercopy(srcfn, dstfn) ;
+  if (h)
+  {
+    byte_copy(dstfn + dstlen + 1, 5, "down") ;
+    if (unlink(dstfn) < 0)
+    {
+      strerr_warnwu2sys("unlink ", dstfn) ;
+      ok = 0 ;
+    }
+    byte_copy(dstfn + dstlen + 1, 8 + sizeof(S6_SUPERVISE_CTLDIR), S6_SUPERVISE_CTLDIR "/control") ;
+    s6_svc_write(dstfn, "u", 1) ;
+  }
+  byte_copy(dstfn + dstlen + 1, 9, "data.old") ;
+  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
+  byte_copy(dstfn + dstlen + 1, 8, "env.old") ;
+  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
+  return 1 ;
+
+ err:
+  if (h)
+  {
+    int e = errno ;
+    byte_copy(dstfn + dstlen + 1, 5, "down") ;
+    unlink(dstfn) ;
+    errno = e ;
+  }
+  return 0 ;
+}
+
+static int servicedir_name_change (char const *live, char const *oldname, char const *newname)
+{
+  unsigned int livelen = str_len(live) ;
+  unsigned int oldlen = str_len(oldname) ;
+  unsigned int newlen = str_len(oldname) ;
+  char oldfn[livelen + oldlen + 2] ;
+  char newfn[livelen + newlen + 2] ;
+  byte_copy(oldfn, livelen, live) ;
+  oldfn[livelen] = '/' ;
+  byte_copy(oldfn + livelen + 1, oldlen + 1, oldname) ;
+  byte_copy(newfn, livelen + 1, oldfn) ;
+  byte_copy(newfn + livelen + 1, newlen + 1, newname) ;
+  if (rename(oldfn, newfn) < 0) return 0 ;
+  return 1 ;
+} 
+
+static inline void update_servicedirs (unsigned char const *oldstate, unsigned int oldn, unsigned char const *newstate, unsigned int newn)
+{
+}
+
+static inline void update_state_and_compiled (unsigned char const *newstate, unsigned int newn, char const *newcompiled)
+{
+  char fn[livelen + 14] ;
+  byte_copy(fn, livelen, live) ;
+  byte_copy(fn + livelen, 7, "/state") ;
+  {
+    char tmpstate[newn] ;
+    unsigned int i = newn ;
+    while (i--) tmpstate[i] = newstate[i] & 1 ;
+    if (!openwritenclose_suffix(fn, tmpstate, newn, ".new"))
+      strerr_diefu2sys(112, "write ", fn) ;
+  }
+  byte_copy(fn + livelen + 1, 13, "compiled.new") ;
+  if (symlink(newcompiled, fn) < 0)
+    strerr_diefu4sys(112, "symlink ", newcompiled, " to ", fn) ;
+  {
+    char realfn[livelen + 10] ;
+    byte_copy(realfn, livelen + 9, fn) ;
+    realfn[livelen + 9] - 0 ;
+    if (rename(fn, realfn) < 0)
+      strerr_diefu4sys(112, "rename ", fn, " to ", realfn) ;
+  }
+}
+
 static unsigned int want_count (unsigned char const *state, unsigned int n)
 {
   unsigned int count = 0, i = n ;
@@ -303,8 +347,6 @@ static void fill_tfmt (char *tfmt, tain_t const *deadline)
 int main (int argc, char const *const *argv, char const *const *envp)
 {
   tain_t deadline ;
-  char const *live = S6RC_LIVE_BASE ;
-  unsigned int livelen ;
   int dryrun = 0 ;
   PROG = "s6-rc-update" ;
   strerr_dief1x(100, "this utility has not been written yet.") ;
@@ -320,7 +362,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
         case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
         case 'n' : dryrun = 1 ; break ;
-        case 'l' : live = l.arg ; break ;
+        case 'l' : live = l.arg ; livelen = str_len(live) ; break ;
         default : dieusage() ;
       }
     }
@@ -329,8 +371,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
     else deadline = tain_infinite_relative ;
   }
   if (argc < 2) dieusage() ;
-
-  livelen = str_len(live) ;
+  if (argv[0][0] != '/')
+    strerr_dief2x(100, argv[0], " is not an absolute directory") ;
 
   {
     int livelock ;
@@ -473,6 +515,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
       if (verbosity >= 2)
         strerr_warni1x("updating state and service directories") ;
+
+      update_servicedirs(oldstate, oldn, newstate, newn) ;
+      update_state_and_compiled(newstate, newn, argv[0]) ;
 
 
      /* Up transition */
