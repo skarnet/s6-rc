@@ -36,7 +36,7 @@ the current service database via
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-compile [ -v <em>verbosity</em> ] [ -u <em>uids</em> ] [ -g <em>gids</em> ] <em>compiled</em> <em>source...</em>
+     s6-rc-compile [ -v <em>verbosity</em> ] [ -u <em>uids</em> ] [ -g <em>gids</em> ] [ -h <em>fdhuser</em> ] <em>compiled</em> <em>source...</em>
 </pre>
 
 <ul>
@@ -46,7 +46,15 @@ it expects to find a valid service definition in <em>service</em>. </li>
  <li> s6-rc-compile outputs a compiled version of the service database
 into <em>compiled</em>. This database contains information for all the
 services declared in every <em>source</em> argument. </li>
- <li> s6-rc-compile exits 0. </li>
+</ul>
+
+<h2> Exit codes </h2>
+
+<ul>
+ <li> 0: success </li>
+ <li> 1: error in a source directory </li>
+ <li> 100: wrong usage </li>
+ <li> 111: system call failed </li>
 </ul>
 
 <h2> Options </h2>
@@ -64,6 +72,11 @@ numerical UIDs. </li>
 use this database with <a href="s6-rc.html">s6-rc</a> to start and
 stop services. <em>gids</em> must be a comma-separated list of
 numerical GIDs. </li>
+ <li> <tt>-h&nbsp;<em>fdhuser</em></tt>&nbsp;: arrange for the
+<a href="http://skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
+program, which maintains the pipes for the longrun pipelines, to run
+as user <em>fdhuser</em>. By default, it runs as the user owning
+the supervision tree, i.e. most likely <tt>root</tt>. </li>
 </ul>
 
 <p>
@@ -85,7 +98,8 @@ duplicated and cannot contain a slash or a newline; they can
 contain spaces and tabs, but using anything else than alphanumerical
 characters, underscores and dashes is discouraged - the s6-rc programs
 will handle weird names just fine, but other tools, especially
-shell scripts, may not.
+shell scripts, may not. Names are also forbidden to use the reserved
+<tt>s6rc-</tt> and <tt>s6-rc-</tt> prefixes.
 </p>
 
 <p>
@@ -221,15 +235,16 @@ directory</a>, but there are a few differences:
  <li> s6-rc-compile crafts the servicedir itself, based on what it
 finds in the service definition directory. It does not copy everything
 directly from the definition directory to the servicedir; only two
-subdirectories will be copied as is, <tt>data</tt> and <tt>env</tt>.
+subdirectories will be copied verbatim, <tt>data</tt> and <tt>env</tt>.
 So if you want to store service configuration data, to be used
 by the run script, in the service directory, make sure it is in a
 <tt>data/</tt> or <tt>env/</tt> subdirectory. </li>
  <li> Definition directories cannot have a <tt>log</tt> subdirectory -
 or if they do, it will be ignored. From s6-rc-compile's point of view,
 logged s6 services must actually be defined as <em>two</em> separate
-s6-rc services, one for the producer and one for the logger; there is
-specific syntax to link those two services. </li>
+s6-rc services, one defined as a producer and one defined as a consumer,
+making a pipeline of just two services; see below for more information
+about pipelines. </li>
 </ul>
 
 <p>
@@ -243,16 +258,23 @@ files will be copied, or recreated, in the generated
 <a href="http://skarnet.org/software/s6/servicedir.html">service directory</a>.
  <li> Optional directories named <tt>data</tt> and <tt>env</tt>. These will
 be copied verbatim into the generated service directory. </li>
- <li> An optional file named <tt>logger</tt>. If this file exists, then
-<em>service</em> will be flagged as a producer, and the file must
-contain the name of another longrun service <em>servicelog</em>, which will
-be declared as a logger for <em>service</em>. <em>service</em> must also
-be declared as a producer in <em>servicelog</em>'s definition directory. </li>
- <li> An optional file named <tt>producer</tt>. If this file exists, then
-<em>service</em> will be flagged as a logger, and the file must
-contain the name of another longrun service <em>serviceprod</em>, which will
-be declared as a producer for <em>service</em>. <em>service</em> must also
-be declared as a logger in <em>serviceprod</em>'s definition directory. </li>
+ <li> An optional file named <tt>producer-for</tt>. If this file exists, then
+it must contain the name of another longrun service <em>servicelog</em>;
+<em>service</em> is then declared as a producer for <em>servicelog</em>.
+<em>servicelog</em> must also, in its own definition directory,
+be declared as a consumer for <em>service</em>. </li>
+ <li> An optional file named <tt>consumer-for</tt>. If this file exists, then
+it must contain the name of another longrun service <em>serviceprod</em>;
+<em>service</em> is then declared as a consumer for <em>serviceprod</em>.
+<em>serviceprod</em> must also, in its own definition directory,
+be declared as a producer for <em>service</em>. </li>
+ <li> An optional file named <tt>pipeline-name</tt>. If this file exists
+along with a <tt>producer-for</tt> file, and there is no
+<tt>consumer-for</tt> file, then a bundle will automatically be
+created, named with the content of the <tt>pipeline-name</tt> file, and
+containing all the services in the pipeline that starts at <em>service</em>.
+See below for more about pipelining. The <tt>pipeline-name</tt> file
+is ignored if <em>service</em> is not a first producer. </li>
 </ul>
 
 <p>
@@ -271,25 +293,59 @@ services that are down.
 </p>
 
 <p>
- The <tt>logger</tt> and <tt>producer</tt> files are support for logged services:
-A service defined as a logger for producer <em>p</em> will have its s6 service
-directory set to <em>p</em><tt>/log</tt>. Logged service definitions must be consistent:
+ The <tt>producer-for</tt>, <tt>consumer-for</tt> and <tt>pipeline-name</tt>
+files are used to set up automatic longrun pipelining.
+</p>
+
+<h3> Longrun pipelining </h3>
+
+<p>
+ Users of supervision suites know about logged services: a service acts
+as a producer, and is coupled with another service, its logger; the
+supervision system automatically maintains an open pipe between the
+producer's stdout and the logger's stdin.
+</p>
+
+<p>
+ s6-rc comes with an extension of this mechanism. Rather than only
+allowing two longrun services to be pipelined, it can set up an
+indefinite number of longrun services this way.
 </p>
 
 <ul>
- <li> It is impossible to have a both a <tt>logger</tt> and a <tt>producer</tt> file
-in the same definition directory: loggers cannot have loggers, producers cannot have
-producers. </li>
- <li> The logger must be declared in the <tt>logger</tt> file in its producer's
-definition directory, and the producer must be declared in the <tt>producer</tt> file
-in its logger's definition directory. If it sees an inconsistency, s6-rc-compile
-will complain and exit 1. </li>
- <li> The producer will automatically have a dependency to its logger (because,
-as much as systemd would have you believe the opposite, it is
-not safe to start a service while its logger is not up). This means that a
-<a href="s6-rc.html">s6-rc change</a> command to start the service will
-automatically start the logger beforehand if it's not already up. </li>
+ <li> The first producer declares its direct consumer in a <tt>producer-for</tt> file. </li>
+ <li> Intermediate services declare both their direct producer in their
+<tt>consumer-for</tt> file, and their direct consumer in their
+<tt>producer-for</tt> file. </li>
+ <li> The last consumer only declares its direct producer in a <tt>consumer-for</tt> file. </li>
+ <li> The first producer may declare a name for the whole pipeline, in
+its <tt>pipeline-name</tt> file. If it does so, then a bundle is automatically
+created with
+the given name, and it contains all the services in the pipeline (plus the
+automatically generated supporting services that open and store the
+pipes). </li>
 </ul>
+
+<p>
+ s6-rc-compile will detect pipelines, and set up the service directories
+so that every producer's stdout is connected to its consumer's stdin, and
+that the pipes are not broken whenever one element in the chain dies.
+</p>
+
+<p>
+ s6-rc-compile checks for pipeline consistency. It must see a
+<tt>producer-for</tt> file in the producer's definition that is consistent
+with the <tt>consumer-for</tt> file in the consumer's definition. It will
+detect and reject cycles as well as collisions.
+</p>
+
+<p>
+ The pipe linking a producer and a consumer is created by an automatically
+generated oneshot service that both the producer and consumer depend on,
+and stored in a
+<a href="http://skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
+instance created by an automatically generated longrun service.
+</p>
 
 <h2> A complete example </h2>
 

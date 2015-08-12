@@ -90,9 +90,8 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
 #endif
     if (i < db->nlong)
     {
-      if (!s6rc_db_read_uint32(b, &sv->x.longrun.servicedir)) return -1 ;
-      DBG("  longrun - servicedir is %u: %s", sv->x.longrun.servicedir, db->string + sv->x.longrun.servicedir) ;
-      if (!s6rc_db_check_valid_string(db->string, db->stringlen, sv->x.longrun.servicedir)) return 0 ;
+      if (!s6rc_db_read_uint32(b, &sv->x.longrun.pipeline[0])) return -1 ;
+      if (!s6rc_db_read_uint32(b, &sv->x.longrun.pipeline[1])) return -1 ;
     }
     else
     {

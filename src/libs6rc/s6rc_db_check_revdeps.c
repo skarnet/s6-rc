@@ -1,6 +1,5 @@
 /* ISC license. */
 
-#include <skalibs/uint32.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/bitarray.h>
 #include <s6-rc/s6rc-db.h>
@@ -25,6 +24,6 @@ int s6rc_db_check_revdeps (s6rc_db_t const *db)
     while (j--) bitarray_not(matrix + m * db->deps[db->services[i].deps[0] + j], i, 1) ;
   }
   i = n * m ;
-  while (i--) if (*p++) return 0 ;
-  return 1 ;
+  while (i--) if (*p++) return 1 ;
+  return 0 ;
 }

@@ -43,7 +43,7 @@ operation.
      s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] timeout <em>atomicname</em>
      s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] contents <em>bundlename</em>
      s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] dependencies <em>servicename</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] servicedir <em>longrunname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] pipeline <em>longrunname</em>
      s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] script <em>oneshotname</em>
      s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] flags <em>atomicname</em>
      s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] atomics <em>servicename...</em>
@@ -54,9 +54,8 @@ operation.
  <li> s6-rc-db expects to find a <em>compiled service database</em>
 in <em>compiled</em>; by default it uses the service database
 used by the live state in <em>live</em>.
-It reads and parses the compiled database it finds. If the
-database is invalid, it exits 4. </li>
- <li> Depending on the arguments given, it prints the requested
+It reads and parses the compiled database it finds; depending on
+its arguments, it prints the requested
 information to stdout, then exits 0. </li>
 </ul>
 
@@ -76,6 +75,17 @@ select the "up" data. This option is ignored when it is irrelevant. </li>
  <li> <tt>-d</tt>&nbsp;: for commands that use different data
 depending on whether it's about bringing the service up or down,
 select the "down" data. This option is ignored when it is irrelevant. </li>
+</ul>
+
+<h2> Exit codes </h2>
+
+<ul>
+ <li> 0: success </li>
+ <li> 3: identifier not found in service database </li>
+ <li> 4: invalid or corrupted service database </li>
+ <li> 5: wrong identifier type for the given command </li>
+ <li> 100: wrong usage </li>
+ <li> 111: system call failed </li>
 </ul>
 
 <h2> Subcommands </h2>
@@ -134,8 +144,7 @@ dependency tables, or a dependency cycle.
 
 <p>
  Prints the type of <em>servicename</em>: <tt>oneshot</tt>, <tt>longrun</tt>
-or <tt>bundle</tt>. Exits 1 if
-<em>servicename</em> is not a valid identifier in the database.
+or <tt>bundle</tt>.
 </p>
 
 <h3> s6-rc-db timeout <em>atomicname</em> </h3>
@@ -143,8 +152,8 @@ or <tt>bundle</tt>. Exits 1 if
 <p>
  Prints the timeout value, in milliseconds, after which bringing
 <em>atomicname</em> up or down is considered a failure if the
-called script still has not succeeded. Exits 1 if <em>atomicname</em>
-isn't a valid atomic service. By default, or if the <tt>-u</tt>
+called script still has not succeeded.
+By default, or if the <tt>-u</tt>
 option has been given to s6-rc-db, the timeout for <em>up</em> is
 printed; the timeout for <em>down</em> is printed instead if the
 <tt>-d</tt> option has been given.
@@ -154,14 +163,12 @@ printed; the timeout for <em>down</em> is printed instead if the
 
 <p>
  Lists the atomic services represented by bundle <em>bundlename</em>.
-Exits 1 if <em>bundlename</em> is not a valid bundle.
 </p>
 
 <h3> s6-rc-db dependencies <em>servicename</em> </h3>
 
 <p>
- Prints the list of direct dependencies for <em>servicename</em>.
-Exits 1 if <em>servicename</em> isn't a valid identifier. If
+ Prints the list of direct dependencies for <em>servicename</em>. If
 <em>servicename</em> is a bundle, its set of direct dependencies
 is the union of the direct dependencies of all the atomic services
 contained in the bundle.
@@ -174,12 +181,13 @@ depend on <em>servicename</em>, or on one of its components if it
 is a bundle.
 </p>
 
-<h3> s6-rc-db servicedir <em>longrunname</em> </h3>
+<h3> s6-rc-db pipeline <em>longrunname</em> </h3>
 
 <p>
- Prints the service directory for longrun service <em>longrunname</em>;
-this value is <em>relative to the scandir</em>. Exits 1 if
-<em>longrunname</em> is not a valid longrun.
+ Prints the longrun service pipeline <em>longrunname</em> is a
+part of, one service per line, producers before consumers.
+If <em>longrunname</em> isn't
+part of a pipeline, only <em>longrunname</em> is printed.
 </p>
 
 <h3> s6-rc-db script <em>oneshotname</em> </h3>
@@ -190,8 +198,7 @@ an <em>argv</em>, i.e. a Unix command line. Each component of this
 command line is
 <strong>terminated by a null character</strong>, so to print it in
 a human-readable format, pipe the output into something like
-<tt>xargs -0 echo</tt>. The command exits 1 if <em>oneshotname</em>
-is not a valid oneshot.
+<tt>xargs -0 echo</tt>.
 </p>
 
 <p>
@@ -203,8 +210,7 @@ is not a valid oneshot.
 
 <p>
  Prints a hexadecimal number that is the list of all binary flags
-for atomic service <em>atomicname</em>. Exits 1 if <em>atomicname</em>
-is not a valid atomic service.
+for atomic service <em>atomicname</em>.
 </p>
 
 <p>
@@ -219,8 +225,7 @@ future version of s6-rc.
 <em>servicename...</em> arguments, i.e. the union of all
 atomic services contained in <em>servicename...</em>. Each
 argument in <em>servicename...</em> can be an atomic service or
-a bundle. If an argument isn't a valid identifier, the command
-exits 1.
+a bundle.
 </p>
 
 <h3> s6-rc-db all-dependencies <em>servicename...</em> </h3>
@@ -232,8 +237,7 @@ dependencies, recursively. In other words: for
 <em>servicename...</em> to be up, every single service listed
 in the output will need to be up. The output includes the
 atomic services represented by the
-<em>servicename...</em> arguments themselves. If one of those
-arguments isn't a valid identifier, the command exits 1.
+<em>servicename...</em> arguments themselves.
 </p>
 
 <p>

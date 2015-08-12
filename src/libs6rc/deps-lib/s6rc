@@ -1,6 +1,8 @@
 s6rc_db_check_depcycles.o
+s6rc_db_check_pipelines.o
+s6rc_db_check_revdeps.o
 s6rc_db_read.o
 s6rc_db_read_sizes.o
 s6rc_db_read_uint32.o
-s6rc_db_check_revdeps.o
 s6rc_graph_closure.o
+-lskarnet

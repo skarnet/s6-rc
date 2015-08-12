@@ -59,6 +59,18 @@ information to stdout, then exits 0; or it performs a machine
 state change. </li>
 </ul>
 
+<h2> Exit codes </h2>
+
+<ul>
+ <li> 0: success </li>
+ <li> 1: some of the state transitions could not be performed </li>
+ <li> 2: timed out during state change </li>
+ <li> 3: unknown service name in the arguments </li>
+ <li> 4: invalid service database </li>
+ <li> 100: wrong usage </li>
+ <li> 111: system call failed </li>
+</ul>
+
 <h2> Service selection </h2>
 
 <p>

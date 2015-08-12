@@ -121,7 +121,7 @@ static pid_t start_oneshot (unsigned int i, int h)
 
 static pid_t start_longrun (unsigned int i, int h)
 {
-  unsigned int svdlen = str_len(db->string + db->services[i].x.longrun.servicedir) ;
+  unsigned int svdlen = str_len(db->string + db->services[i].name) ;
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
@@ -129,7 +129,7 @@ static pid_t start_longrun (unsigned int i, int h)
   char const *newargv[7 + !!dryrun[0] * 6] ;
   byte_copy(servicefn, livelen, live) ;
   byte_copy(servicefn + livelen, 9, "/scandir/") ;
-  byte_copy(servicefn + livelen + 9, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
+  byte_copy(servicefn + livelen + 9, svdlen, db->string + db->services[i].name) ;
   if (h)
   {
     byte_copy(servicefn + livelen + 9 + svdlen, 17, "/notification-fd") ;
@@ -166,11 +166,11 @@ static void success_longrun (unsigned int i, int h)
 {
   if (!dryrun[0])
   {
-    unsigned int svdlen = str_len(db->string + db->services[i].x.longrun.servicedir) ;
+    unsigned int svdlen = str_len(db->string + db->services[i].name) ;
     char fn[livelen + svdlen + 15] ;
     byte_copy(fn, livelen, live) ;
     byte_copy(fn + livelen, 9, "/scandir/") ;
-    byte_copy(fn + livelen + 9, svdlen, db->string + db->services[i].x.longrun.servicedir) ;
+    byte_copy(fn + livelen + 9, svdlen, db->string + db->services[i].name) ;
     byte_copy(fn + livelen + 9 + svdlen, 6, "/down") ;
     if (h)
     {

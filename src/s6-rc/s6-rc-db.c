@@ -180,16 +180,6 @@ static void print_timeout (char const *name, int h)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static void print_servicedir (char const *name)
-{
-  unsigned int n = resolve_service(name) ;
-  if (n >= db->nlong)
-    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " does not represent a longrun service") ;
-  if (buffer_puts(buffer_1, db->string + db->services[n].x.longrun.servicedir) < 0
-   || buffer_putflush(buffer_1, "\n", 1) < 0)
-    strerr_diefu1sys(111, "write to stdout") ;
-}
-
 static void print_script (char const *name, int h)
 {
   unsigned int argc ;
@@ -206,6 +196,30 @@ static void print_script (char const *name, int h)
      || buffer_put(buffer_1, "\0", 1) < 0)
       strerr_diefu1sys(111, "write to stdout") ;
   if (!buffer_flush(buffer_1))
+    strerr_diefu1sys(111, "write to stdout") ;
+}
+
+static inline void print_pipeline (char const *name)
+{
+  unsigned int n = resolve_service(name) ;
+  if (n >= db->nlong)
+    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " does not represent a longrun") ;
+  for (;;)
+  {
+    register unsigned int j = db->services[n].x.longrun.pipeline[0] ;
+    if (j >= db->nlong) break ;
+    n = j ;
+  }
+  for (;;)
+  {
+    register unsigned int j = db->services[n].x.longrun.pipeline[1] ;
+    if (buffer_puts(buffer_1, db->string + db->services[n].name) < 0
+     || buffer_put(buffer_1, "\n", 1) < 0)
+      strerr_diefu1sys(111, "write to stdout") ;
+    if (j >= db->nlong) break ;
+    n = j ;
+  }
+  if (buffer_flush(buffer_1))
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
@@ -278,7 +292,7 @@ static inline void print_help (void)
 "s6-rc-db [ -u | -d ] timeout atomicname\n"
 "s6-rc-db contents bundlename\n"
 "s6-rc-db [ -u | -d ] dependencies servicename...\n"
-"s6-rc-db servicedir longrunname\n"
+"s6-rc-db pipeline longrunname\n"
 "s6-rc-db [ -u | -d ] script oneshotname\n"
 "s6-rc-db flags atomicname\n"
 "s6-rc-db atomics servicename...\n"
@@ -305,7 +319,7 @@ static inline unsigned int parse_command (char const *command)
     "timeout",
     "contents",
     "dependencies",
-    "servicedir",
+    "pipeline",
     "script",
     "flags",
     "atomics",
@@ -421,11 +435,19 @@ int main (int argc, char const *const *argv)
       {
         case 1 : /* check */
         {
-          unsigned int problem, w ;
-          if (!s6rc_db_check_revdeps(&dbblob))
+          diuint32 problem ;
+          if (s6rc_db_check_revdeps(&dbblob))
             strerr_dief3x(4, "invalid service database in ", compiled, ": direct and reverse dependencies are mismatched") ;
-          w = s6rc_db_check_depcycles(&dbblob, 1, &problem) ;
-          if (w < n) strerr_dief6x(4, "invalid service database in ", compiled, ": service ", stringblob + serviceblob[w].name, " has a dependency cycle involving ", stringblob + serviceblob[problem].name) ;
+          if (s6rc_db_check_depcycles(&dbblob, 1, &problem))
+            strerr_dief8x(4, "invalid service database in ", compiled, ": dependency ", "cycle", " involving ", stringblob + serviceblob[problem.left].name, " and ", stringblob + serviceblob[problem.right].name) ;
+          r = s6rc_db_check_pipelines(&dbblob, &problem) ;
+          if (r)
+          {
+            if (r == 1)
+              strerr_dief8x(4, "invalid service database in ", compiled, ": pipeline ", "cycle", " involving ", stringblob + serviceblob[problem.left].name, " and ", stringblob + serviceblob[problem.right].name) ;
+            else
+              strerr_dief8x(4, "invalid service database in ", compiled, ": pipeline ", "collision", " involving ", stringblob + serviceblob[problem.left].name, " and ", stringblob + serviceblob[problem.right].name) ;
+          }
           break ;
         }
         case 2 : /* list */
@@ -450,8 +472,8 @@ int main (int argc, char const *const *argv)
         case 6 : /* dependencies */
           print_union(argv + 1, up, 1, 0) ;
           break ;
-        case 7 : /* servicedir */
-          print_servicedir(argv[1]) ;
+        case 7 : /* pipeline */
+          print_pipeline(argv[1]) ;
           break ;
         case 8 : /* script */
           print_script(argv[1], up) ;

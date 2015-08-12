@@ -8,19 +8,6 @@ s6-rc-init \
 s6-rc \
 s6-rc-update
 
-
 LIBEXEC_TARGETS :=
 
-ifdef DO_ALLSTATIC
-LIBS6RC := libs6rc.a
-else
-LIBS6RC := libs6rc.so
-endif
-
-ifdef DO_SHARED
-SHARED_LIBS := libs6rc.so
-endif
-
-ifdef DO_STATIC
-STATIC_LIBS := libs6rc.a
-endif
+LIB_DEFS := S6RC=s6rc

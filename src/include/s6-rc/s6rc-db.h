@@ -4,6 +4,7 @@
 #define S6RC_DB_H
 
 #include <skalibs/uint32.h>
+#include <skalibs/diuint32.h>
 #include <skalibs/buffer.h>
 
 #define S6RC_DB_BANNER_START "s6rc-db: start\n"
@@ -22,7 +23,7 @@ struct s6rc_oneshot_s
 typedef struct s6rc_longrun_s s6rc_longrun_t, *s6rc_longrun_t_ref ;
 struct s6rc_longrun_s
 {
-  uint32 servicedir ;
+  uint32 pipeline[2] ;
 } ;
 
 typedef union s6rc_longshot_u s6rc_longshot_t, *s6rc_longshot_t_ref ;
@@ -62,7 +63,8 @@ extern int s6rc_db_read_uint32 (buffer *, uint32 *) ;
 extern int s6rc_db_read_sizes (int, s6rc_db_t *) ;
 extern int s6rc_db_read (int, s6rc_db_t *) ;
 
-extern unsigned int s6rc_db_check_depcycles (s6rc_db_t const *, int, unsigned int *) ;
+extern int s6rc_db_check_pipelines (s6rc_db_t const *, diuint32 *) ;
+extern int s6rc_db_check_depcycles (s6rc_db_t const *, int, diuint32 *) ;
 extern int s6rc_db_check_revdeps (s6rc_db_t const *) ;
 
 #endif
