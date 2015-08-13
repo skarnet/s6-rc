@@ -276,6 +276,7 @@ static unsigned int add_internal_oneshot (before_t *be, char const *name, char c
    || !stralloc_catb(&keep, ups, upn)) dienomem() ;
   add_name_nocheck(be, S6RC_INTERNALS, name, SVTYPE_ONESHOT, &pos, &service.common.kname) ;
   if (!genalloc_append(oneshot_t, &be->oneshots, &service)) dienomem() ;
+  be->nargvs += service.argc[0] + service.argc[1] + 2 ;
   return pos ;
 }
 
@@ -296,32 +297,32 @@ static unsigned int add_storepipe (before_t *be, char const *name)
   add_word("0") ;
   add_word("1") ;
   add_word(EXECLINE_EXTBINPREFIX "if") ;
-  add_word(" " S6_EXTBINPREFIX "s6-fdholder-store") ;
-  add_word(" ../s6rc-fdholder/s") ;
-  add_word(" pipe:s6rc-r-") ; satmp.len-- ; add_word(name) ;
-  add_word("") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-store") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-r-") ; satmp.len-- ; add_word(name) ;
+  add_word(EXECLINE_BLOCK_END_STRING) ;
   add_word(EXECLINE_EXTBINPREFIX "if") ;
   add_word("-nt") ;
-  add_word(" " S6_EXTBINPREFIX "s6-fdholder-store") ;
-  add_word(" -d1") ;
-  add_word(" ./s6rc-fdholder/s") ;
-  add_word(" pipe:s6rc-w-") ; satmp.len-- ; add_word(name) ;
-  add_word("") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-store") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "-d1") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-w-") ; satmp.len-- ; add_word(name) ;
+  add_word(EXECLINE_BLOCK_END_STRING) ;
   add_word(EXECLINE_EXTBINPREFIX "exit") ;
   add_word("1") ;
 
   sep = satmp.len ;
 
   add_word(EXECLINE_EXTBINPREFIX "foreground") ;
-  add_word(" " S6_EXTBINPREFIX "s6-fdholder-delete") ;
-  add_word(" ../s6rc-fdholder/s") ;
-  add_word(" pipe:s6rc-w-") ; satmp.len-- ; add_word(name) ;
-  add_word("") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-delete") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-w-") ; satmp.len-- ; add_word(name) ;
+  add_word(EXECLINE_BLOCK_END_STRING) ;
   add_word(EXECLINE_EXTBINPREFIX "foreground") ;
-  add_word(" " S6_EXTBINPREFIX "s6-fdholder-delete") ;
-  add_word(" ../s6rc-fdholder/s") ;
-  add_word(" pipe:s6rc-r-") ; satmp.len-- ; add_word(name) ;
-  add_word("") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-delete") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
+  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-r-") ; satmp.len-- ; add_word(name) ;
+  add_word(EXECLINE_BLOCK_END_STRING) ;
   add_word(EXECLINE_EXTBINPREFIX "exit") ;
   add_word("0") ;
 
@@ -513,16 +514,12 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
   }
   if (add_namelist(be, dirfd, srcdir, name, "consumer-for", &relatedindex, &n))
   {
-    unsigned int namelen = str_len(name) ;
-    char svname[16 + namelen] ;
     if (n != 1)
       strerr_dief5x(1, srcdir, "/", name, "/consumer-for", " should only contain one service name") ;
     service.pipeline[0] = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
-    byte_copy(svname, 15, "s6rc-storepipe-") ;
-    byte_copy(svname + 15, namelen + 1, name) ;
     if (verbosity >= 3)
       strerr_warni3x(name, " is a consumer for ", data.s + service.pipeline[0]) ;
-    n = add_storepipe(be, svname) ;
+    n = add_storepipe(be, name) ;
     genalloc_s(unsigned int, &be->indices)[relatedindex] = n ;
     service.common.ndeps++ ;
     fd = 0 ;
@@ -1223,7 +1220,7 @@ static inline void write_run_wrapper (char const *compiled, char const *fn, s6rc
   if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) dienomem() ;
   if (db->services[i].x.longrun.pipeline[0] < db->nlong)
   {
-    if (!stralloc_cats(&satmp, EXECLINE_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-r-")
+    if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-r-")
      || !string_quote_nodelim(&satmp, db->string + db->services[i].name, str_len(db->string + db->services[i].name))
      || !stralloc_cats(&satmp, "\"\n")) dienomem() ;
   }
@@ -1233,7 +1230,7 @@ static inline void write_run_wrapper (char const *compiled, char const *fn, s6rc
     if (!stralloc_cats(&satmp, EXECLINE_EXTBINPREFIX "fdmove ")
      || !stralloc_cats(&satmp, fd == 3 ? "4" : "3")
      || !stralloc_cats(&satmp, " 0\n"
-      EXECLINE_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-w-")
+      S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-w-")
      || !string_quote_nodelim(&satmp, consumername, str_len(consumername))
      || !stralloc_cats(&satmp, "\"\n"
       EXECLINE_EXTBINPREFIX "fdmove 1 0\n"

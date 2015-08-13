@@ -50,13 +50,13 @@ static inline int s6rc_db_read_deps (buffer *b, unsigned int max, uint32 *deps, 
 static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
 {
   unsigned int n = db->nshort + db->nlong ;
-  s6rc_service_t *sv = db->services ;
   unsigned int nargvs = db->nargvs ;
   unsigned int argvpos = 0 ;
   register unsigned int i = 0 ;
   for (; i < n ; i++)
   {
-    DBG("iteration %u/%u remaining", i+1, n) ;
+    s6rc_service_t *sv = db->services + i ;
+    DBG("service %u/%u", i, n) ;
     if (!s6rc_db_read_uint32(b, &sv->name)) return -1 ;
     DBG("  name is %u: %s", sv->name, db->string + sv->name) ;
     if (sv->name >= db->stringlen) return 0 ;
@@ -95,21 +95,21 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
     }
     else
     {
-      unsigned int i = 0 ;
+      unsigned int j = 0 ;
       DBG("  oneshot") ;
-      for (; i < 2 ; i++)
+      for (; j < 2 ; j++)
       {
         uint32 pos, argc ;
         if (!s6rc_db_read_uint32(b, &argc)) return -1 ;
-        DBG("    argc[%u] is %u, nargvs is %u", i, argc, nargvs) ;
+        DBG("    argc[%u] is %u, nargvs is %u", j, argc, nargvs) ;
         if (argc > nargvs) return 0 ;
         if (!s6rc_db_read_uint32(b, &pos)) return -1 ;
-        DBG("    pos[%u] is %u", i, pos) ;
+        DBG("    pos[%u] is %u", j, pos) ;
         if (!s6rc_db_check_valid_strings(db->string, db->stringlen, pos, argc)) return 0 ;
         if (!env_make((char const **)db->argvs + argvpos, argc, db->string + pos, db->stringlen - pos)) return -1 ;
         DBG("    first arg is %s", db->argvs[argvpos]) ;
-        sv->x.oneshot.argv[i] = argvpos ;
-        sv->x.oneshot.argc[i] = argc ;
+        sv->x.oneshot.argv[j] = argvpos ;
+        sv->x.oneshot.argc[j] = argc ;
         argvpos += argc ; nargvs -= argc ;
         if (!nargvs--) return 0 ; db->argvs[argvpos++] = 0 ;
       }
@@ -119,7 +119,6 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
       if (buffer_get(b, &c, 1) < 1) return -1 ;
       if (c != '\376') return 0 ;
     }
-    sv++ ;
   }
   if (nargvs) return 0 ;
   return 1 ;
