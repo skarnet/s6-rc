@@ -35,7 +35,7 @@ invocation of the
  <li> <em>compiled</em>, <em>live</em> and <em>scandir</em> must be
 absolute paths. </li>
  <li> s6-rc-init expects to find a <em>compiled service database</em>
-in <em>compiled</tt>. It expects to be able to create a directory
+in <em>compiled</em>. It expects to be able to create a directory
 at <em>live</em>. It also expects that an instance of
 <a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
 is running on <em>scandir</em>. </li>
@@ -48,11 +48,12 @@ subdirectory of <em>live</em>, adds down files to the live copies
 and links them into <em>scandir</em>. It then triggers
 <a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>,
 which will pick up the new service directories and start
-http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
 processes on them - but the service themselves will not be started
 right away, because of the down files. </li>
  <li> s6-rc-init waits for all s6-supervise processes to be
 operational, then exits 0. </li>
+</ul>
 
 <h2> Options </h2>
 
@@ -70,7 +71,9 @@ Default is <tt>/etc/s6-rc/compiled</tt>. </li>
 the <em>live</em> directory, which should not exist prior to running
 s6-rc-init, but should be under a writable filesystem - likely a RAM
 filesystem. Default is
-<tt>/run/s6-rc</tt>. </li>
+<tt>/run/s6-rc</tt>. The default can be changed at compile time by
+giving the <tt>--livedir=<em>live</em></tt> option to
+<tt>./configure</tt>. </li>
 </ul>
 
 <h2> Typical usage </h2>

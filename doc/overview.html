@@ -42,7 +42,7 @@ means bringing services up, or bringing services down.
 <p>
  Supervision suites manage <em>long-lived processes</em>, a.k.a
 <em>daemons</em>, and sometimes call them <em>services</em>.
-With s6-rc, those things are different: a long-lived process is
+With s6-rc, things are a little different: a long-lived process is
 also called a <em>longrun</em> and is a service, but a service
 does not have to be a longrun. There is a second kind of service,
 which is called a <em>oneshot</em>, and which represents a change
@@ -85,12 +85,13 @@ are both oneshots, both longruns, or a oneshot and a longrun.
 </p>
 
 <p>
- s6-rc also handles an additional kind of service: a <em>bundle</em>.
-A bundle is just a collection of oneshots or longruns, described
+ Oneshots and longruns are called <em>atomic services</em>.
+By opposition to atomic services, s6-rc also handles an
+additional kind of service that it calls a <em>bundle</em>.
+A bundle is just a collection of atomic services, described
 under a single name. A bundle definition can even contain other
 bundles, but ultimately a bundle will always represent a set of one
-or more oneshots or longruns. A oneshot or longrun is called an
-<em>atomic service</em>.
+or more atomic services.
 Bundle names can be used anywhere with the s6-rc user
 interface, and they will internally be converted to a set of
 atomic services. An atomic service can depend on a bundle: it will
@@ -147,8 +148,8 @@ supervision tree is up and running. s6-rc will only work
 if there is an active
 <a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
 process monitoring a
-<a href="http://skarnet.org/software/s6/scandir.html">scan</a>
-directory. On Linux, for instance, it is possible to achieve such a state
+<a href="http://skarnet.org/software/s6/scandir.html">scan
+directory</a>. On Linux, for instance, it is possible to achieve such a state
 by using an init created by the
 <a href="http://skarnet.org/software/s6-linux-init/s6-linux-init-maker.html">s6-linux-init-maker</a>
 tool: when control reaches stage 2, s6-svscan is guaranteed to run,

@@ -19,6 +19,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
 #include <s6/config.h>
+#include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
 #define USAGE "s6-rc-db [ -u | -d ] [ -l live ] [ -c compiled ] command... (use s6-rc-db help for more information)"

@@ -66,12 +66,15 @@ information to stdout, then exits 0. </li>
 compiled service database in <em>compiled</em> instead of
 the current live one. </li>
  <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: assume the live
-state is in <em>live</em>. Default is
-<tt>/run/s6-rc</tt>. This option is ignored if the
-<tt>-c</tt> option has been given. </li>
+state is in <em>live</em>. This option is ignored if the
+<tt>-c</tt> option has been given. Default is
+<tt>/run/s6-rc</tt>. The default can be changed at package
+compilation time, by giving the <tt>--livedir=<em>live</em></tt>
+option to <tt>./configure</tt>. </li>
  <li> <tt>-u</tt>&nbsp;: for commands that use different data
 depending on whether it's about bringing the service up or down,
-select the "up" data. This option is ignored when it is irrelevant. </li>
+select the "up" data (this is the default). This option is
+ignored when it is irrelevant. </li>
  <li> <tt>-d</tt>&nbsp;: for commands that use different data
 depending on whether it's about bringing the service up or down,
 select the "down" data. This option is ignored when it is irrelevant. </li>

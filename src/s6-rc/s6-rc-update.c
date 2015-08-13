@@ -393,7 +393,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
   tain_t deadline ;
   int dryrun = 0 ;
   PROG = "s6-rc-update" ;
-  strerr_dief1x(100, "this utility has not been written yet.") ;
+  strerr_dief1x(100, "will you please stop trying to run this? It's not ready!") ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;

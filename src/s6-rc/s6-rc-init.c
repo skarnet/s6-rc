@@ -14,6 +14,7 @@
 #include <s6/s6-supervise.h>
 #include <s6/ftrigw.h>
 #include <s6/ftrigr.h>
+#include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
 #define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] scandir"

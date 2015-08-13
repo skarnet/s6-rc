@@ -159,14 +159,15 @@ character are ignored. The file defines the <em>direct dependencies</em> of
  It is unnecessary to manually define complete sets of dependencies in the
 <tt>dependency</tt> file, because
 <a href="s6-rc.html">s6-rc</a> will properly handle dependency chains.
-anyway. If <em>A</em> depends on <em>B</em>, no matter the underlying
+If <em>A</em> depends on <em>B</em>, no matter the underlying
 implementation of <em>B</em>, and the current implementation of <em>B</em>
 depends on <em>C</em>, then you should just put <em>B</em> in
 <tt><em>A</em>/dependencies</tt>; when starting the set,
 <a href="s6-rc.html">s6-rc</a> will start <em>C</em> first, then
 <em>B</em>, then <em>A</em>. If the underlying implementation of <em>B</em>
 changes and does not depend on <em>C</em>, then you will just have to
-modify the dependencies for <em>B</em>, not for <em>A</em>
+modify the dependencies for <em>B</em>, and the definition of <em>A</em>
+will still be correct.
 </p>
 
 <p>
@@ -182,13 +183,16 @@ complain and exit 1.
 <h4> For oneshots </h4>
 
 <ul>
- <li> Two mandatory regular files named <tt>up</tt> and <tt>down</tt>, which
+ <li> Two regular files named <tt>up</tt> and <tt>down</tt>, which
 must each contain a single Unix command line. The files will be interpreted by the
 <a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>
 lexer at compile time and the results will be stored into the
 compiled database in an internal form. <tt>up</tt> will be run when
 the service is started, and <tt>down</tt> will be executed when the service
-is stopped. </li>
+is stopped. <tt>up</tt> is mandatory, but <tt>down</tt> is optional;
+if no <tt>down</tt> file is provided in the source definition directory,
+then s6-rc will consider that the down transition for this service
+does nothing and always succeeds. </li>
 </ul>
 
 
@@ -255,7 +259,10 @@ about pipelines. </li>
  <li> A mandatory regular file named <tt>run</tt>, as well as optional files
 named <tt>finish</tt>, <tt>notification-fd</tt> and <tt>nosetsid</tt>. These
 files will be copied, or recreated, in the generated
-<a href="http://skarnet.org/software/s6/servicedir.html">service directory</a>.
+<a href="http://skarnet.org/software/s6/servicedir.html">service directory</a>:
+they are meant to be used by the
+<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+process that will manage the longrun service. </li>
  <li> Optional directories named <tt>data</tt> and <tt>env</tt>. These will
 be copied verbatim into the generated service directory. </li>
  <li> An optional file named <tt>producer-for</tt>. If this file exists, then

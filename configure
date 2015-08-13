@@ -23,7 +23,7 @@ Fine tuning of the installation directories:
   --libexecdir=DIR              package-scoped executables [EPREFIX/libexec]
   --libdir=DIR                  static library files [PREFIX/lib/$package]
   --includedir=DIR              C header files [PREFIX/include]
-  --datadir=DIR                 global configuration files [PREFIX/etc]
+  --datadir=DATADIR             global configuration files [PREFIX/etc]
 
  If no --prefix option is given, by default libdir (but not dynlibdir) will be
  /usr/lib/$package, and includedir will be /usr/include.
@@ -44,6 +44,7 @@ Optional features:
   --enable-static-libc          make entirely static binaries [disabled]
   --enable-slashpackage[=ROOT]  assume /package installation at ROOT [disabled]
   --enable-cross=CROSS          prefix toolchain executable names with CROSS [none]
+  --livedir=DIR                 default live directory [/run/s6]
 
 EOF
 exit 0
@@ -151,6 +152,7 @@ addlibdpath=''
 vpaths=''
 vpathd=''
 cross="$CROSS_COMPILE"
+livedir=/run/s6-rc
 
 for arg ; do
   case "$arg" in
@@ -182,6 +184,7 @@ for arg ; do
     --enable-cross=*) cross=${arg#*=} ;;
     --enable-cross) cross= ;;
     --disable-cross) cross= ;;
+    --livedir=*) livedir=${arg#*=} ;;
     --enable-*|--disable-*|--with-*|--without-*|--*dir=*|--build=*) ;;
     --host=*|--target=*) target=${arg#*=} ;;
     -* ) echo "$0: unknown option $arg" ;;
@@ -205,7 +208,7 @@ fi
 
 # Expand installation directories
 stripdir prefix
-for i in exec_prefix dynlibdir libexecdir bindir sbindir libdir includedir datadir sysdeps sproot skalibs ; do
+for i in exec_prefix dynlibdir libexecdir bindir sbindir libdir includedir datadir sysdeps sproot skalibs livedir ; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
@@ -401,6 +404,7 @@ cat <<EOF
 
 #define ${package_macro_name}_VERSION "$version"
 #define ${package_macro_name}_ETC "$datadir"
+#define ${package_macro_name}_LIVE_BASE "$livedir"
 EOF
 if $slashpackage ; then
   echo "#define ${package_macro_name}_BINPREFIX \"$binprefix/\""

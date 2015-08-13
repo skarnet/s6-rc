@@ -50,7 +50,8 @@ change.
 
 <ul>
  <li> s6-rc expects to find a functional <em>live state</em> in
-<em>live</em> (by default <tt>/run/s6-rc</tt>). The live state is
+<em>live</em> (by default <tt>/run/s6-rc</tt>, unless changed when the package
+was compiled). The live state is
 normally created at boot time by
 <a href="s6-rc-init.html">s6-rc-init</a>. If the live state is
 invalid, s6-rc complains and exits 4. </li>
@@ -88,7 +89,8 @@ The s6-rc command operates on the selection.
 <ul>
  <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
 live state in <em>live</em>. Default is
-<tt>/run/s6-rc</tt>. </li>
+<tt>/run/s6-rc</tt>. The default can be changed at compile-time by
+giving the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. </li>
  <li> <tt>-a</tt>&nbsp;: add the current set of active services to
 the selection. This is useful for instance at
 shutdown time: <tt>s6-rc -da change</tt>
@@ -327,11 +329,11 @@ stored in the <tt>/zork</tt> directory instead of <tt>/run/s6-rc</tt>.
 <em>myservicebundle</em>, as well as everything that depends on them.
 </p>
 
-<pre> s6-rc -pun0 <em>myservicebundle</em> </pre>
+<pre> s6-rc -pun0 change <em>myservicebundle</em> </pre>
 <p>
  Prints what s6-rc would do to bring the state to <em>exactly</em>
 the contents of <em>myservicebundle</em> as well as its recursive
-dependencies, and pruning all the rest. Do not wait any extra time
+dependencies, and pruning all the rest. Does not wait any extra time
 between simulated transitions.
 </p>
 

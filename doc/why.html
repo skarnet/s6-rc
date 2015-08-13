@@ -89,9 +89,9 @@ initialization scripts) and <em>longruns</em> (daemons), are needed.
  Unix distributions usually come with their own init systems and
 service managers; all of those have flaws one way or another. No
 widely spread init system gets things right, which is the main
-reason for the recent "init wars" - there are strong, valid reasons
-to support such or such init system, but <em>also</em> strong, valid
-reason to dislike it.
+reason for the recent "init wars" - no matter what init system you
+talk about, there are strong, valid reasons to like it and support it,
+and there are <em>also</em> strong, valid reasons to dislike it.
 </p>
 
 <p>
@@ -173,7 +173,9 @@ because Apple doesn't see fit to provide a documentation page for
 launchd) is very clear: it replaces init, rc, init.d/rc.d,
 SystemStarter, inetd, crontd, atd and watchdogd. It does all of this
 in process 1. And it uses XML for daemon configuration, so process 1
-has to link in a XML parsing library. </li>
+has to link in a XML parsing library. Is this the sleek, elegant
+design that Apple is usually known for? Stick to selling iPhones,
+guys. </li>
  <li> <a href="http://www.freedesktop.org/wiki/Software/systemd/">systemd</a>,
 the main protagonist (or antagonist) in the "init wars". It has the same
 problems as launchd, up by an order of magnitude;
@@ -200,9 +202,9 @@ architects were obviously not Unix experts, which is a shame when
 it's about creating a process 1 for Unix. This is apparent because: </li>
  <li> They have been designed like <em>application software</em>, not
 <em>system software</em>, which requires a fairly different set of
-skills, and careful attention to details - such as minimal software
-dependencies and shortness of code paths - that are not as important
-in application software. </li>
+skills, and careful attention to details
+that are not as important in application software, 
+such as minimal software dependencies and shortness of code paths. </li>
 </ul>
 
 <p>
@@ -226,7 +228,8 @@ readiness notification support, reproducible script execution, and
  <li> s6-rc is a <em>service manager</em>, i.e. the equivalent of
 <tt>sysv-rc</tt> or OpenRC. It is <em>not</em> an init system.
 <strong>You can run s6-rc with any init system of your choosing.</strong>
-Of course, s6-rc requires a s6 supervision tree to be running on
+Of course, s6-rc requires a
+<a href="http://skarnet.org/software/s6/">s6</a> supervision tree to be running on
 the system, since it delegates the management of longrun services
 to that supervision tree, but it does not require that s6 be the
 init system itself. s6-rc will work
