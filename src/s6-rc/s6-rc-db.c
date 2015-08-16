@@ -440,14 +440,14 @@ int main (int argc, char const *const *argv)
           if (s6rc_db_check_revdeps(&dbblob))
             strerr_dief3x(4, "invalid service database in ", compiled, ": direct and reverse dependencies are mismatched") ;
           if (s6rc_db_check_depcycles(&dbblob, 1, &problem))
-            strerr_dief8x(4, "invalid service database in ", compiled, ": dependency ", "cycle", " involving ", stringblob + serviceblob[problem.left].name, " and ", stringblob + serviceblob[problem.right].name) ;
+            strerr_dief8x(4, "invalid service database in ", compiled, ": dependency ", "cycle", " reached from ", stringblob + serviceblob[problem.left].name, " and involving ", stringblob + serviceblob[problem.right].name) ;
           r = s6rc_db_check_pipelines(&dbblob, &problem) ;
           if (r)
           {
             if (r == 1)
-              strerr_dief8x(4, "invalid service database in ", compiled, ": pipeline ", "cycle", " involving ", stringblob + serviceblob[problem.left].name, " and ", stringblob + serviceblob[problem.right].name) ;
+              strerr_dief8x(4, "invalid service database in ", compiled, ": pipeline ", "cycle", " reached from ", stringblob + serviceblob[problem.left].name, " and involving ", stringblob + serviceblob[problem.right].name) ;
             else
-              strerr_dief8x(4, "invalid service database in ", compiled, ": pipeline ", "collision", " involving ", stringblob + serviceblob[problem.left].name, " and ", stringblob + serviceblob[problem.right].name) ;
+              strerr_dief8x(4, "invalid service database in ", compiled, ": pipeline ", "collision", " reached from ", stringblob + serviceblob[problem.left].name, " and involving ", stringblob + serviceblob[problem.right].name) ;
           }
           break ;
         }

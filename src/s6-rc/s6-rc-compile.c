@@ -25,6 +25,7 @@
 #include <execline/config.h>
 #include <execline/execline.h>
 #include <s6/config.h>
+#include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
 #define USAGE "s6-rc-compile [ -v verbosity ] [ -u okuid,okuid... ] [ -g okgid,okgid... ] [ -h fdholder_user ] destdir sources..."
@@ -41,6 +42,21 @@ S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
 S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
 S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
 S6_EXTBINPREFIX "s6-sudod -t 2000 --\n"
+
+#define S6RC_FDHOLDER_RUNSCRIPT \
+"#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
+EXECLINE_EXTBINPREFIX "pipeline -dw --\n{\n  " \
+EXECLINE_EXTBINPREFIX "if -n --\n  {\n    " \
+EXECLINE_EXTBINPREFIX "forstdin -x 1 -- i\n    " \
+EXECLINE_EXTBINPREFIX "exit 1\n  }\n  " \
+EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    " \
+EXECLINE_EXTBINPREFIX "redirfd -r 0 data/pipes-to-create\n    " \
+EXECLINE_EXTBINPREFIX "withstdinas PIPES\n    " \
+EXECLINE_EXTBINPREFIX "import -u -sd\"\n\" -- PIPES\n    " \
+S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    " \
+S6RC_BINPREFIX "s6-rc-fdholder-filler -1 -- $PIPES\n  }\n  " \
+S6_EXTBINPREFIX "s6-svc -t .\n}\n" \
+S6_EXTBINPREFIX "s6-fdholder-daemon -1 -i data/rules -- s\n"
 
 static unsigned int verbosity = 1 ;
 static stralloc keep = STRALLOC_ZERO ;
@@ -255,82 +271,6 @@ static unsigned int add_internal_longrun (before_t *be, char const *name)
   return pos ;
 }
 
-static unsigned int add_internal_oneshot (before_t *be, char const *name, char const *ups, unsigned int upn, char const *downs, unsigned int downn)
-{
-  unsigned int pos ;
-  oneshot_t service =
-  {
-    .common =
-    {
-      .ndeps = 2,
-      .depindex = genalloc_len(unsigned int, &be->indices),
-      .annotation_flags = 0,
-      .timeout = { 0, 0 }
-    },
-    .argvindex = { keep.len, keep.len + downn }
-  } ;
-  service.argc[0] = byte_count(downs, downn, '\0') ;
-  service.argc[1] = byte_count(ups, upn, '\0') ;
-  if (!genalloc_catb(unsigned int, &be->indices, be->specialdeps, 2)
-   || !stralloc_catb(&keep, downs, downn)
-   || !stralloc_catb(&keep, ups, upn)) dienomem() ;
-  add_name_nocheck(be, S6RC_INTERNALS, name, SVTYPE_ONESHOT, &pos, &service.common.kname) ;
-  if (!genalloc_append(oneshot_t, &be->oneshots, &service)) dienomem() ;
-  be->nargvs += service.argc[0] + service.argc[1] + 2 ;
-  return pos ;
-}
-
-static void add_word (char const *word)
-{
-  if (!stralloc_cats(&satmp, word) || !stralloc_0(&satmp)) dienomem() ;
-}
-
-static unsigned int add_storepipe (before_t *be, char const *name)
-{
-  unsigned int pos, sep, base = satmp.len ;
-  unsigned int namelen = str_len(name) ;
-  char svname[16 + namelen] ;
-  byte_copy(svname, 15, "s6rc-storepipe-") ;
-  byte_copy(svname + 15, namelen + 1, name) ;
-
-  add_word(EXECLINE_EXTBINPREFIX "piperw") ;
-  add_word("0") ;
-  add_word("1") ;
-  add_word(EXECLINE_EXTBINPREFIX "if") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-store") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-r-") ; satmp.len-- ; add_word(name) ;
-  add_word(EXECLINE_BLOCK_END_STRING) ;
-  add_word(EXECLINE_EXTBINPREFIX "if") ;
-  add_word("-nt") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-store") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "-d1") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-w-") ; satmp.len-- ; add_word(name) ;
-  add_word(EXECLINE_BLOCK_END_STRING) ;
-  add_word(EXECLINE_EXTBINPREFIX "exit") ;
-  add_word("1") ;
-
-  sep = satmp.len ;
-
-  add_word(EXECLINE_EXTBINPREFIX "foreground") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-delete") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-w-") ; satmp.len-- ; add_word(name) ;
-  add_word(EXECLINE_BLOCK_END_STRING) ;
-  add_word(EXECLINE_EXTBINPREFIX "foreground") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING S6_EXTBINPREFIX "s6-fdholder-delete") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "../s6rc-fdholder/s") ;
-  add_word(EXECLINE_BLOCK_QUOTE_STRING "pipe:s6rc-r-") ; satmp.len-- ; add_word(name) ;
-  add_word(EXECLINE_BLOCK_END_STRING) ;
-  add_word(EXECLINE_EXTBINPREFIX "exit") ;
-  add_word("0") ;
-
-  pos = add_internal_oneshot(be, svname, satmp.s + base, sep - base, satmp.s + sep, satmp.len - sep) ;
-  satmp.len = base ;
-  return pos ;
-}
-
 static int uint_uniq (unsigned int const *list, unsigned int n, unsigned int pos)
 {
   while (n--) if (pos == list[n]) return 0 ;
@@ -498,16 +438,8 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
     if (n != 1)
       strerr_dief5x(1, srcdir, "/", name, "/producer-for", " should only contain one service name") ;
     service.pipeline[1] = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
-    {
-      unsigned int dummy ;
-      unsigned int namelen = str_len(data.s + service.pipeline[1]) ;
-      char svname[16 + namelen] ;
-      byte_copy(svname, 15, "s6rc-storepipe-") ;
-      byte_copy(svname + 15, namelen + 1, data.s + service.pipeline[1]) ;
-      add_name_nocheck(be, srcdir, svname, SVTYPE_UNDEFINED, &n, &dummy) ;
-      if (!genalloc_append(unsigned int, &be->indices, &n)) dienomem() ;
-      service.common.ndeps += 2 ;
-    }
+    if (!genalloc_append(unsigned int, &be->indices, &be->specialdeps[1])) dienomem() ;
+    service.common.ndeps += 2 ;
     if (verbosity >= 3)
       strerr_warni3x(name, " is a producer for ", data.s + service.pipeline[1]) ;
     fd = 1 ;
@@ -517,12 +449,15 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
     if (n != 1)
       strerr_dief5x(1, srcdir, "/", name, "/consumer-for", " should only contain one service name") ;
     service.pipeline[0] = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
+    genalloc_setlen(unsigned int, &be->indices, relatedindex) ;
+    if (!fd)
+    {
+      genalloc_append(unsigned int, &be->indices, &be->specialdeps[1]) ;
+      service.common.ndeps++ ;
+    }
+    else fd = 0 ;
     if (verbosity >= 3)
       strerr_warni3x(name, " is a consumer for ", data.s + service.pipeline[0]) ;
-    n = add_storepipe(be, name) ;
-    genalloc_s(unsigned int, &be->indices)[relatedindex] = n ;
-    service.common.ndeps++ ;
-    fd = 0 ;
   }
   if (fd && add_namelist(be, dirfd, srcdir, name, "pipeline-name", &relatedindex, &n))
   {
@@ -626,16 +561,7 @@ static inline void add_pipeline_bundles (before_t *be)
         strerr_dief5x(1, "longrun service ", keep.s + longruns[j].common.kname, " declares a consumer ", data.s + longruns[j].pipeline[1], " that is not a longrun service") ;
       if (!genalloc_append(unsigned int, &be->indices, &info->pos)) dienomem() ;
       j = info->i ;
-      {
-        unsigned int namelen = str_len(data.s + info->pos) ;
-        char svname[16 + namelen] ;
-        byte_copy(svname, 15, "s6rc-storepipe-") ;
-        byte_copy(svname + 15, namelen + 1, data.s + info->pos) ;
-        avltree_search(&names_map, svname, &id) ;
-        info = genalloc_s(nameinfo_t, &nameinfo) + id ;
-        if (!genalloc_append(unsigned int, &be->indices, &info->pos)) dienomem() ;
-      }
-      bundle.n += 2 ;
+      bundle.n++ ;
     }
     if (!genalloc_append(bundle_t, &be->bundles, &bundle)) dienomem() ;
   }
@@ -750,7 +676,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, nlong + p->i)] = 0 ;
-          strerr_warnt7x("atomic ", keep.s + me->kname, " depends on oneshot ", data.s + p->pos, " (", fmt, ")") ;
+          strerr_warnt6x(keep.s + me->kname, " depends on oneshot ", data.s + p->pos, " (", fmt, ")") ;
         }
         break ;
       case SVTYPE_LONGRUN :
@@ -759,7 +685,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, p->i)] = 0 ;
-          strerr_warnt7x("atomic ", keep.s + me->kname, " depends on longrun ", data.s + p->pos, " (", fmt, ")") ;
+          strerr_warnt6x(keep.s + me->kname, " depends on longrun ", data.s + p->pos, " (", fmt, ")") ;
         }
         break ;
       case SVTYPE_BUNDLE :
@@ -768,7 +694,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, nlong + p->i)] = 0 ;
-          strerr_warnt4x("atomic ", keep.s + me->kname, " depends on bundle ", data.s + p->pos) ;
+          strerr_warnt3x(keep.s + me->kname, " depends on bundle ", data.s + p->pos) ;
         }
         break ;
       default :
@@ -884,14 +810,14 @@ static inline void flatlist_services (s6rc_db_t *db, unsigned char const *sarray
 
   if (verbosity >= 3) strerr_warni1x("checking database correctness") ;
   if (s6rc_db_check_depcycles(db, 1, &problem))
-    strerr_dief4x(1, "cyclic service dependency involving", db->string + db->services[problem.left].name, " and ", db->string + db->services[problem.right].name) ;
+    strerr_dief5x(1, "cyclic service dependency", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
   r = s6rc_db_check_pipelines(db, &problem) ;
   if (r)
   {
     if (r == 1)
-      strerr_dief4x(1, "cyclic longrun pipeline involving", db->string + db->services[problem.left].name, " and ", db->string + db->services[problem.right].name) ;
+      strerr_dief5x(1, "cyclic longrun pipeline", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
     else
-      strerr_dief4x(1, "longrun pipeline collision involving", db->string + db->services[problem.left].name, " and ", db->string + db->services[problem.right].name) ;
+      strerr_dief5x(1, "longrun pipeline collision", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
   }
 }
 
@@ -986,16 +912,18 @@ static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
   auto_file(compiled, "n", pack, 20) ;
 }
 
-static void make_skel (char const *compiled, char const *name, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn)
+static void make_skel (char const *compiled, char const *name, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, unsigned int notif)
 {
   unsigned int namelen = str_len(name) ;
-  unsigned int i = uidn ;
+  char fmt[UINT_FMT] ;
+  unsigned int i = uint_fmt(fmt, notif) ;
+  fmt[i++] = '\n' ;
   char fn[UINT64_FMT + namelen + 35] ;
   byte_copy(fn, 12, "servicedirs/") ;
   byte_copy(fn + 12, namelen + 1, name) ;
   auto_dir(compiled, fn) ;
   byte_copy(fn + 12 + namelen, 17, "/notification-fd") ;
-  auto_file(compiled, fn, "3\n", 2) ;
+  auto_file(compiled, fn, fmt, i) ;
   byte_copy(fn + 13 + namelen, 5, "data") ;
   auto_dir(compiled, fn) ;
   byte_copy(fn + 17 + namelen, 7, "/rules") ;
@@ -1008,6 +936,7 @@ static void make_skel (char const *compiled, char const *name, uint64 const *uid
   byte_copy(fn + 23 + namelen, 5, "/uid") ;
   auto_dir(compiled, fn) ;
   fn[27 + namelen] = '/' ;
+  i = uidn ;
   while (i--)
   {
     unsigned int len = uint64_fmt(fn + 28 + namelen, uids[i]) ;
@@ -1029,15 +958,42 @@ static void make_skel (char const *compiled, char const *name, uint64 const *uid
 
 static inline void write_oneshot_runner (char const *compiled, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn)
 {
-  make_skel(compiled, S6RC_ONESHOT_RUNNER, uids, uidn, gids, gidn) ;
+  make_skel(compiled, S6RC_ONESHOT_RUNNER, uids, uidn, gids, gidn, 3) ;
   auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", S6RC_ONESHOT_RUNNER_RUNSCRIPT, sizeof(S6RC_ONESHOT_RUNNER_RUNSCRIPT) - 1) ;
   auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
 }
 
-static inline void write_fdholder (char const *compiled, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
+static inline int write_pipelines (stralloc *sa, s6rc_db_t const *db)
+{
+  uint32 i = db->nlong ;
+  unsigned char black[bitarray_div8(db->nlong)] ;
+  byte_zero(black, bitarray_div8(db->nlong)) ;
+  while (i--) if (!bitarray_peek(black, i))
+  {
+    uint32 j = i ;
+    for (;;)
+    {
+      register uint32 k = db->services[j].x.longrun.pipeline[0] ;
+      if (k >= db->nlong) break ;
+      j = k ;
+    }
+    for (;;)
+    {
+      register uint32 k = db->services[j].x.longrun.pipeline[1] ;
+      bitarray_set(black, j) ;
+      if (k >= db->nlong) break ;
+      if (!string_quote(sa, db->string + db->services[k].name, str_len(db->string + db->services[k].name))
+       || !stralloc_catb(sa, " ", 1)) return 0 ;
+      j = k ;
+    }
+  }
+  return 1 ;
+}
+
+static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
 {
   unsigned int base = satmp.len ;
-  make_skel(compiled, S6RC_FDHOLDER, uids, uidn, gids, gidn) ;
+  make_skel(compiled, S6RC_FDHOLDER, uids, uidn, gids, gidn, 1) ;
   {
     char fn[62 + S6RC_FDHOLDER_LEN + UINT64_FMT] = "servicedirs/" S6RC_FDHOLDER "/data/rules/uid/" ;
     char fmt[7 + UINT64_FMT] = "../uid/" ;
@@ -1074,9 +1030,17 @@ static inline void write_fdholder (char const *compiled, uint64 const *uids, uns
   }
 
   if (!stralloc_cats(&satmp,
-    "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
-    EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n" \
-    EXECLINE_EXTBINPREFIX "fdmove 1 3\n")) dienomem() ;
+    "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n"
+    EXECLINE_EXTBINPREFIX "pipeline -dw --\n{\n  "
+    EXECLINE_EXTBINPREFIX "if -n --\n  {\n    "
+    EXECLINE_EXTBINPREFIX "forstdin -x 1 -- i\n    "
+    EXECLINE_EXTBINPREFIX "exit 1\n  }\n  "
+    EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    "
+    S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
+    S6RC_BINPREFIX "s6-rc-fdholder-filler -1 -- ")
+   || !write_pipelines(&satmp, db)
+   || !stralloc_cats(&satmp, "\n  }\n  "
+    S6_EXTBINPREFIX "s6-svc -t .\n}\n")) dienomem() ;
   if (fdhuser)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-envuidgid -i -- ")
@@ -1094,10 +1058,10 @@ static inline void write_fdholder (char const *compiled, uint64 const *uids, uns
   auto_rights(compiled, "servicedirs/" S6RC_FDHOLDER "/run", 0755) ;
 }
 
-static inline void write_specials (char const *compiled, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
+static inline void write_specials (char const *compiled, s6rc_db_t const *db, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
 {
   write_oneshot_runner(compiled, uids, uidn, gids, gidn) ;
-  write_fdholder(compiled, uids, uidn, gids, gidn, fdhuser) ;
+  write_fdholder(compiled, db, uids, uidn, gids, gidn, fdhuser) ;
 }
 
 static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps)
@@ -1427,7 +1391,18 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
   strerr_diefu2sys(111, "write to ", dbfn) ;
 }
 
-static inline void write_compiled (char const *compiled, s6rc_db_t const *db, char const *const *srcdirs, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
+static inline void write_compiled (
+  char const *compiled,
+  s6rc_db_t const *db,
+  char const *const *srcdirs,
+  bundle_t const *bundles,
+  unsigned int nbundles,
+  uint32 const *bdeps,
+  uint64 const *uids,
+  unsigned int uidn,
+  gid_t const *gids,
+  unsigned int gidn,
+  char const *fdhuser)
 {
   if (verbosity >= 2) strerr_warni2x("writing compiled information to ", compiled) ;
   init_compiled(compiled) ;
@@ -1435,7 +1410,7 @@ static inline void write_compiled (char const *compiled, s6rc_db_t const *db, ch
   write_resolve(compiled, db, bundles, nbundles, bdeps) ;
   stralloc_free(&data) ;
   write_db(compiled, db) ;
-  write_specials(compiled, uids, uidn, gids, gidn, fdhuser) ;
+  write_specials(compiled, db, uids, uidn, gids, gidn, fdhuser) ;
   write_servicedirs(compiled, db, srcdirs) ;
 }
 

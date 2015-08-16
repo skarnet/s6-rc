@@ -1,6 +1,7 @@
-s6-rc-compile	0755
-s6-rc-db	0755
-s6-rc-dryrun	0755
-s6-rc-init	0755
-s6-rc		0755
-s6-rc-update	0755
+s6-rc-compile		0755
+s6-rc-db		0755
+s6-rc-dryrun		0755
+s6-rc-init		0755
+s6-rc			0755
+s6-rc-update		0755
+s6-rc-fdholder-filler	0755

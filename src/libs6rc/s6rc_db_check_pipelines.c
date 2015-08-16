@@ -31,7 +31,7 @@ int s6rc_db_check_pipelines (s6rc_db_t const *db, diuint32 *problem)
     j = i ;
     for (;;)
     {
-      register unsigned int k = db->services[j].x.longrun.pipeline[1] ;
+      register uint32 k = db->services[j].x.longrun.pipeline[1] ;
       if (k >= db->nlong) break ;
       if (k == i || bitarray_peek(black, k))
       {
