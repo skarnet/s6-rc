@@ -220,7 +220,7 @@ static inline void print_pipeline (char const *name)
     if (j >= db->nlong) break ;
     n = j ;
   }
-  if (buffer_flush(buffer_1))
+  if (!buffer_flush(buffer_1))
     strerr_diefu1sys(111, "write to stdout") ;
 }
 

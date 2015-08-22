@@ -43,21 +43,6 @@ S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
 S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
 S6_EXTBINPREFIX "s6-sudod -t 2000 --\n"
 
-#define S6RC_FDHOLDER_RUNSCRIPT \
-"#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n" \
-EXECLINE_EXTBINPREFIX "pipeline -dw --\n{\n  " \
-EXECLINE_EXTBINPREFIX "if -n --\n  {\n    " \
-EXECLINE_EXTBINPREFIX "forstdin -x 1 -- i\n    " \
-EXECLINE_EXTBINPREFIX "exit 1\n  }\n  " \
-EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    " \
-EXECLINE_EXTBINPREFIX "redirfd -r 0 data/pipes-to-create\n    " \
-EXECLINE_EXTBINPREFIX "withstdinas PIPES\n    " \
-EXECLINE_EXTBINPREFIX "import -u -sd\"\n\" -- PIPES\n    " \
-S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    " \
-S6RC_BINPREFIX "s6-rc-fdholder-filler -1 -- $PIPES\n  }\n  " \
-S6_EXTBINPREFIX "s6-svc -t .\n}\n" \
-S6_EXTBINPREFIX "s6-fdholder-daemon -1 -i data/rules -- s\n"
-
 static unsigned int verbosity = 1 ;
 static stralloc keep = STRALLOC_ZERO ;
 static stralloc data = STRALLOC_ZERO ;
@@ -918,7 +903,7 @@ static void make_skel (char const *compiled, char const *name, uint64 const *uid
   char fmt[UINT_FMT] ;
   unsigned int i = uint_fmt(fmt, notif) ;
   fmt[i++] = '\n' ;
-  char fn[UINT64_FMT + namelen + 35] ;
+  char fn[namelen + 29] ;
   byte_copy(fn, 12, "servicedirs/") ;
   byte_copy(fn + 12, namelen + 1, name) ;
   auto_dir(compiled, fn) ;
@@ -935,30 +920,35 @@ static void make_skel (char const *compiled, char const *name, uint64 const *uid
   }
   byte_copy(fn + 23 + namelen, 5, "/uid") ;
   auto_dir(compiled, fn) ;
-  fn[27 + namelen] = '/' ;
-  i = uidn ;
-  while (i--)
-  {
-    unsigned int len = uint64_fmt(fn + 28 + namelen, uids[i]) ;
-    fn[28 + namelen + len] = 0 ;
-    auto_dir(compiled, fn) ;
-    byte_copy(fn + 28 + namelen + len, 7, "/allow") ;
-    auto_file(compiled, fn, "", 0) ;
-  }
-  i = gidn ;
-  while (i--)
-  {
-    unsigned int len = gid_fmt(fn + 28 + namelen, gids[i]) ;
-    fn[28 + namelen + len] = 0 ;
-    auto_dir(compiled, fn) ;
-    byte_copy(fn + 28 + namelen + len, 7, "/allow") ;
-    auto_file(compiled, fn, "", 0) ;
-  }
 }
 
 static inline void write_oneshot_runner (char const *compiled, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn)
 {
+  unsigned int i ;
+  char fn[34 + sizeof(S6RC_ONESHOT_RUNNER)] = "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/gid/" ;
   make_skel(compiled, S6RC_ONESHOT_RUNNER, uids, uidn, gids, gidn, 3) ;
+  if (gidn)
+  {
+    i = gidn ;
+    while (i--)
+    {
+      unsigned int len = gid_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, gids[i]) ;
+      fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
+      auto_dir(compiled, fn) ;
+      byte_copy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, 7, "/allow") ;
+      auto_file(compiled, fn, "", 0) ;
+    }
+  }
+  fn[24 + S6RC_ONESHOT_RUNNER_LEN] = 'u' ;
+  i = uidn ;
+  while (i--)
+  {
+    unsigned int len = uint64_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, uids[i]) ;
+    fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
+    auto_dir(compiled, fn) ;
+    byte_copy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, 7, "/allow") ;
+    auto_file(compiled, fn, "", 0) ;
+  }
   auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", S6RC_ONESHOT_RUNNER_RUNSCRIPT, sizeof(S6RC_ONESHOT_RUNNER_RUNSCRIPT) - 1) ;
   auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
 }
@@ -999,8 +989,11 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     char fmt[7 + UINT64_FMT] = "../uid/" ;
     unsigned int i = uint64_fmt(fmt + 7, uids[0]) ;
     fmt[7 + i] = 0 ;
-    byte_copy(fn + 28 + S6RC_FDHOLDER_LEN, i, fmt + 7) ;
-    byte_copy(fn + 28 + S6RC_FDHOLDER_LEN + i, 5, "/env") ;
+    byte_copy(fn + 28 + S6RC_FDHOLDER_LEN, i + 1, fmt + 7) ;
+    auto_dir(compiled, fn) ;
+    byte_copy(fn + 28 + S6RC_FDHOLDER_LEN + i, 7, "/allow") ;
+    auto_file(compiled, fn, "", 0) ;
+    byte_copy(fn + 29 + S6RC_FDHOLDER_LEN + i, 4, "env") ;
     auto_dir(compiled, fn) ;
     byte_copy(fn + 32 + S6RC_FDHOLDER_LEN + i, 18, "/S6_FDHOLDER_LIST") ;
     auto_file(compiled, fn, "\n", 1) ;
@@ -1037,7 +1030,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     EXECLINE_EXTBINPREFIX "exit 1\n  }\n  "
     EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    "
     S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
-    S6RC_BINPREFIX "s6-rc-fdholder-filler -1 -- ")
+    S6RC_LIBEXECPREFIX "s6-rc-fdholder-filler -1 -- ")
    || !write_pipelines(&satmp, db)
    || !stralloc_cats(&satmp, "\n  }\n  "
     S6_EXTBINPREFIX "s6-svc -t .\n}\n")) dienomem() ;
@@ -1272,7 +1265,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     byte_copy(srcfn + srcdirlen + len + 2, 15, "timeout-finish") ;
     filecopy(srcfn, dstfn, 0644) ;
 
-    byte_copy(srcfn + srcdirlen + len + 4, 7, "setsid") ;
+    byte_copy(srcfn + srcdirlen + len + 2, 9, "nosetsid") ;
     if (stat(srcfn, &st) < 0)
     {
       if (errno != ENOENT)
@@ -1284,7 +1277,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     else
     {
       int fd ;
-      byte_copy(dstfn + clen + 16 + len, 7, "setsid") ;
+      byte_copy(dstfn + clen + 14 + len, 9, "nosetsid") ;
       fd = open_trunc(dstfn) ;
       if (fd < 0)
       {
