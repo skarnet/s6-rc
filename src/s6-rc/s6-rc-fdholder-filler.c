@@ -66,7 +66,7 @@ int main (int argc, char const *const *argv)
       dump[(i<<1)+1].fd = p[1] ;
       offset.nano = 1 ;
       tain_add(&dump[(i<<1)+1].limit, &dump[i<<1].limit, &offset) ;
-      byte_copy(dump[(i<<1)+1].id, 12 + len, dump[i<<1].id) ;
+      byte_copy(dump[(i<<1)+1].id, 13 + len, dump[i<<1].id) ;
       dump[(i<<1)+1].id[10] = 'w' ;
     }
     if (!s6_fdholder_setdump_g(&a, dump, n << 1, &deadline))
