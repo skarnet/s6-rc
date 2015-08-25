@@ -136,7 +136,7 @@ static pid_t start_longrun (unsigned int i, int h)
     if (access(servicefn, F_OK) < 0)
     {
       h = 2 ;
-      if (verbosity >= 2 && errno == ENOENT)
+      if (verbosity >= 2 && errno != ENOENT)
         strerr_warnwu2sys("access ", servicefn) ;
     }
   }
