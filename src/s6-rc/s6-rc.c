@@ -141,7 +141,7 @@ static pid_t start_longrun (unsigned int i, int h)
     }
   }
   servicefn[livelen + 9 + svdlen] = 0 ;
-  fmt[uint32_fmt(fmt, compute_timeout(i, h))] = 0 ;  
+  fmt[uint32_fmt(fmt, compute_timeout(i, !!h))] = 0 ;  
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
   {
