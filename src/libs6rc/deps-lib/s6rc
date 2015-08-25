@@ -5,4 +5,10 @@ s6rc_db_read.o
 s6rc_db_read_sizes.o
 s6rc_db_read_uint32.o
 s6rc_graph_closure.o
+s6rc_read_uint.o
+s6rc_servicedir_internal.o
+s6rc_servicedir_block.o
+s6rc_servicedir_unblock.o
+s6rc_servicedir_copy_offline.o
+s6rc_servicedir_copy_online.o
 -lskarnet

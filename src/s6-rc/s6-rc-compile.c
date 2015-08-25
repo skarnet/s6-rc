@@ -1114,32 +1114,6 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
   close(fd) ;
 }
 
-static int filecopy (char const *src, char const *dst, mode_t mode)
-{
-  int d ;
-  int s = open_readb(src) ;
-  if (s < 0) return 0 ;
-  d = open3(dst, O_WRONLY | O_CREAT | O_TRUNC, mode) ;
-  if (d < 0)
-  {
-    close(s) ;
-    return 0 ;
-  }
-  if (fd_cat(s, d) < 0) goto err ;
-  close(s) ;
-  close(d) ;
-  return 1 ;
-
-err:
-  {
-    register int e = errno ;
-    close(s) ;
-    close(d) ;
-    errno = e ;
-  }
-  return 0 ;
-}
-
 static void dircopy (char const *compiled, char const *srcfn, char const *dstfn)
 {
   struct stat st ;
@@ -1159,16 +1133,6 @@ static void dircopy (char const *compiled, char const *srcfn, char const *dstfn)
     cleanup(compiled) ;
     strerr_diefu4sys(111, "recursively copy ", srcfn, " to ", dstfn) ;
   }
-}
-
-static int read_uint (char const *file, unsigned int *fd)
-{
-  char buf[UINT_FMT + 1] ;
-  register int r = openreadnclose(file, buf, UINT_FMT) ;
-  if (r < 0) return (errno == ENOENT) ? 0 : -1 ;
-  buf[byte_chr(buf, r, '\n')] = 0 ;
-  if (!uint0_scan(buf, fd)) return (errno = EINVAL, -1) ;
-  return 1 ;
 }
 
 static inline void write_run_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, unsigned int fd)
@@ -1227,7 +1191,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     srcfn[srcdirlen] = '/' ;
     byte_copy(srcfn + srcdirlen + 1, len, db->string + db->services[i].name) ;
     byte_copy(srcfn + srcdirlen + 1 + len, 17, "/notification-fd") ;
-    r = read_uint(srcfn, &fd) ;
+    r = s6rc_read_uint(srcfn, &fd) ;
     if (r < 0)
     {
       cleanup(compiled) ;
@@ -1253,17 +1217,17 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       byte_copy(dstfn + clen + 17 + len, 6, ".user") ;
     }
     byte_copy(srcfn + srcdirlen + 1 + len, 5, "/run") ;
-    if (!filecopy(srcfn, dstfn, 0755))
+    if (!filecopy_unsafe(srcfn, dstfn, 0755))
     {
       cleanup(compiled) ;
       strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
     }
     byte_copy(dstfn + clen + 14 + len, 7, "finish") ;
     byte_copy(srcfn + srcdirlen + len + 2, 7, "finish") ;
-    filecopy(srcfn, dstfn, 0755) ;
+    filecopy_unsafe(srcfn, dstfn, 0755) ;
     byte_copy(dstfn + clen + 14 + len, 15, "timeout-finish") ;
     byte_copy(srcfn + srcdirlen + len + 2, 15, "timeout-finish") ;
-    filecopy(srcfn, dstfn, 0644) ;
+    filecopy_unsafe(srcfn, dstfn, 0644) ;
 
     byte_copy(srcfn + srcdirlen + len + 2, 9, "nosetsid") ;
     if (stat(srcfn, &st) < 0)
