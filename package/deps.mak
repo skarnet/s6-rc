@@ -26,7 +26,7 @@ src/s6-rc/s6-rc-update.o src/s6-rc/s6-rc-update.lo: src/s6-rc/s6-rc-update.c src
 src/s6-rc/s6-rc.o src/s6-rc/s6-rc.lo: src/s6-rc/s6-rc.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 
 libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_check_pipelines.o src/libs6rc/s6rc_db_check_revdeps.o src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_graph_closure.o src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_online.o
-libs6rc.so.xyzzy: private EXTRA_LIBS := -lskarnet
+libs6rc.so.xyzzy: private EXTRA_LIBS := -ls6 -lskarnet
 libs6rc.so.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo
 s6-rc: private EXTRA_LIBS := ${TAINNOW_LIB}
 s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -lskarnet
