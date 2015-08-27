@@ -21,8 +21,7 @@
 
 #define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
-
-#define INITIAL_MAGIC "(s6-rc-init initial live directory)"
+#define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
 static unsigned int llen ;
 
@@ -72,15 +71,9 @@ int main (int argc, char const *const *argv)
   if (argv[0][0] != '/')
     strerr_dief2x(100, "scandir", " must be an absolute path") ;
 
-  llen = str_len(live) ;
-  if (!sadirname(&satmp, live, llen)
-   || !stralloc_catb(&satmp, "/", 1))
-    strerr_diefu1sys(111, "stralloc_catb") ;
-  dirlen = satmp.len ;
-  if (!sabasename(&satmp, live, llen))
-    strerr_diefu1sys(111, "stralloc_catb") ;
+  if (!s6rc_sanitize_dir(&satmp, live, &dirlen)) dienomem() ;
   llen = satmp.len ;
-  if (!stralloc_catb(&satmp, " " INITIAL_MAGIC, 1 + sizeof(INITIAL_MAGIC)))
+  if (!stralloc_catb(&satmp, S6RC_LIVE_REAL_SUFFIX, sizeof(S6RC_LIVE_REAL_SUFFIX)))
     strerr_diefu1sys(111, "stralloc_catb") ;
 
   {

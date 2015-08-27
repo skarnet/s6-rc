@@ -15,11 +15,15 @@
 #include <skalibs/bitarray.h>
 #include <skalibs/cdb.h>
 #include <skalibs/stralloc.h>
+#include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/skamisc.h>
+#include <skalibs/webipc.h>
 #include <skalibs/unix-transactional.h>
 #include <execline/execline.h>
+#include <s6/config.h>
 #include <s6/s6-supervise.h>
+#include <s6/s6-fdholder.h>
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
@@ -35,6 +39,21 @@ static unsigned int verbosity = 1 ;
 
  /* Conversions and transitions */
 
+
+ /* oldstate flags:
+     1 -> is up
+     2 -> wanted down
+     4 -> restart
+     8 -> converts to atomic or singleton
+    16 -> has a new name
+    32 -> wanted down after closure
+    64 -> appears in convfile
+
+    newstate flags:
+     1 -> is up (converted from old up)
+     2 -> wanted up
+     4 -> is a conversion target
+ */
 
 static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
 {
@@ -143,7 +162,7 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
     if (r < 0) strerr_diefu3sys(111, "read ", newfn, "/resolve.cdb") ;
     if (!r)
     {
-      oldstate[i] |= 2 ; /* disappeared -> want down */
+      oldstate[i] |= 34 ; /* disappeared */
       continue ;
     }
     if (cdb_datalen(newc) & 3)
@@ -156,7 +175,7 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
       char const *p = pack ;
       if (cdb_read(newc, pack, cdb_datalen(newc), cdb_datapos(newc)) < 0)
         strerr_diefu3sys(111, "read ", newfn, "/resolve.cdb") ;
-      if (len == 1) oldstate[i] |= 8 ; /* atomic or singleton bundle */
+      if (len == 1) oldstate[i] |= 8 ;
       while (len--)
       {
         uint32 x ;
@@ -212,22 +231,16 @@ static inline void adjust_newalreadyup (unsigned char const *oldstate, unsigned 
   }
 }
 
-static void compute_transitions (char const *convfile, unsigned char *oldstate, int fdoldc, s6rc_db_t const *olddb, unsigned char *newstate, int fdnewc, char const *newfn, s6rc_db_t const *newdb)
+static void compute_transitions (char const *convfile, unsigned char *oldstate, int fdoldc, s6rc_db_t const *olddb, unsigned char *newstate, int fdnewc, char const *newfn, s6rc_db_t const *newdb, stralloc *sa)
 {
   unsigned int oldn = olddb->nshort + olddb->nlong ;
   unsigned int newn = newdb->nshort + newdb->nlong ;
   unsigned char conversion_table[oldn * bitarray_div8(newn)] ;
-  unsigned int oldpairings[olddb->nlong] ;
-  unsigned int newpairings[newdb->nlong] ;
+  unsigned int nameindex[oldn] ;
   byte_zero(conversion_table, oldn * bitarray_div8(newn)) ;
-  {
-    stralloc namedata = STRALLOC_ZERO ;
-    unsigned int nameindex[oldn] ;
-    
-    stuff_with_oldc(oldstate, fdoldc, olddb, convfile, nameindex, &namedata) ;
-    stuff_with_newc(fdnewc, newfn, conversion_table, oldstate, newstate, namedata.s, nameindex, olddb, newdb) ;
-    stralloc_free(&namedata) ;
-  }
+  stuff_with_oldc(oldstate, fdoldc, olddb, convfile, nameindex, sa) ;
+  stuff_with_newc(fdnewc, newfn, conversion_table, oldstate, newstate, sa->s, nameindex, olddb, newdb) ;
+  sa->len = 0 ;
   adjust_newwantup(oldstate, oldn, newstate, newn, conversion_table) ;
   s6rc_graph_closure(olddb, oldstate, 5, 0) ;
   adjust_newalreadyup(oldstate, oldn, newstate, newn, conversion_table) ;
@@ -238,142 +251,100 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
  /* Service directory replacement */
 
 
-static int safe_servicedir_update (char const *dst, char const *src, int h)
-{
-  unsigned int dstlen = str_len(dst) ;
-  unsigned int srclen = str_len(src) ;
-  int fd ;
-  int hasdata = 1, hasenv = 1, ok = 1 ;
-  char dstfn[dstlen + 15 + sizeof(S6_SUPERVISE_CTLDIR)] ;
-  char srcfn[srclen + 17] ;
-  char tmpfn[dstlen + 21] ;
-  byte_copy(dstfn, dstlen, dst) ;
-  byte_copy(srcfn, srclen, src) ;
-
-  byte_copy(dstfn + dstlen, 6, "/down") ;
-  fd = open_trunc(dstfn) ;
-  if (fd < 0) strerr_warnwu2sys("touch ", dstfn) ;
-  else close(fd) ;
-  byte_copy(dstfn + dstlen + 1, 5, "data") ;
-  byte_copy(tmpfn, dstlen + 5, dstfn) ;
-  byte_copy(tmpfn + dstlen + 5, 5, ".old") ;
-  if (rename(dstfn, tmpfn) < 0)
-  {
-    if (errno == ENOENT) hasdata = 0 ;
-    else goto err ;
-  }
-  byte_copy(dstfn + dstlen + 1, 4, "env") ;
-  byte_copy(tmpfn + dstlen + 1, 8, "env.old") ;
-  if (rename(dstfn, tmpfn) < 0)
-  {
-    if (errno == ENOENT) hasenv = 0 ;
-    else goto err ;
-  }
-  byte_copy(dstfn + dstlen + 1, 9, "nosetsid") ;
-  if (unlink(dstfn) < 0 && errno != ENOENT) goto err ;
-  byte_copy(dstfn + dstlen + 3, 14, "tification-fd") ;
-  if (unlink(dstfn) < 0 && errno != ENOENT) goto err ;
-
-  byte_copy(srcfn + srclen, 17, "/notification-fd") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 3, 7, "setsid") ;
-  byte_copy(dstfn + dstlen + 3, 7, "setsid") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 1, 5, "data") ;
-  byte_copy(dstfn + dstlen + 1, 5, "data") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 1, 4, "env") ;
-  byte_copy(dstfn + dstlen + 1, 4, "env") ;
-  hiercopy(srcfn, dstfn) ;
-  byte_copy(srcfn + srclen + 1, 4, "run") ;
-  byte_copy(dstfn + dstlen + 1, 4, "run") ;
-  if (!hiercopy(srcfn, dstfn)) goto err ;
-  byte_copy(srcfn + srclen + 1, 4, "run") ;
-  byte_copy(dstfn + dstlen + 1, 7, "finish") ;
-  byte_copy(tmpfn + dstlen + 1, 11, "finish.new") ;
-  if (hiercopy(srcfn, tmpfn) && rename(tmpfn, dstfn) < 0) goto err ;
-  if (h)
-  {
-    byte_copy(dstfn + dstlen + 1, 5, "down") ;
-    if (unlink(dstfn) < 0)
-    {
-      strerr_warnwu2sys("unlink ", dstfn) ;
-      ok = 0 ;
-    }
-    byte_copy(dstfn + dstlen + 1, 8 + sizeof(S6_SUPERVISE_CTLDIR), S6_SUPERVISE_CTLDIR "/control") ;
-    s6_svc_write(dstfn, "u", 1) ;
-  }
-  byte_copy(dstfn + dstlen + 1, 9, "data.old") ;
-  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
-  byte_copy(dstfn + dstlen + 1, 8, "env.old") ;
-  if (rm_rf(dstfn) < 0) strerr_warnwu2sys("remove ", dstfn) ;
-  return 1 ;
-
- err:
-  if (h)
-  {
-    int e = errno ;
-    byte_copy(dstfn + dstlen + 1, 5, "down") ;
-    unlink(dstfn) ;
-    errno = e ;
-  }
-  return 0 ;
-}
-
-static int servicedir_name_change (char const *live, char const *oldname, char const *newname)
-{
-  unsigned int livelen = str_len(live) ;
-  unsigned int oldlen = str_len(oldname) ;
-  unsigned int newlen = str_len(oldname) ;
-  char oldfn[livelen + oldlen + 2] ;
-  char newfn[livelen + newlen + 2] ;
-  byte_copy(oldfn, livelen, live) ;
-  oldfn[livelen] = '/' ;
-  byte_copy(oldfn + livelen + 1, oldlen + 1, oldname) ;
-  byte_copy(newfn, livelen + 1, oldfn) ;
-  byte_copy(newfn + livelen + 1, newlen + 1, newname) ;
-  if (rename(oldfn, newfn) < 0) return 0 ;
-  return 1 ;
-} 
-
-static inline void update_servicedirs (unsigned char const *oldstate, unsigned int oldn, unsigned char const *newstate, unsigned int newn)
-{
-}
-
-
 
  /* The update itself. */
 
 
-static inline void update_state_and_compiled (unsigned char const *newstate, unsigned int newn, char const *newcompiled)
+static inline void make_new_live (unsigned char const *newstate, unsigned int newn, char const *newcompiled, stralloc *sa)
 {
-  char fn[livelen + 14] ;
-  byte_copy(fn, livelen, live) ;
-  byte_copy(fn + livelen, 7, "/state") ;
+  unsigned int dirlen, llen, newlen ;
+  if (!s6rc_sanitize_dir(sa, live, &dirlen)) dienomem() ;
+  llen = sa->len ;
+  if (!stralloc_cats(sa, S6RC_LIVE_REAL_SUFFIX S6RC_LIVE_NEW_SUFFIX)
+   || !stralloc_0(sa))
+    dienomem() ;
+  newlen = sa->len - 1 ;
+  rm_rf(sa->s) ;
+  if (mkdir(sa->s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", sa->s) ;
+    strerr_diefu2sys(111, "mkdir ", sa->s) ;
+  sa->len = newlen ;
+  if (!stralloc_cats(sa, "/state") || !stralloc_0(sa)) goto err ;
   {
     char tmpstate[newn] ;
     unsigned int i = newn ;
     while (i--) tmpstate[i] = newstate[i] & 1 ;
-    if (!openwritenclose_suffix(fn, tmpstate, newn, ".new"))
-      strerr_diefu2sys(112, "write ", fn) ;
+    if (!openwritenclose_unsafe(sa->s, tmpstate, newn)) goto err ;
   }
-  byte_copy(fn + livelen + 1, 13, "compiled.new") ;
-  if (symlink(newcompiled, fn) < 0)
-    strerr_diefu4sys(112, "symlink ", newcompiled, " to ", fn) ;
+  sa->len = newlen ;
+  if (!stralloc_cats(sa, "/compiled") || !stralloc_0(sa)) goto err ;
+  if (symlink(newcompiled, sa->s) < 0) goto err ;
+
+ err:
   {
-    char realfn[livelen + 10] ;
-    byte_copy(realfn, livelen + 9, fn) ;
-    realfn[livelen + 9] - 0 ;
-    if (rename(fn, realfn) < 0)
-      strerr_diefu4sys(112, "rename ", fn, " to ", realfn) ;
+    int e = errno ;
+    sa->len = newlen ;
+    sa->s[sa->len++] = 0 ;
+    rm_rf(sa->s) ;
+    errno = e ;
+    strerr_diefu2sys(111, "make new live directory in ", sa->s) ;
   }
 }
 
-static unsigned int want_count (unsigned char const *state, unsigned int n)
+
+
+ /* Pipe updates */
+
+static inline int delete_old_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, unsigned char const *oldstate, tain_t const *deadline)
 {
-  unsigned int count = 0, i = n ;
-  while (i--) if (state[i] & 2) count++ ;
-  return count ;
+  unsigned int i = olddb->nlong ;
+  while (i--)
+    if (!(oldstate[i] & 32) && oldstate[i] & 16
+     && olddb->services[i].x.longrun.pipeline[0] < olddb->nlong)
+    {
+      unsigned int len = str_len(olddb->string + olddb->services[i].name) ;
+      char pipename[len + 13] ;
+      byte_copy(pipename, 12, "pipe:s6rc-w-") ;
+      byte_copy(pipename + 12, len + 1, olddb->string + olddb->services[i].name) ;
+      if (!s6_fdholder_delete_g(a, pipename, deadline)) return 0 ;
+      pipename[10] = 'r' ;
+      if (!s6_fdholder_delete_g(a, pipename, deadline)) return 0 ;
+    }
+  return 1 ;
+}
+
+static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, unsigned char const *newstate, tain_t const *deadline)
+{
+  tain_t nano1 = { .sec = TAI_ZERO, .nano = 1 } ;
+  tain_t limit ;
+  tain_add_g(&limit, &tain_infinite_relative) ;
+  unsigned int i = newdb->nlong ;
+  while (i--)
+    if (newstate[i] & 4 && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
+    {
+      int p[2] ;
+      unsigned int len = str_len(newdb->string + newdb->services[i].name) ;
+      char pipename[len + 13] ;
+      byte_copy(pipename, 12, "pipe:s6rc-w-") ;
+      byte_copy(pipename + 12, len + 1, newdb->string + newdb->services[i].name) ;
+      if (pipe(p) < 0) return 0 ;
+      tain_add(&limit, &limit, &nano1) ;
+      if (!s6_fdholder_store_g(a, p[1], pipename, &limit, deadline))
+      {
+        close(p[1]) ;
+        close(p[0]) ;
+        return 0 ;
+      }
+      close(p[1]) ;
+      pipename[10] = 'r' ;
+      tain_add(&limit, &limit, &nano1) ;
+      if (!s6_fdholder_store_g(a, p[0], pipename, &limit, deadline))
+      {
+        close(p[0]) ;
+        return 0 ;
+      }
+      close(p[0]) ;
+    }
+  return 1 ;
 }
 
 static void fill_tfmt (char *tfmt, tain_t const *deadline)
@@ -387,13 +358,65 @@ static void fill_tfmt (char *tfmt, tain_t const *deadline)
   tfmt[uint_fmt(tfmt, t)] = 0 ;
 }
 
+static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldstate, s6rc_db_t const *newdb, unsigned char const *newstate, char const *const *envp, tain_t const *deadline)
+{
+  int fdsocket ;
+  s6_fdholder_t a = S6_FDHOLDER_ZERO ;
+  char fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER "/s")] ;
+  if (!(newstate[1] & 1)) return ;
+  byte_copy(fnsocket, livelen, live) ;
+  byte_copy(fnsocket + livelen, sizeof("/servicedirs/" S6RC_FDHOLDER "/s"), "/servicedirs" S6RC_FDHOLDER "/s") ;
+  fdsocket = ipc_stream_nb() ;
+  if (fdsocket < 0) goto hammer ;
+  if (!ipc_timed_connect_g(fdsocket, fnsocket, deadline)) goto closehammer ;
+  s6_fdholder_init(&a, fdsocket) ;
+  if (!delete_old_pipes(&a, olddb, oldstate, deadline)) goto freehammer ;
+  if (!create_new_pipes(&a, newdb, newstate, deadline)) goto freehammer ;
+  s6_fdholder_free(&a) ;
+  close(fdsocket) ;
+  return ;
+
+ freehammer:
+  s6_fdholder_free(&a) ;
+ closehammer:
+  close(fdsocket) ;
+ hammer:
+  if (verbosity) strerr_warnwu1x("live update s6rc-fdholder - restarting it") ;
+  {
+    pid_t pid ;
+    int wstat ;
+    char tfmt[UINT_FMT] ;
+    char const *newargv[7] = { S6_EXTBINPREFIX "s6-svc", "-T", tfmt, "-twR", "--", fnsocket, 0 } ;
+    fill_tfmt(tfmt, deadline) ;
+    fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER) - 1] = 0 ;
+    pid = child_spawn0(newargv[0], newargv, envp) ;
+    if (!pid) strerr_diefu2sys(111, "spawn ", newargv[0]) ;
+    if (wait_pid(pid, &wstat) < 0) strerr_diefu1sys(111, "waitpid") ;
+    tain_now_g() ;
+    if (WIFSIGNALED(wstat) || WEXITSTATUS(wstat))
+      if (verbosity) strerr_warnw1x("restart s6rc-fdholder") ;
+  }
+}
+
+
+
+ /* Main */
+
+
+static unsigned int want_count (unsigned char const *state, unsigned int n)
+{
+  unsigned int count = 0, i = n ;
+  while (i--) if (state[i] & 2) count++ ;
+  return count ;
+}
+
 int main (int argc, char const *const *argv, char const *const *envp)
 {
   char const *convfile = "/dev/null" ;
   tain_t deadline ;
   int dryrun = 0 ;
   PROG = "s6-rc-update" ;
-  strerr_dief1x(100, "will you please stop trying to run this? It's not ready!") ;
+  strerr_dief1x(100, "nope, not quite yet.") ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;
@@ -406,7 +429,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
         case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
         case 'n' : dryrun = 1 ; break ;
-        case 'l' : live = l.arg ; livelen = str_len(live) ; break ;
+        case 'l' : live = l.arg ; break ;
         case 'f' : convfile = l.arg ; break ;
         default : dieusage() ;
       }
@@ -424,6 +447,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     int fdoldc, fdnewc ;
     s6rc_db_t olddb, newdb ;
     unsigned int oldn, oldm, newn, newm ;
+    unsigned int livelen = str_len(live) ;
     char dbfn[livelen + 10] ;
 
     if (!tain_now_g())
@@ -437,7 +461,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
     byte_copy(dbfn + livelen, 6, "/lock") ;
     livelock = open_write(dbfn) ;
     if (livelock < 0) strerr_diefu2sys(111, "open ", dbfn) ;
-    if (coe(livelock) < 0) strerr_diefu2sys(111, "coe ", dbfn) ;
     if (lock_ex(livelock) < 0) strerr_diefu2sys(111, "lock ", dbfn) ;
 
 
@@ -460,6 +483,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     {
       pid_t pid ;
+      stralloc sa = STRALLOC_ZERO ;
       s6rc_service_t oldserviceblob[oldn] ;
       char const *oldargvblob[olddb.nargvs] ;
       uint32 olddepsblob[olddb.ndeps << 1] ;
@@ -509,7 +533,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Read the conversion file and compute what to do */
 
       if (verbosity >= 2) strerr_warni1x("computing state adjustments") ;
-      compute_transitions(convfile, oldstate, fdoldc, &olddb, newstate, fdnewc, argv[0], &newdb) ;
+      compute_transitions(convfile, oldstate, fdoldc, &olddb, newstate, fdnewc, argv[0], &newdb, &sa) ;
       tain_now_g() ;
       if (!tain_future(&deadline)) strerr_dief1x(1, "timed out") ;
 
@@ -517,7 +541,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Down transition */
 
       {
-        char const *newargv[12 + (dryrun * 5) + want_count(oldstate, oldn)] ;
+        char const *newargv[11 + (dryrun * 5) + want_count(oldstate, oldn)] ;
         unsigned int m = 0, i = oldn ;
         int wstat ;
         char vfmt[UINT_FMT] ;
@@ -539,8 +563,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        newargv[m++] = "-X" ;
-        newargv[m++] = "-d" ;
+        newargv[m++] = "-Xd" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
         while (i--) if (oldstate[i] & 2)
@@ -551,8 +574,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
         pid = child_spawn0(newargv[0], newargv, envp) ;
         if (!pid) strerr_diefu2sys(111, "spawn ", newargv[0]) ;
         if (wait_pid(pid, &wstat) < 0) strerr_diefu1sys(111, "waitpid") ;
+        tain_now_g() ;
         if (WIFSIGNALED(wstat) || WEXITSTATUS(wstat))
-          strerr_diefu1sys(wait_estatus(wstat), "first s6-rc invocation failed") ;
+          strerr_dief1x(wait_estatus(wstat), "first s6-rc invocation failed") ;
       }
 
 
@@ -561,8 +585,13 @@ int main (int argc, char const *const *argv, char const *const *envp)
       if (verbosity >= 2)
         strerr_warni1x("updating state and service directories") ;
 
-      update_servicedirs(oldstate, oldn, newstate, newn) ;
-      update_state_and_compiled(newstate, newn, argv[0]) ;
+
+     /* Pipelines */
+
+      if (verbosity >= 2)
+        strerr_warni1x("updating s6rc-fdholder pipe storage") ;
+
+      update_fdholder(&olddb, oldstate, &newdb, newstate, envp, &deadline) ;
 
 
      /* Up transition */
@@ -570,7 +599,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       if (!tain_future(&deadline)) strerr_dief1x(1, "timed out") ;
 
       {
-        char const *newargv[12 + (dryrun * 5) + want_count(newstate, newn)] ;
+        char const *newargv[11 + (dryrun * 5) + want_count(newstate, newn)] ;
         unsigned int m = 0, i = newn ;
         char vfmt[UINT_FMT] ;
         char tfmt[UINT_FMT] ;
@@ -591,8 +620,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        newargv[m++] = "-aX" ;
-        newargv[m++] = "-u" ;
+        newargv[m++] = "-Xua" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
         while (i--) if (newstate[i] & 2)

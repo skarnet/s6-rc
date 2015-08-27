@@ -3,6 +3,9 @@
 #ifndef S6RC_CONSTANTS_H
 #define S6RC_CONSTANTS_H
 
+#define S6RC_LIVE_REAL_SUFFIX ".real"
+#define S6RC_LIVE_NEW_SUFFIX ".new"
+
 #define S6RC_COMPILED_BASE "/etc/s6-rc/compiled"
 
 #define S6RC_ONESHOT_RUNNER "s6rc-oneshot-runner"
