@@ -880,8 +880,11 @@ static void auto_rights (char const *compiled, char const *file, mode_t mode)
 
 static inline void init_compiled (char const *compiled)
 {
+  int compiledlock ;
   if (mkdir(compiled, 0755) < 0)
     strerr_diefu2sys(111, "mkdir ", compiled) ;
+  if (!s6rc_lock(0, 0, 0, compiled, 2, &compiledlock))
+    strerr_diefu2sys(111, "take lock on ", compiled) ;
   auto_dir(compiled, "servicedirs") ;
 }
 

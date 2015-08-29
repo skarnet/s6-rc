@@ -1,0 +1,132 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-bundle program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-bundle program" />
+    <meta name="Keywords" content="s6-rc offline database dump command rc init dependency state management services" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc-bundle</a><br />
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-bundle program </h1>
+
+<p>
+ s6-rc-bundle is a tool to add or delete bundles from a compiled
+service database without having to recompile it from source.
+</p>
+
+<p>
+ It is an <em>offline tool</em>, i.e. you can run it on any
+compiled service database without actually having a live set
+of services managed by s6-rc. However, if you do have a live
+set, you can still run s6-rc-bundle on the current database (and
+it is the default); it won't interfere with your normal service
+operation.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-bundle help
+     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] add <em>bundlename</em> <em>contents...</em>
+     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] delete <em>bundlenames...</em>
+     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] multiple <em>args...</em>
+</pre>
+
+<ul>
+ <li> s6-rc-bundle expects to find a <em>compiled service database</em>
+in <em>compiled</em>; by default it uses the service database
+used by the live state in <em>live</em>. </li>
+ <li> Depending on the arguments, it adds a bundle definition to this database, or
+deletes a bundle definition from it, or performs multiple additions/deletions. </li>
+</ul>
+
+<h2> Options </h2>
+
+<ul>
+ <li> <tt>-c&nbsp;<em>compiled</em></tt>&nbsp;: operate on a
+compiled service database in <em>compiled</em> instead of
+the current live one. </li>
+ <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: assume the live
+state is in <em>live</em>. This option is ignored if the
+<tt>-c</tt> option has been given. Default is
+<tt>/run/s6-rc</tt>. The default can be changed at package
+compilation time, by giving the <tt>--livedir=<em>live</em></tt>
+option to <tt>./configure</tt>. </li>
+ <li> <tt>-f</tt>&nbsp;: force. s6-rc-bundle will not complain
+when given a nonexisting name to delete (it will do nothing), or
+when given an existing name to add (it will replace the definition).
+By default, s6-rc-bundle will exit when asked to delete a
+nonexistent name or to add an existing name. </li>
+</ul>
+
+<h2> Exit codes </h2>
+
+<ul>
+ <li> 0: success </li>
+ <li> 1: identifier already exists in service database </li>
+ <li> 3: identifier not found in service database </li>
+ <li> 4: invalid or corrupted service database </li>
+ <li> 5: wrong identifier type for the given command </li>
+ <li> 100: wrong usage </li>
+ <li> 111: system call failed </li>
+</ul>
+
+<h2> Subcommands </h2>
+
+<h3> s6-rc-bundle help </h3>
+
+<p>
+ Prints a help message on stdout.
+</p>
+
+<h3> s6-rc-bundle add <em>bundlename</em> <em>contents...</em> </h3>
+
+<p>
+ Adds a bundle named <em>bundlename</em> to the database, representing
+the services listed in <em>contents</em>. The arguments in <em>contents...</em>
+are resolved <em>before</em> the database is modified by the
+s6-rc-bundle invocation.
+</p>
+
+<h3> s6-rc-bundle delete <em>bundlenames...</em> </h3>
+
+<p>
+ Deletes bundles listed in <em>bundlenames...</em>.
+</p>
+
+<h3> s6-rc-bundle multiple <em>args...</em> </h3>
+
+<p>
+ Performs multiple bundle deletions and additions. This subcommand is best
+used in an <a href="http://skarnet.org/software/execline/">execline</a>
+script, because it uses
+<a href="http://skarnet.org/software/execline/el_semicolon.html">blocks</a>.
+</p>
+
+<p>
+<em>args...</em> is composed of:
+</p>
+
+<ul>
+ <li> One block listing bundle names that will be
+deleted from the database. </li>
+ <li> Zero or more addition definitions, each of them composed of:
+ <ul>
+  <li> One argument that is the name of the bundle to add </li>
+  <li> One block listing the services contained in the
+new bundle. The names in the block are resolved before any addition
+is made to the database. </li>
+ </ul> </li>
+</ul>
+
+</body>
+</html>

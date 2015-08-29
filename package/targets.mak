@@ -1,7 +1,8 @@
 BIN_TARGETS := \
 s6-rc-compile \
 s6-rc-dryrun \
-s6-rc-db
+s6-rc-db \
+s6-rc-bundle
 
 SBIN_TARGETS := \
 s6-rc-init \

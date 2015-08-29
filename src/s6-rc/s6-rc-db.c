@@ -1,24 +1,14 @@
 /* ISC license. */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
 #include <unistd.h>
-#include <errno.h>
-#include <signal.h>
 #include <skalibs/uint32.h>
-#include <skalibs/uint.h>
-#include <skalibs/allreadwrite.h>
 #include <skalibs/bytestr.h>
-#include <skalibs/cdb.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr2.h>
-#include <skalibs/environ.h>
-#include <skalibs/direntry.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/cdb.h>
 #include <skalibs/unix-transactional.h>
-#include <s6/config.h>
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
@@ -384,6 +374,7 @@ int main (int argc, char const *const *argv)
 
   {
     unsigned int livelen = str_len(live) ;
+    int compiledlock ;
     s6rc_db_t dbblob ;
     char compiledblob[compiled ? str_len(compiled) : livelen + 10] ;
     db = &dbblob ;
@@ -395,6 +386,8 @@ int main (int argc, char const *const *argv)
       compiled = compiledblob ;
     }
 
+    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock))
+      strerr_diefu2sys(111, "take lock on ", compiled) ;
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)
       strerr_diefu2sys(111, "open ", compiled) ;

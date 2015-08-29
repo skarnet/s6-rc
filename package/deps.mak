@@ -11,6 +11,7 @@ src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read.lo: src/libs6rc/s6rc_db_read
 src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_sizes.lo: src/libs6rc/s6rc_db_read_sizes.c src/include/s6-rc/s6rc-db.h
 src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_db_read_uint32.lo: src/libs6rc/s6rc_db_read_uint32.c src/include/s6-rc/s6rc-db.h
 src/libs6rc/s6rc_graph_closure.o src/libs6rc/s6rc_graph_closure.lo: src/libs6rc/s6rc_graph_closure.c src/include/s6-rc/s6rc-db.h src/include/s6-rc/s6rc-utils.h
+src/libs6rc/s6rc_lock.o src/libs6rc/s6rc_lock.lo: src/libs6rc/s6rc_lock.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_read_uint.lo: src/libs6rc/s6rc_read_uint.c
 src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_sanitize_dir.lo: src/libs6rc/s6rc_sanitize_dir.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_block.lo: src/libs6rc/s6rc_servicedir_block.c src/include/s6-rc/s6rc-servicedir.h
@@ -18,6 +19,7 @@ src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_offl
 src/libs6rc/s6rc_servicedir_copy_online.o src/libs6rc/s6rc_servicedir_copy_online.lo: src/libs6rc/s6rc_servicedir_copy_online.c src/include/s6-rc/s6rc-servicedir.h src/include/s6-rc/s6rc-utils.h src/libs6rc/s6rc-servicedir-internal.h
 src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_internal.lo: src/libs6rc/s6rc_servicedir_internal.c src/include/s6-rc/s6rc-utils.h src/libs6rc/s6rc-servicedir-internal.h
 src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_unblock.lo: src/libs6rc/s6rc_servicedir_unblock.c src/include/s6-rc/s6rc-servicedir.h
+src/s6-rc/s6-rc-bundle.o src/s6-rc/s6-rc-bundle.lo: src/s6-rc/s6-rc-bundle.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-compile.o src/s6-rc/s6-rc-compile.lo: src/s6-rc/s6-rc-compile.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-db.o src/s6-rc/s6-rc-db.lo: src/s6-rc/s6-rc-db.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-dryrun.o src/s6-rc/s6-rc-dryrun.lo: src/s6-rc/s6-rc-dryrun.c
@@ -26,11 +28,13 @@ src/s6-rc/s6-rc-init.o src/s6-rc/s6-rc-init.lo: src/s6-rc/s6-rc-init.c src/inclu
 src/s6-rc/s6-rc-update.o src/s6-rc/s6-rc-update.lo: src/s6-rc/s6-rc-update.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc.o src/s6-rc/s6-rc.lo: src/s6-rc/s6-rc.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 
-libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_check_pipelines.o src/libs6rc/s6rc_db_check_revdeps.o src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_graph_closure.o src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_online.o
+libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_check_pipelines.o src/libs6rc/s6rc_db_check_revdeps.o src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_graph_closure.o src/libs6rc/s6rc_lock.o src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_online.o
 libs6rc.so.xyzzy: private EXTRA_LIBS := -ls6 -lskarnet
-libs6rc.so.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo
+libs6rc.so.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo
 s6-rc: private EXTRA_LIBS := ${TAINNOW_LIB}
 s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -lskarnet
+s6-rc-bundle: private EXTRA_LIBS :=
+s6-rc-bundle: src/s6-rc/s6-rc-bundle.o ${LIBS6RC} -lexecline -lskarnet
 s6-rc-compile: private EXTRA_LIBS :=
 s6-rc-compile: src/s6-rc/s6-rc-compile.o ${LIBS6RC} -lexecline -lskarnet
 s6-rc-db: private EXTRA_LIBS :=

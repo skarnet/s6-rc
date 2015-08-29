@@ -30,7 +30,7 @@ static void cleanup (void)
   int e = errno ;
   satmp.s[llen] = 0 ;
   unlink(satmp.s) ;
-  satmp.s[llen] = ' ' ;
+  satmp.s[llen] = '.' ;
   rm_rf_in_tmp(&satmp, 0) ;
   stralloc_free(&satmp) ;
   errno = e ;
@@ -88,29 +88,21 @@ int main (int argc, char const *const *argv)
     char cfn[llen + 23] ;
 
 
-   /* Create the real dir and the symlink */
+   /* Create the real dir, lock it, symlink */
 
     if (mkdir(satmp.s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", satmp.s) ;
+    if (!s6rc_lock(satmp.s, 2, &fdlock, 0, 0, 0))
+    {
+      cleanup() ;
+      strerr_diefu2sys(111, "take lock on ", satmp.s) ;
+    }
     byte_copy(lfn, llen, live) ; lfn[llen] = 0 ;
     if (symlink(satmp.s + dirlen, lfn) < 0)
+    {
+      cleanup() ;
       strerr_diefu4sys(111, "symlink ", satmp.s + dirlen, " to ", lfn) ;
+    }
     
-
-   /* lock */
-
-    byte_copy(lfn + llen, 6, "/lock") ;
-    fdlock = open_trunc(lfn) ;
-    if (fdlock < 0)
-    {
-      cleanup() ;
-      strerr_diefu2sys(111, "open ", lfn) ;
-    }
-    if (lock_ex(fdlock) < 0)
-    {
-      cleanup() ;
-      strerr_diefu2sys(111, "lock ", lfn) ;
-    }
-
 
   /* compiled */
 
@@ -237,24 +229,17 @@ int main (int argc, char const *const *argv)
         thislen = str_len(d->d_name) ;
         byte_copy(srcfn + llen + 13, thislen, d->d_name) ;
         byte_copy(srcfn + llen + 13 + thislen, 6, "/down") ;
-        r = open_trunc(srcfn) ;
-        if (r < 0)
+        if (!touch(srcfn))
         {
           cleanup() ;
           strerr_diefu2sys(111, "touch ", srcfn) ;
         }
-        close(r) ;
         byte_copy(srcfn + llen + 14 + thislen, 9, "log/down") ;
-        r = open_trunc(srcfn) ;
-        if (r < 0)
+        if (!touch(srcfn))
         {
-          if (errno != ENOENT)
-          {
-            cleanup() ;
-            strerr_diefu2sys(111, "touch ", srcfn) ;
-          }
+          cleanup() ;
+          strerr_diefu2sys(111, "touch ", srcfn) ;
         }
-        else close(r) ;
         byte_copy(srcfn + llen + 14 + thislen, 6, "event") ;
         if (!ftrigw_fifodir_make(srcfn, gid, 0))
         {

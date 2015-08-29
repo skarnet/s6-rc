@@ -1,0 +1,3 @@
+${LIBS6RC}
+-lexecline
+-lskarnet
