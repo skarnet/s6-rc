@@ -30,7 +30,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     byte_copy(cfn + clen, 6, "/lock") ;
     cfd = open_create(cfn) ;
     if (cfd < 0)
-      if (cwhat == 1 || errno != EROFS) { e = errno ; goto lerr ; }
+      if (cwhat > 1 || errno != EROFS) { e = errno ; goto lerr ; }
       else cfd = -errno ;
     else if ((cwhat > 1 ? lock_ex(cfd) : lock_sh(cfd)) < 0) { e = errno ; goto cerr ; }
   }
