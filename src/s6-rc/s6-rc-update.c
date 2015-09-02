@@ -373,6 +373,9 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
     }
   }
 
+  if (verbosity >= 2)
+    strerr_warni1x("successfully switched to new database") ;
+
  /* scandir cleanup, then old livedir cleanup */
   sa->len = dirlen ;
   sa->s[sa->len++] = '/' ;
@@ -529,7 +532,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
   tain_t deadline ;
   int dryrun = 0 ;
   PROG = "s6-rc-update" ;
-  strerr_dief1x(100, "nope, not quite yet.") ;
+  strerr_dief1x(100, "almost there. Just a little more patience.") ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;
@@ -692,11 +695,17 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
       if (!dryrun)
       {
+        int r ;
 
        /* Update state and service directories */
 
         if (verbosity >= 2)
           strerr_warni1x("updating state and service directories") ;
+
+        make_new_livedir (oldstate, &olddb, newstate, &newdb, argv[0], newlong, &sa) ;
+        r = s6rc_servicedir_manage_g(live, &deadline) ;
+        if (!r) strerr_diefu2sys(111, "manage new service directories in ", live) ;
+        if (r & 2) strerr_warnw3x("s6-svscan not running on ", live, "/scandir") ;
 
 
        /* Adjust stored pipelines */

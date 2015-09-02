@@ -347,11 +347,10 @@ detect and reject cycles as well as collisions.
 </p>
 
 <p>
- The pipe linking a producer and a consumer is created by an automatically
-generated oneshot service that both the producer and consumer depend on,
-and stored in a
+ The pipe linking a producer and a consumer is created and stored at run-time in a
 <a href="http://skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
-instance created by an automatically generated longrun service.
+instance managed by an automatically generated longrun service named
+<tt>s6rc-fdholder</tt>.
 </p>
 
 <h2> A complete example </h2>

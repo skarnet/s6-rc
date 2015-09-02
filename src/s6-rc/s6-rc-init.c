@@ -1,21 +1,15 @@
 /* ISC license. */
 
-#include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
-#include <skalibs/uint16.h>
 #include <skalibs/uint.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/stralloc.h>
-#include <skalibs/direntry.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/skamisc.h>
-#include <s6/s6-supervise.h>
-#include <s6/ftrigw.h>
-#include <s6/ftrigr.h>
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
@@ -30,7 +24,7 @@ static void cleanup (void)
   int e = errno ;
   satmp.s[llen] = 0 ;
   unlink(satmp.s) ;
-  satmp.s[llen] = '.' ;
+  satmp.s[llen] = ':' ;
   rm_rf_in_tmp(&satmp, 0) ;
   stralloc_free(&satmp) ;
   errno = e ;
@@ -71,6 +65,9 @@ int main (int argc, char const *const *argv)
   if (argv[0][0] != '/')
     strerr_dief2x(100, "scandir", " must be an absolute path") ;
 
+  tain_now_g() ;
+  tain_add_g(&deadline, &tto) ;
+
   if (!s6rc_sanitize_dir(&satmp, live, &dirlen)) dienomem() ;
   llen = satmp.len ;
   if (!stralloc_cats(&satmp, ":initial") || !stralloc_0(&satmp))
@@ -79,10 +76,8 @@ int main (int argc, char const *const *argv)
   {
     int fdlock ;
     int fdcompiled ;
+    int ok ;
     s6rc_db_t db ;
-    DIR *dir ;
-    unsigned int maxlen = 0 ;
-    unsigned int ndirs = 0 ;
     unsigned int n ;
     char lfn[llen + 13] ;
     char cfn[llen + 23] ;
@@ -90,13 +85,16 @@ int main (int argc, char const *const *argv)
 
    /* Create the real dir, lock it, symlink */
 
+    unlink(live) ;
+    rm_rf(satmp.s) ;
     if (mkdir(satmp.s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", satmp.s) ;
     if (!s6rc_lock(satmp.s, 2, &fdlock, 0, 0, 0))
     {
       cleanup() ;
       strerr_diefu2sys(111, "take lock on ", satmp.s) ;
     }
-    byte_copy(lfn, llen, live) ; lfn[llen] = 0 ;
+    byte_copy(lfn, llen, satmp.s) ;
+    lfn[llen] = 0 ;
     if (symlink(satmp.s + dirlen, lfn) < 0)
     {
       cleanup() ;
@@ -104,7 +102,7 @@ int main (int argc, char const *const *argv)
     }
     
 
-  /* compiled */
+   /* compiled */
 
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)
@@ -112,7 +110,7 @@ int main (int argc, char const *const *argv)
       cleanup() ;
       strerr_diefu2sys(111, "open ", compiled) ;
     }
-    byte_copy(lfn + llen + 1, 9, "compiled") ;
+    byte_copy(lfn + llen, 10, "/compiled") ;
     if (symlink(compiled, lfn) < 0)
     {
       cleanup() ;
@@ -120,7 +118,7 @@ int main (int argc, char const *const *argv)
     }
 
 
-  /* scandir */
+   /* scandir */
 
     byte_copy(lfn + llen + 1, 8, "scandir") ;
     if (symlink(argv[0], lfn) < 0)
@@ -132,7 +130,6 @@ int main (int argc, char const *const *argv)
 
    /* state */
 
-    
     byte_copy(lfn + llen + 1, 6, "state") ;
     {
       register int r = s6rc_db_read_sizes(fdcompiled, &db) ;
@@ -167,134 +164,18 @@ int main (int argc, char const *const *argv)
       strerr_diefu4sys(111, "recursively copy ", cfn, " to ", lfn) ;
     }
 
-    tain_now_g() ;
-    tain_add_g(&deadline, &tto) ;
-    dir = opendir(lfn) ;
-    if (!dir)
+
+   /* start the supervisors */
+
+    lfn[llen] = 0 ;
+    ok = s6rc_servicedir_manage_g(lfn, &deadline) ;
+    if (!ok)
     {
       cleanup() ;
-      strerr_diefu2sys(111, "opendir ", lfn) ;
+      strerr_diefu3sys(111, "supervise service directories in ", lfn, "/servicedirs") ;
     }
-    for (;;)
-    {
-      unsigned int thislen ;
-      direntry *d ;
-      errno = 0 ;
-      d = readdir(dir) ;
-      if (!d) break ;
-      if (d->d_name[0] == '.') continue ;
-      thislen = str_len(d->d_name) ;
-      if (thislen > maxlen) maxlen = thislen ;
-      ndirs++ ;
-    }
-    if (errno)
-    {
-      int e = errno ;
-      dir_close(dir) ;
-      errno = e ;
-      cleanup() ;
-      strerr_diefu2sys(111, "readdir ", lfn) ;
-    }
-    if (ndirs)
-    {
-      ftrigr_t a = FTRIGR_ZERO ;
-      gid_t gid = getgid() ;
-      unsigned int i = 0 ;
-      int r ;
-      uint16 ids[ndirs] ;
-      char srcfn[llen + 23 + maxlen] ; /* XXX: unsafe if dir is writable by non-root */
-      char dstfn[llen + 9 + sizeof(S6_SVSCAN_CTLDIR "/control") + maxlen] ;
-      rewinddir(dir) ;
-      byte_copy(srcfn, llen + 12, lfn) ;
-      srcfn[llen + 12] = '/' ;
-      byte_copy(dstfn, llen, satmp.s) ;
-      byte_copy(dstfn + llen, 8, "/scandir") ;
-      dstfn[llen + 8] = '/' ;
-      if (!ftrigr_startf_g(&a, &deadline))
-      {
-        int e = errno ;
-        dir_close(dir) ;
-        errno = e ;
-        cleanup() ;
-        strerr_diefu1sys(111, "start event listener process") ;
-      }
-      for (;;)
-      {
-        unsigned int thislen ;
-        direntry *d ;
-        errno = 0 ;
-        d = readdir(dir) ;
-        if (!d) break ;
-        if (d->d_name[0] == '.') continue ;
-        thislen = str_len(d->d_name) ;
-        byte_copy(srcfn + llen + 13, thislen, d->d_name) ;
-        byte_copy(srcfn + llen + 13 + thislen, 6, "/down") ;
-        if (!touch(srcfn))
-        {
-          cleanup() ;
-          strerr_diefu2sys(111, "touch ", srcfn) ;
-        }
-        byte_copy(srcfn + llen + 14 + thislen, 9, "log/down") ;
-        if (!touch(srcfn))
-        {
-          cleanup() ;
-          strerr_diefu2sys(111, "touch ", srcfn) ;
-        }
-        byte_copy(srcfn + llen + 14 + thislen, 6, "event") ;
-        if (!ftrigw_fifodir_make(srcfn, gid, 0))
-        {
-          cleanup() ;
-          strerr_diefu2sys(111, "make fifodir ", srcfn) ;
-        }
-        ids[i] = ftrigr_subscribe_g(&a, srcfn, "s", 0, &deadline) ;
-        if (!ids[i])
-        {
-          int e = errno ;
-          dir_close(dir) ;
-          errno = e ;
-          cleanup() ;
-          strerr_diefu2sys(111, "subscribe to ", srcfn) ;
-        }
-        srcfn[llen + 13 + thislen] = 0 ;
-        byte_copy(dstfn + llen + 9, thislen + 1, d->d_name) ;
-        if (symlink(srcfn, dstfn) < 0)
-        {
-          int e = errno ;
-          dir_close(dir) ;
-          errno = e ;
-          cleanup() ;
-          strerr_diefu4sys(111, "symlink ", srcfn, " to ", dstfn) ;
-        }
-        i++ ;
-      }
-      if (errno)
-      {
-        int e = errno ;
-        dir_close(dir) ;
-        errno = e ;
-        cleanup() ;
-        strerr_diefu2sys(111, "readdir ", lfn) ;
-      }
-      dir_close(dir) ;
-      byte_copy(dstfn + llen + 9, sizeof(S6_SVSCAN_CTLDIR "/control"), S6_SVSCAN_CTLDIR "/control") ;
-      r = s6_svc_write(dstfn, "a", 1) ;
-      if (r < 0)
-      {
-        cleanup() ;
-        strerr_diefu2sys(111, "write to ", dstfn) ;
-      }
-      if (!r) strerr_warnw2x("s6-svscan not running on ", argv[0]) ;
-      else
-      {
-        if (ftrigr_wait_and_g(&a, ids, ndirs, &deadline) < 0)
-        {
-          cleanup() ;
-          strerr_diefu1sys(111, "wait for s6-supervise processes to come up") ;
-        }
-      }
-      ftrigr_end(&a) ;
-    }
-    else dir_close(dir) ;
-  }
+    if (ok & 2)
+      strerr_warnw3x("s6-svscan not running on ", lfn, "/scandir") ;
+  }  
   return 0 ;
 }
