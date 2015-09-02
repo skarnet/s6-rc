@@ -58,7 +58,7 @@ static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force,
   if (!r)
   {
     if (!h && !force)
-      strerr_dief4x(3, "identifier ", name, "does not exist in database ", compiled) ;
+      strerr_dief4x(3, "identifier ", name, " does not exist in database ", compiled) ;
     return ;
   }
   if (h && !force)
@@ -146,7 +146,7 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
     {
       register int r = cdb_find(&cr, *p, str_len(*p)) ;
       if (r < 0) strerr_diefu3sys(111, "cdb_find in ", compiled, "/resolve.cdb") ;
-      if (!r) strerr_dief4x(3, "identifier ", *p, "does not exist in database ", compiled) ;
+      if (!r) strerr_dief4x(3, "identifier ", *p, " does not exist in database ", compiled) ;
       {
         unsigned int j = cdb_datalen(&cr) ;
         char pack[j + 1] ;
