@@ -13,5 +13,6 @@ s6rc_servicedir_block.o
 s6rc_servicedir_unblock.o
 s6rc_servicedir_copy_offline.o
 s6rc_servicedir_copy_online.o
+s6rc_servicedir_manage.o
 -ls6
 -lskarnet
