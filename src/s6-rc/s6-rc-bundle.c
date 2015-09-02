@@ -88,7 +88,7 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
   unsigned int n = db->nlong + db->nshort ;
   unsigned char bits[bitarray_div8(n)] ;
   if (fdr < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
-  if (cdb_init_map(&cr, fdr, 1))
+  if (!cdb_init_map(&cr, fdr, 1))
     strerr_diefu3sys(111, "cdb_init ", compiled, "/resolve.cdb") ;
   while (i--) check(&cr, db, toadd[i], 1, force, compiled) ;
   i = todeln ;
