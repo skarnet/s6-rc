@@ -62,7 +62,7 @@ static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force,
     return ;
   }
   if (h && !force)
-    strerr_dief4x(1, "identifier ", name, " exists in database ", compiled) ;
+    strerr_dief4x(1, "identifier ", name, " already exists in database ", compiled) ;
   if (cdb_datalen(cr) == 4)
   {
     uint32 x ;
@@ -119,7 +119,9 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
         strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
       }
       for (i = 0 ; i < todeln ; i++) if (!str_diffn(todel[i], ktmp, klen)) break ;
-      if (i >= todeln)
+      if (i < todeln) continue ;
+      for (i = 0 ; i < toaddn ; i++) if (!str_diffn(toadd[i], ktmp, klen)) break ;
+      if (i < toaddn) continue ;
       {
         unsigned int dlen = cdb_datalen(&cr) ;
         char dtmp[dlen + 1] ;
