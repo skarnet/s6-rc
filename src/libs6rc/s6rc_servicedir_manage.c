@@ -22,7 +22,7 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
   gid_t gid = getgid() ;
   unsigned int livelen = str_len(live) ;
   int ok = 1 ;
-  int e ;
+  int e = 0 ;
   DIR *dir ;
   char dirfn[livelen + 13] ;
   if (!ftrigr_startf(&a, deadline, stamp)) return 0 ;

@@ -21,13 +21,14 @@
 <p>
  s6-rc-update is an <em>online service database switcher</em>:
 it will replace your compiled service database with another
-one, and adjust the live state accordingly.
+one, and adjust the live state accordingly. This allows you to
+change your set of services without having to reboot.
 </p>
 
 <p>
- Live upgrading a service database is no small feat, and no
+ Live upgrading a service database is not easy, and no
 fully automated system can get it right in all cases.
-s6-rc-update will do its best on its own, but it lets you
+s6-rc-update will do its best on its own, but it lets the user
 give it instructions to handle
 difficult cases; and rather than implement doubtful
 heuristics, it will fail with an error message in
@@ -36,11 +37,213 @@ situations it really cannot solve.
 
 <h2> Interface </h2>
 
+<pre>
+     s6-rc-update [ -n ] [ -v <em>verbosity</em> ] [ -t <em>timeout</em> ] [ -l <em>live</em> ] [ -f <em>convfile</em> ] <em>newdb</em>
+</pre>
+
+<ul>
+ <li> s6-rc-update analyzes the current live state, the current compiled service
+database, and the compiled service database contained at <em>newdb</em>. </li>
+ <li> Additionally, it can process an optional <em>conversion file</em> containing
+instructions. </li>
+ <li> It computes the necessary service transitions to safely update the live
+database. </li>
+ <li> It shuts down the necessary services. </li>
+ <li> It updates the live directory so that <em>newdb</em> becomes the
+live compiled service database. </li>
+ <li> It starts up the necessary services. </li>
+</ul>
+
+<h2> Exit codes </h2>
+
+<ul>
+ <li> 0: success </li>
+ <li> 1: failure to perform some state transitions </li>
+ <li> 2: timed out </li>
+ <li> 3: unknown service name in the conversion file </li>
+ <li> 4: invalid service database </li>
+ <li> 5: wrong service type in the conversion file </li>
+ <li> 6: duplicate service in the conversion file </li>
+ <li> 100: wrong usage </li>
+ <li> 111: system call failed </li>
+</ul>
+
+<h2> Options </h2>
+
+<ul>
+ <li> <tt>-n</tt>&nbsp;: dry run. s6-rc-update will compute the service
+transitions, and print the <a href="s6-rc.html">s6-rc</a> command lines
+it would execute to perform those transitions. It will not actually
+run them or modify the live database. </li>
+ <li> <tt>-v&nbsp;<em>verbosity</em></tt>&nbsp;: be more or less
+verbose. Default is 1: warning and error messages will be printed to
+stderr. 0 silences warnings. 2 adds a bit more information about
+what s6-rc-update is doing. 3 or more is heavy debug output. </li>
+ <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: if s6-rc-update cannot
+perform its job within <em>timeout</em> milliseconds, it will exit.
+The default is 0, meaning infinite (no timeout). Be aware that timing
+out and exiting may leave the live database in an inconsistent state,
+so use of this option is not recommended. </li>
+ <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
+live state in <em>live</em>. Default is <tt>/run/s6-rc</tt>.
+The default can be changed at compile-time by giving the
+<tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. </li>
+ <li> <tt>-f&nbsp;<em>convfile</em></tt>&nbsp;: use the conversion
+file located at <em>convfile</em>. Default is <tt>/dev/null</tt>,
+meaning no special instructions. </li>
+</ul>
+
+<h2> Transition details </h2>
+
 <p>
- To be written. s6-rc-update is currently the missing piece in the
-s6-rc suite, which is the reason why s6-rc has not been officially released
-yet. :-)
+ s6-rc-update's job is to ensure consistency of the live state across
+a change of compiled service database. To do so, it must make sure
+that the services that are up at the time of its invocation are still
+up after its invocation; but service definitions in the new compiled
+may be different from those in the old one; in particular, dependencies
+may change, or a service can change types - a oneshot can become
+a longrun and vice-versa, and an atomic service can even become a
+bundle.
 </p>
+
+<h3> Service identity </h3>
+
+<p>
+ s6-rc-update examines atomic services, as defined in the old compiled,
+that are up at invocation time, and computes what is necessary for the
+"same" service, as defined in the new compiled, to be up. Barring
+conversion file instructions, the service is "the same" if it has the
+same name in the new compiled, no matter its type.
+</p>
+
+<p>
+ So, if there is an up oneshot named <tt>sshd</tt> in the old compiled,
+and there is a longrun named <tt>sshd</tt> in the new compiled, then
+s6-rc-update will decide that the new <tt>sshd</tt> longrun will replace
+the old <tt>sshd</tt> oneshot. If the new compiled defines a <tt>sshd</tt>
+bundle instead, then s6-rc-update will decide that the old <tt>sshd</tt>
+oneshot will be replaced with the contents of the <tt>sshd</tt> bundle.
+<p>
+
+<h3> Restarts </h3>
+
+<p>
+ s6-rc-update tries to avoid needlessly restarting services. For instance,
+running it with a new compiled that is an exact copy of
+the old compiled should not cause any restarts. s6-rc-update will flag a
+service to be restarted in the following cases:
+</p>
+
+<ul>
+ <li> The service has disappeared in the new compiled. In this case, the
+old service will simply be stopped. </li>
+ <li> The service has changed types: a oneshot becomes a longrun, a longrun
+becomes a oneshot, or an atomic service becomes a bundle. In this case, the
+old service will be stopped, then the new service will be started. </li>
+ <li> The service has a dependency to a service that must restart, or to an
+old service that must stop, or to a new service that did not previously
+exist or that was previously down. </li>
+ <li> There is an instruction to restart the service in the conversion file. </li>
+</ul>
+
+<h3> Steps </h3>
+
+<p>
+ After it has decided what services it should restart, s6-rc-update will:
+</p>
+
+<ul>
+ <li> Invoke <a href="s6-rc.html">s6-rc</a> to stop old services. </li>
+ <li> Update the live directory with the data from the new compiled.
+This is the critical part; s6-rc should not be interrupted at this point.
+It does its best to avoid risking leaving behind an inconsistent state,
+but a 100% atomicity guarantee is impossible to achieve. </li>
+ <li> Adjust pipe names for the existing pipelines, if needed. </li>
+ <li> Exec into <a href="s6-rc.html">s6-rc</a> to start new services. </li>
+</ul>
+
+<h2> The conversion file </h2>
+
+<p>
+ The conversion file is used to give s6-rc-update instructions when the
+change of databases is not entirely straightforward. Currently, it
+supports the following features:
+</p>
+
+<ul>
+ <li> changing the name of a service </li>
+ <li> forcing a restart on a service </li>
+</ul>
+
+<h3> Format </h3>
+
+<p>
+ The conversion file is a sequence of lines; each line is parsed
+independently, there's no carrying of information from one line to
+the next.
+</p>
+
+<p>
+ A line is lexed into words by the
+<a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>
+lexer, which means that words are normally separated by whitespace, but
+can be quoted, that <tt>#</tt> comments are recognized, etc.
+</p>
+
+<p>
+ The first word in a line must be the name of an "old" atomic service, i.e.
+an atomic service contained in the current live database. The remaining
+words in the line are instructions telling s6-rc-update how to convert
+that service.
+</p>
+
+<h4> Renaming </h4>
+
+<p>
+ If the second word in the line is <tt>-></tt>, then the third word in the
+line must be the new name of the service in the new database: s6-rc-update
+will then rename it. It is possible
+to rename an atomic service to another atomic service or a bundle, but no
+matter whether a service is renamed or not, changing its type will force a
+restart.
+</p>
+
+<p>
+ Note that renaming a longrun without restarting it will keep the same
+<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+process supervising the longrun: this process will appear in a
+<tt>ps</tt> output as supervising the old name. This is only cosmetic and
+will have no impact on the service; nevertheless, if you wish to avoid that,
+simply force a restart on every service you rename.
+</p>
+
+<h4> Restarting </h4>
+
+<p>
+ If the word following either the old name, or a renaming instruction, is the
+word <tt>restart</tt>, then the service will forced to restart.
+</p>
+
+<h3> Examples </h3>
+
+<p>
+ Consider the following conversion file:
+</p>
+
+<pre># Simple conversion file
+mount-var -> mount-rwfs
+httpd restart
+sqld -> mysqld restart
+</pre>
+
+<ul>
+ <li> It will rename <tt>mount-var</tt> to <tt>mount-rwfs</tt>, not restarting it
+if <tt>mount-var</tt> in the old database and <tt>mount-rwfs</tt> in the new
+database have the same type and do not depend on services that would force a
+restart. </li>
+ <li> It will restart <tt>httpd</tt> </li>
+ <li> It will rename <tt>sqld</tt> to <tt>mysqld</tt> and make it restart.
+</ul>
 
 </body>
 </html>

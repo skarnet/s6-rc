@@ -86,6 +86,16 @@ to operate the database. If neither option is used, then root
 (and only root) is implicitly allowed.
 </p>
 
+<p>
+ It is important to <em>only</em> use the <tt>-u</tt> or <tt>-g</tt>
+options when the user owning the supervision tree is not root. The
+internal s6-rc mechanisms allow uids and gids specified by those
+options to run any program as the user owning the supervision tree;
+if that user is root, this becomes an easy avenue for unwanted
+privilege gain. Only specify users that have the right to operate
+the supervision tree!
+</p>
+
 <h2> Source format </h2>
 
 <p>
@@ -363,7 +373,7 @@ Linux system running
 <a href="http://skarnet.org/software/">skarnet.org</a> packages; of course, only
 the service definition set has been kept, and private information has been
 removed, so it won't work out-of-the-box without the proper specific files,
-notably configuration in <tt>/etc/</tt> - but nevertheless, you can browse the
+notably configuration in <tt>/etc</tt> - but nevertheless, you can browse the
 source and understand what it does, and adapt it to your own needs. It will
 compile as is with
 <tt>s6-rc-compile</tt>, and you can examine the

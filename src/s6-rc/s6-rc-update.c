@@ -53,7 +53,8 @@ static unsigned int verbosity = 1 ;
     newstate flags:
      1 -> is up (converted from old up)
      2 -> wanted up
-     4 -> is a conversion target
+     8 -> is a conversion target
+    32 -> is up after closure (i.e. includes new deps)
  */
 
 static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
@@ -150,7 +151,7 @@ static inline void stuff_with_oldc (unsigned char *oldstate, int fdoldc, s6rc_db
   close(oldfdres) ;
 }
 
-static inline void fill_convtable_and_flags (unsigned char *conversion_table, unsigned char *oldstate, unsigned char *newstate, char const *namedata, unsigned int const *oldindex, unsigned int *newlong, cdb_t *newc, char const *newfn, s6rc_db_t const *olddb, s6rc_db_t const *newdb)
+static inline void fill_convtable_and_flags (unsigned char *conversion_table, unsigned char *oldstate, unsigned char *newstate, char const *namedata, unsigned int const *oldindex, unsigned int *invimage, cdb_t *newc, char const *newfn, s6rc_db_t const *olddb, s6rc_db_t const *newdb)
 {
   unsigned int newn = newdb->nshort + newdb->nlong ;
   unsigned int i = olddb->nshort + olddb->nlong ;
@@ -183,22 +184,19 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
         uint32_unpack_big(p, &x) ; p += 4 ;
         if (x >= newn)
           strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
-        if (newstate[x] & 4)
-          strerr_dief4x(1, "bad conversion file: new service ", newdb->string + newdb->services[x].name, " is a target for more than one conversion, including old service ", olddb->string + olddb->services[i].name) ;
-        newstate[x] |= 4 ;
+        if (newstate[x] & 8)
+          strerr_dief4x(6, "bad conversion file: new service ", newdb->string + newdb->services[x].name, " is a target for more than one conversion, including old service ", olddb->string + olddb->services[i].name) ;
+        newstate[x] |= 8 ;
+        invimage[x] = i ;
         bitarray_set(conversion_table + i * bitarray_div8(newn), x) ;
-        if (oldstate[i] & 8)
-        {
-          if (x < newdb->nlong) newlong[x] = i ;
-          if ((i < olddb->nlong) != (x < newdb->nlong)) oldstate[i] |= 4 ;
-        }
+        if (oldstate[i] & 8 && (i < olddb->nlong) != (x < newdb->nlong))
+          oldstate[i] |= 4 ;
       }
     }
-    if (oldstate[i] & 1 && (oldstate[i] & 4 || !(oldstate[i] & 8))) oldstate[i] |= 34 ;
   }
 }
 
-static inline void stuff_with_newc (int fdnewc, char const *newfn, unsigned char *conversion_table, unsigned char *oldstate, unsigned char *newstate, char const *namedata, unsigned int const *oldindex, unsigned int *newlong, s6rc_db_t const *olddb, s6rc_db_t const *newdb)
+static inline void stuff_with_newc (int fdnewc, char const *newfn, unsigned char *conversion_table, unsigned char *oldstate, unsigned char *newstate, char const *namedata, unsigned int const *oldindex, unsigned int *invimage, s6rc_db_t const *olddb, s6rc_db_t const *newdb)
 {
   cdb_t newc = CDB_ZERO ;
   int newfdres = open_readatb(fdnewc, "resolve.cdb") ;
@@ -206,24 +204,13 @@ static inline void stuff_with_newc (int fdnewc, char const *newfn, unsigned char
   if (!cdb_init_map(&newc, newfdres, 1))
     strerr_diefu3sys(111, "cdb_init ", newfn, "/compiled/resolve.cdb") ;
 
-  fill_convtable_and_flags(conversion_table, oldstate, newstate, namedata, oldindex, newlong, &newc, newfn, olddb, newdb) ;
+  fill_convtable_and_flags(conversion_table, oldstate, newstate, namedata, oldindex, invimage, &newc, newfn, olddb, newdb) ;
 
   cdb_free(&newc) ;
   close(newfdres) ;
 }
 
-static inline void adjust_newup (unsigned char const *oldstate, unsigned int oldn, unsigned char *newstate, unsigned int newn, unsigned char const *conversion_table)
-{
-  unsigned int i = oldn ;
-  while (i--) if (oldstate[i] & 1)
-  {
-    register unsigned int j = newn ;
-    while (j--) if (bitarray_peek(conversion_table + i * bitarray_div8(newn), j))
-      newstate[j] |= (oldstate[i] & 32) ? 2 : 1 ;
-  }
-}
-
-static void compute_transitions (char const *convfile, unsigned char *oldstate, int fdoldc, s6rc_db_t const *olddb, unsigned char *newstate, unsigned int *newlong, int fdnewc, char const *newfn, s6rc_db_t const *newdb, stralloc *sa)
+static void compute_transitions (char const *convfile, unsigned char *oldstate, int fdoldc, s6rc_db_t const *olddb, unsigned char *newstate, unsigned int *invimage, int fdnewc, char const *newfn, s6rc_db_t const *newdb, stralloc *sa)
 {
   unsigned int oldn = olddb->nshort + olddb->nlong ;
   unsigned int newn = newdb->nshort + newdb->nlong ;
@@ -232,10 +219,39 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
   unsigned char conversion_table[oldn * bitarray_div8(newn)] ;
   byte_zero(conversion_table, oldn * bitarray_div8(newn)) ;
   stuff_with_oldc(oldstate, fdoldc, olddb, convfile, oldindex, sa) ;
-  stuff_with_newc(fdnewc, newfn, conversion_table, oldstate, newstate, sa->s + sabase, oldindex, newlong, olddb, newdb) ;
+  stuff_with_newc(fdnewc, newfn, conversion_table, oldstate, newstate, sa->s + sabase, oldindex, invimage, olddb, newdb) ;
   sa->len = sabase ;
-  s6rc_graph_closure(olddb, oldstate, 5, 0) ;
-  adjust_newup(oldstate, oldn, newstate, newn, conversion_table) ;
+
+  for (;;)
+  {
+    int done = 1 ;
+    unsigned int i = oldn ;
+    while (i--)
+    {
+      if (oldstate[i] & 1 && (oldstate[i] & 4 || !(oldstate[i] & 8))) oldstate[i] |= 34 ;
+      else oldstate[i] &= 221 ;
+    }
+    s6rc_graph_closure(olddb, oldstate, 5, 0) ;
+    i = newn ; while (i--) newstate[i] &= 8 ;
+    i = oldn ;
+    while (i--) if (oldstate[i] & 1)
+    {
+      register unsigned int j = newn ;
+      while (j--) if (bitarray_peek(conversion_table + i * bitarray_div8(newn), j))
+        newstate[j] |= (oldstate[i] & 32) ? 2 : 33 ;
+    }
+    s6rc_graph_closure(newdb, newstate, 5, 1) ;
+    i = newn ;
+    while (i--) if ((newstate[i] & 33) == 32)
+    {
+      done = 0 ;
+      newstate[i] |= 4 ;
+    }
+    if (done) break ;
+    s6rc_graph_closure(newdb, newstate, 2, 0) ;
+    i = newn ;
+    while (i--) if ((newstate[i] & 5) == 5) oldstate[invimage[i]] |= 4 ;
+  }
 }
 
 
@@ -243,7 +259,7 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
  /* Update the live directory while keeping active servicedirs */
 
 
-static inline void rollback_servicedirs (char const *newlive, unsigned char const *newstate, unsigned int const *newlong, s6rc_db_t const *olddb, s6rc_db_t const *newdb, unsigned int n)
+static inline void rollback_servicedirs (char const *newlive, unsigned char const *newstate, unsigned int const *invimage, s6rc_db_t const *olddb, s6rc_db_t const *newdb, unsigned int n)
 {
   unsigned int newllen = str_len(newlive) ;
   unsigned int i = n ;
@@ -256,7 +272,7 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
     byte_copy(newfn + newllen + 13, newnamelen + 1, newdb->string + newdb->services[i].name) ;
     if (newstate[i] & 1)
     {
-      char const *oldname = newstate[i] & 4 ? olddb->string + olddb->services[newlong[i]].name : newdb->string + newdb->services[i].name ;
+      char const *oldname = newstate[i] & 4 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
       unsigned int oldnamelen = str_len(oldname) ;
       char oldfn[livelen + 23 + oldnamelen] ;
       byte_copy(oldfn, livelen, live) ;
@@ -288,7 +304,7 @@ static inline void unsupervise (char const *live, char const *name, int keepsupe
   }
 }
 
-static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *newlong, stralloc *sa)
+static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *invimage, stralloc *sa)
 {
   unsigned int tmpbase = satmp.len ;
   unsigned int sabase = sa->len ;
@@ -343,7 +359,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
      || !stralloc_0(sa)) { e = errno ; goto rollback ; }
     if (newstate[i] & 1)
     {
-      char const *oldname = newstate[i] & 4 ? olddb->string + olddb->services[newlong[i]].name : newdb->string + olddb->services[i].name ;
+      char const *oldname = newstate[i] & 4 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + olddb->services[i].name ;
       unsigned int oldnamelen = str_len(oldname) ;
       char oldfn[livelen + 13 + oldnamelen] ;
       byte_copy(oldfn, livelen, live) ;
@@ -393,7 +409,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
  rollback:
   sa->len = newlen ;
   sa->s[sa->len++] = 0 ;
-  rollback_servicedirs(sa->s + sabase, newstate, newlong, olddb, newdb, i) ;
+  rollback_servicedirs(sa->s + sabase, newstate, invimage, olddb, newdb, i) ;
  err:
   sa->len = newlen ;
   sa->s[sa->len++] = 0 ;
@@ -481,7 +497,7 @@ static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldsta
   if (fdsocket < 0) goto hammer ;
   if (!ipc_timed_connect_g(fdsocket, fnsocket, deadline))
   {
-    if (errno == ETIMEDOUT) strerr_dief1x(1, "timed out") ;
+    if (errno == ETIMEDOUT) strerr_dief1x(2, "timed out during s6rc-fdholder update") ;
     else goto closehammer ;
   }
   s6_fdholder_init(&a, fdsocket) ;
@@ -510,7 +526,7 @@ static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldsta
     tain_now_g() ;
     if (WIFSIGNALED(wstat) || WEXITSTATUS(wstat))
       if (verbosity) strerr_warnw1x("restart s6rc-fdholder") ;
-    if (!tain_future(deadline)) strerr_dief1x(1, "timed out") ;
+    if (!tain_future(deadline)) strerr_dief1x(2, "timed out during s6rc-fdholder update") ;
   }
 }
 
@@ -532,7 +548,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
   tain_t deadline ;
   int dryrun = 0 ;
   PROG = "s6-rc-update" ;
-  strerr_dief1x(100, "almost there. Just a little more patience.") ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;
@@ -604,7 +619,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       s6rc_service_t newserviceblob[newn] ;
       char const *newargvblob[newdb.nargvs] ;
       uint32 newdepsblob[newdb.ndeps << 1] ;
-      unsigned int newlong[newdb.nlong] ;
+      unsigned int invimage[newn] ;
       char oldstringblob[olddb.stringlen] ;
       char newstringblob[newdb.stringlen] ;
       unsigned char oldstate[oldn] ;
@@ -633,22 +648,22 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
      /* Initial state */
 
-      byte_zero(newstate, newn) ;
       byte_copy(dbfn + livelen + 1, 6, "state") ;
       r = openreadnclose(dbfn, (char *)oldstate, oldn) ;
       if (r != oldn) strerr_diefu2sys(111, "read ", dbfn) ;
       r = oldn ;
       while (r--) oldstate[r] &= 1 ;
-      r = newdb.nlong ;
-      while (r--) newlong[r] = olddb.nlong + olddb.nshort ;
+      byte_zero(newstate, newn) ;
+      r = newn ;
+      while (r--) invimage[r] = olddb.nlong + olddb.nshort ;
 
 
      /* Read the conversion file and compute what to do */
 
       if (verbosity >= 2) strerr_warni1x("computing state adjustments") ;
-      compute_transitions(convfile, oldstate, fdoldc, &olddb, newstate, newlong, fdnewc, argv[0], &newdb, &sa) ;
+      compute_transitions(convfile, oldstate, fdoldc, &olddb, newstate, invimage, fdnewc, argv[0], &newdb, &sa) ;
       tain_now_g() ;
-      if (!tain_future(&deadline)) strerr_dief1x(1, "timed out") ;
+      if (!tain_future(&deadline)) strerr_dief1x(2, "timed out while computing state adjutments") ;
 
 
      /* Down transition */
@@ -690,7 +705,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
         tain_now_g() ;
         if (WIFSIGNALED(wstat) || WEXITSTATUS(wstat))
           strerr_dief1x(wait_estatus(wstat), "first s6-rc invocation failed") ;
-        if (!tain_future(&deadline)) strerr_dief1x(1, "timed out") ;
       }
 
       if (!dryrun)
@@ -702,7 +716,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         if (verbosity >= 2)
           strerr_warni1x("updating state and service directories") ;
 
-        make_new_livedir (oldstate, &olddb, newstate, &newdb, argv[0], newlong, &sa) ;
+        make_new_livedir(oldstate, &olddb, newstate, &newdb, argv[0], invimage, &sa) ;
         r = s6rc_servicedir_manage_g(live, &deadline) ;
         if (!r) strerr_diefu2sys(111, "manage new service directories in ", live) ;
         if (r & 2) strerr_warnw3x("s6-svscan not running on ", live, "/scandir") ;
