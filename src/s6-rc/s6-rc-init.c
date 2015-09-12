@@ -59,11 +59,11 @@ int main (int argc, char const *const *argv)
   if (!argc) dieusage() ;
 
   if (compiled[0] != '/')
-    strerr_dief2x(100, "compiled", " must be an absolute path") ;
+    strerr_dief2x(100, compiled, " is not an absolute path") ;
   if (live[0] != '/')
-    strerr_dief2x(100, "live", " must be an absolute path") ;
+    strerr_dief2x(100, live, " is not an absolute path") ;
   if (argv[0][0] != '/')
-    strerr_dief2x(100, "scandir", " must be an absolute path") ;
+    strerr_dief2x(100, argv[0], " is not an absolute path") ;
 
   tain_now_g() ;
   tain_add_g(&deadline, &tto) ;

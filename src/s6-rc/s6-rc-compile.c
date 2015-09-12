@@ -524,6 +524,7 @@ static inline void add_pipeline_bundles (before_t *be)
   longrun_t const *longruns = genalloc_s(longrun_t, &be->longruns) ;
   unsigned int n = genalloc_len(longrun_t, &be->longruns) ;
   unsigned int i = n ;
+  if (verbosity >= 2) strerr_warni1x("making bundles for pipelines") ;
   while (i--) if (longruns[i].pipelinename)
   {
     bundle_t bundle = { .listindex = genalloc_len(unsigned int, &be->indices), .n = 1 } ;

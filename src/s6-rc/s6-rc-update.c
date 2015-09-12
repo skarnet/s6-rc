@@ -272,7 +272,7 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
     byte_copy(newfn + newllen + 13, newnamelen + 1, newdb->string + newdb->services[i].name) ;
     if (newstate[i] & 1)
     {
-      char const *oldname = newstate[i] & 4 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
+      char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
       unsigned int oldnamelen = str_len(oldname) ;
       char oldfn[livelen + 23 + oldnamelen] ;
       byte_copy(oldfn, livelen, live) ;
@@ -288,18 +288,19 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
   }
 }
 
-static inline void unsupervise (char const *live, char const *name, int keepsupervisor)
+static inline void unsupervise (char const *llive, char const *name, int keepsupervisor)
 {
   unsigned int namelen = str_len(name) ;
-  char fn[livelen + 14 + namelen] ;
-  byte_copy(fn, livelen, live) ;
-  byte_copy(fn + livelen, 9, "/scandir/") ;
-  byte_copy(fn + livelen + 9, namelen + 1, name) ;
+  unsigned int llen = str_len(llive) ;
+  char fn[llen + 14 + namelen] ;
+  byte_copy(fn, llen, llive) ;
+  byte_copy(fn + llen, 9, "/scandir/") ;
+  byte_copy(fn + llen + 9, namelen + 1, name) ;
   unlink(fn) ;
   if (!keepsupervisor)
   {
-    byte_copy(fn + livelen + 1, 12, "servicedirs/") ;
-    byte_copy(fn + livelen + 13, namelen + 1, name) ;
+    byte_copy(fn + llen + 1, 12, "servicedirs/") ;
+    byte_copy(fn + llen + 13, namelen + 1, name) ;
     s6_svc_writectl(fn, S6_SUPERVISE_CTLDIR, "x", 1) ;
   }
 }
@@ -316,10 +317,9 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   if (!s6rc_sanitize_dir(sa, live, &dirlen)) dienomem() ;
   llen = sa->len ;
   if (!random_sauniquename(sa, 8) || !stralloc_0(sa)) dienomem() ;
-  newlen = sa->len - 1 ;
+  newlen = --sa->len ;
   rm_rf(sa->s + sabase) ;
   if (mkdir(sa->s + sabase, 0755) < 0) strerr_diefu2sys(111, "mkdir ", sa->s + sabase) ;
-    strerr_diefu2sys(111, "mkdir ", sa->s + sabase) ;
   {
     unsigned int tmplen = satmp.len ;
     char fn[llen - sabase + 9] ;
@@ -359,9 +359,9 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
      || !stralloc_0(sa)) { e = errno ; goto rollback ; }
     if (newstate[i] & 1)
     {
-      char const *oldname = newstate[i] & 4 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + olddb->services[i].name ;
+      char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
       unsigned int oldnamelen = str_len(oldname) ;
-      char oldfn[livelen + 13 + oldnamelen] ;
+      char oldfn[livelen + 14 + oldnamelen] ;
       byte_copy(oldfn, livelen, live) ;
       byte_copy(oldfn + livelen, 13, "/servicedirs/") ;
       byte_copy(oldfn + livelen + 13, oldnamelen + 1, oldname) ;
@@ -394,12 +394,10 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
 
  /* scandir cleanup, then old livedir cleanup */
   sa->len = dirlen ;
-  sa->s[sa->len++] = '/' ;
   if (!stralloc_catb(sa, satmp.s + tmpbase, satmp.len - tmpbase) || !stralloc_0(sa))
     dienomem() ;
-
   i = olddb->nlong ;
-  while (i--) unsupervise(sa->s + sabase, olddb->string + olddb->services[i].name, oldstate[i] & 1 && !(oldstate[i] && 32)) ;
+  while (i--) unsupervise(sa->s + sabase, olddb->string + olddb->services[i].name, (oldstate[i] & 33) == 1) ;
   rm_rf(sa->s + sabase) ;
 
   sa->len = sabase ;
@@ -492,7 +490,7 @@ static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldsta
   char fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER "/s")] ;
   if (!(newstate[1] & 1)) return ;
   byte_copy(fnsocket, livelen, live) ;
-  byte_copy(fnsocket + livelen, sizeof("/servicedirs/" S6RC_FDHOLDER "/s"), "/servicedirs" S6RC_FDHOLDER "/s") ;
+  byte_copy(fnsocket + livelen, sizeof("/servicedirs/" S6RC_FDHOLDER "/s"), "/servicedirs/" S6RC_FDHOLDER "/s") ;
   fdsocket = ipc_stream_nb() ;
   if (fdsocket < 0) goto hammer ;
   if (!ipc_timed_connect_g(fdsocket, fnsocket, deadline))
@@ -569,16 +567,17 @@ int main (int argc, char const *const *argv, char const *const *envp)
     if (t) tain_from_millisecs(&deadline, t) ;
     else deadline = tain_infinite_relative ;
   }
-  if (argc < 2) dieusage() ;
+  if (!argc) dieusage() ;
   if (argv[0][0] != '/')
-    strerr_dief2x(100, argv[0], " is not an absolute directory") ;
-
+    strerr_dief2x(100, argv[0], " is not an absolute path") ;
+  if (live[0] != '/')
+    strerr_dief2x(100, live, " is not an absolute path") ;
+  livelen = str_len(live) ;
   {
     int livelock, oldlock, newlock ;
     int fdoldc, fdnewc ;
     s6rc_db_t olddb, newdb ;
     unsigned int oldn, newn ;
-    unsigned int livelen = str_len(live) ;
     char dbfn[livelen + 10] ;
 
     if (!tain_now_g())

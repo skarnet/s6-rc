@@ -95,6 +95,11 @@ giving the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. </li
 the selection. This is useful for instance at
 shutdown time: <tt>s6-rc -da change</tt>
 will stop all services. </li>
+ <li> <tt>-X</tt>&nbsp;: don't lock the live state or the compile
+database. This option should never be used when s6-rc is run
+manually; it's only used by commands such as
+<a href="s6-rc-update.html">s6-rc-update</a> that spawn a s6-rc
+instance while already holding the necessary locks. </li>
 </ul>
 
 <h3> Up or down </h3>

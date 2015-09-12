@@ -36,7 +36,12 @@ int s6rc_servicedir_copy_online (char const *src, char const *dst)
   {
     str_copy(dstfn + dstlen + 1, s6rc_servicedir_file_list[i].name) ;
     str_copy(oldfn + dstlen + 5, s6rc_servicedir_file_list[i].name) ;
-    if (rename(dstfn, oldfn) < 0) { e = errno ; goto errrename ; }
+    if (rename(dstfn, oldfn) < 0
+     && (errno != ENOENT || s6rc_servicedir_file_list[i].options & SVFILE_MANDATORY))
+    {
+      e = errno ;
+      goto errrename ;
+    }
   }
   n = i ;
   while (i--)
