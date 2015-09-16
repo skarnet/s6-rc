@@ -245,5 +245,18 @@ restart. </li>
  <li> It will rename <tt>sqld</tt> to <tt>mysqld</tt> and make it restart.
 </ul>
 
+<h2> Notes </h2>
+
+<ul>
+ <li> The old compiled service database is left unchanged, and the new compiled
+service database is used in-place. If the machine is rebooted, the
+<a href="s6-rc-init.html">s6-rc-init</a> invocation will still boot on the
+old compiled unless more work is performed. It is recommended to keep a
+<tt>current</tt> symbolic link to the current compiled, to always
+<a href="s6-rc-init.html">s6-rc-init</a> on <tt>current</tt>, and to
+make <tt>current</tt> point to the new compiled right after a s6-rc-update
+invocation. </li>
+</ul>
+
 </body>
 </html>

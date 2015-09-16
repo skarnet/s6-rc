@@ -39,28 +39,30 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
     if (d->d_name[0] == '.') continue ;
     {
       unsigned int len = str_len(d->d_name) ;
+      int r ;
       uint16 id ;
       char srcfn[livelen + 20 + len] ;
       char dstfn[livelen + 10 + len] ;
-      register int r ;
       byte_copy(srcfn, livelen + 12, dirfn) ;
       srcfn[livelen + 12] = '/' ;
       byte_copy(srcfn + livelen + 13, len + 1, d->d_name) ;
       r = s6_svc_ok(srcfn) ;
       if (r < 0) { e = errno ; goto err ; }
-      if (r) continue ;
-      byte_copy(srcfn + livelen + 13 + len, 6, "/down") ;
-      if (!touch(srcfn)) { e = errno ; goto err ; }
-      byte_copy(srcfn + livelen + 14 + len, 6, "event") ;
-      if (!ftrigw_fifodir_make(srcfn, gid, 0)) { e = errno ; goto err ; }
-      id = ftrigr_subscribe(&a, srcfn, "s", 0, deadline, stamp) ;
-      if (!id) { e = errno ; goto err ; }
-      if (!genalloc_append(uint16, &ids, &id)) { e = errno ; goto err ; }
-      srcfn[livelen + 13 + len] = 0 ;
+      if (!r)
+      {
+        byte_copy(srcfn + livelen + 13 + len, 6, "/down") ;
+        if (!touch(srcfn)) { e = errno ; goto err ; }
+        byte_copy(srcfn + livelen + 14 + len, 6, "event") ;
+        if (!ftrigw_fifodir_make(srcfn, gid, 0)) { e = errno ; goto err ; }
+        id = ftrigr_subscribe(&a, srcfn, "s", 0, deadline, stamp) ;
+        if (!id) { e = errno ; goto err ; }
+        if (!genalloc_append(uint16, &ids, &id)) { e = errno ; goto err ; }
+        srcfn[livelen + 13 + len] = 0 ;
+      }
       byte_copy(dstfn, livelen, live) ;
       byte_copy(dstfn + livelen, 9, "/scandir/") ;
       byte_copy(dstfn + livelen + 9, len + 1, d->d_name) ;
-      if (symlink(srcfn, dstfn) < 0) { e = errno ; goto err ; }
+      if (symlink(srcfn, dstfn) < 0 && (!r || errno != EEXIST)) { e = errno ; goto err ; }
     }
   }
   if (errno) { e = errno ; goto err ; }
