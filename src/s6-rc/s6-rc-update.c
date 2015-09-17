@@ -164,6 +164,8 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
     if (r < 0) strerr_diefu3sys(111, "read ", newfn, "/resolve.cdb") ;
     if (!r)
     {
+      if (oldstate[i] & 16)
+        strerr_dief4x(4, "bad conversion file: new service ", newname, " is undefined in database ", newfn) ;
       oldstate[i] |= 34 ; /* disappeared */
       continue ;
     }
@@ -185,7 +187,7 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
         if (x >= newn)
           strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
         if (newstate[x] & 8)
-          strerr_dief4x(6, "bad conversion file: new service ", newdb->string + newdb->services[x].name, " is a target for more than one conversion, including old service ", olddb->string + olddb->services[i].name) ;
+          strerr_diefu4x(6, "convert database: new service ", newdb->string + newdb->services[x].name, " is a target for more than one conversion, including old service ", olddb->string + olddb->services[i].name) ;
         newstate[x] |= 8 ;
         invimage[x] = i ;
         bitarray_set(conversion_table + i * bitarray_div8(newn), x) ;
