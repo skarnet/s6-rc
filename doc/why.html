@@ -138,6 +138,14 @@ that it has a significant performance impact.
 </p>
 
 <p>
+ (Note that <a href="https://wiki.gentoo.org/wiki/Project:OpenRC">OpenRC</a>
+has an option to start services in parallel, but at the time of this
+writing, it has no readiness notification mechanism when this option
+is used, and all the services are started in parallel without regard
+for the dependency graph, so it is not reliable.)
+</p>
+
+<p>
  Another, less obvious, but important drawback is that service-launching
 scripts run as scions of the shell that invoked the command, and so
 they may exhibit different behaviours when they're run automatically at
@@ -274,7 +282,7 @@ total memory footprint of any service manager out there, and all the
 reliability and ease of administration that a supervision suite can
 provide. It is a real, viable alternative to integrated init
 behemoths, providing equivalent functionality while being much
-smaller and much, much more maintainable.
+smaller and much more maintainable.
 </p>
 
 </body>
