@@ -94,7 +94,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         register char const **p = newargv ;
         while (sargc--) *p++ = *sargv++ ;
         *p = 0 ;
-        pathexec_run(newargv[0], newargv, envp) ;
+        pathexec0_run(newargv, envp) ;
         strerr_dieexec(111, newargv[0]) ;
       }
     }
