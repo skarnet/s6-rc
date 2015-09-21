@@ -16,7 +16,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
   char const *live = S6RC_LIVE_BASE ;
   unsigned int number ;
   int up ;
-  PROG = "s6-rc-db" ;
+  PROG = "s6-rc-oneshot-run" ;
   {
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
@@ -59,8 +59,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
     if (!s6rc_db_read_sizes(fdcompiled, &db))
       strerr_diefu3sys(111, "read ", compiled, "/n") ;
 
-    if (number >= db.nshort)
-      strerr_dief1x(3, "invalid oneshot number") ;
+    if (number < db.nlong || number >= db.nlong + db.nshort)
+      strerr_dief1x(3, "invalid service number") ;
 
 
    /* Allocate enough stack for the db */
