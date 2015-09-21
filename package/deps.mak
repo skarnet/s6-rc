@@ -26,6 +26,7 @@ src/s6-rc/s6-rc-db.o src/s6-rc/s6-rc-db.lo: src/s6-rc/s6-rc-db.c src/include/s6-
 src/s6-rc/s6-rc-dryrun.o src/s6-rc/s6-rc-dryrun.lo: src/s6-rc/s6-rc-dryrun.c
 src/s6-rc/s6-rc-fdholder-filler.o src/s6-rc/s6-rc-fdholder-filler.lo: src/s6-rc/s6-rc-fdholder-filler.c
 src/s6-rc/s6-rc-init.o src/s6-rc/s6-rc-init.lo: src/s6-rc/s6-rc-init.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
+src/s6-rc/s6-rc-oneshot-run.o src/s6-rc/s6-rc-oneshot-run.lo: src/s6-rc/s6-rc-oneshot-run.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-update.o src/s6-rc/s6-rc-update.lo: src/s6-rc/s6-rc-update.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc.o src/s6-rc/s6-rc.lo: src/s6-rc/s6-rc.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 
@@ -46,5 +47,7 @@ s6-rc-fdholder-filler: private EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
 s6-rc-fdholder-filler: src/s6-rc/s6-rc-fdholder-filler.o -ls6 -lskarnet
 s6-rc-init: private EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
 s6-rc-init: src/s6-rc/s6-rc-init.o ${LIBS6RC} -ls6 -lskarnet
+s6-rc-oneshot-run: private EXTRA_LIBS :=
+s6-rc-oneshot-run: src/s6-rc/s6-rc-oneshot-run.o ${LIBS6RC} -lskarnet
 s6-rc-update: private EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
 s6-rc-update: src/s6-rc/s6-rc-update.o ${LIBS6RC} -ls6 -lexecline -lskarnet

@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-oneshot-run program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-oneshot-run program" />
+    <meta name="Keywords" content="s6-rc dry run s6-rc-oneshot-run command oneshot runner service manager" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-oneshot-run internal program </h1>
+
+<p>
+ s6-rc-oneshot-run executes a oneshot service's <tt>up</tt> or
+<tt>down</tt> script taken from the current live compiled database.
+</p>
+
+<p>
+ s6-rc-oneshot-run is not meant to be used directly; it is used
+in internal scripts created by
+<a href="s6-rc-compile.html">s6-rc-compile</a>, which are invoked during an
+<a href="s6-rc.html">s6-rc</a> execution.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-oneshot-run [ -l <em>live</em> ] up|down <em>n</em>
+</pre>
+
+<ul>
+ <li> s6-rc-oneshot-run executes into the <tt>up</tt> or <tt>down</tt> script,
+depending on its first argument, of the <em>n</em>th oneshot service defined
+in the current compiled service database (i.e. the compiled linked from the
+live directory). </li>
+</ul>
+
+<h2> Options </h2>
+
+<ul>
+ <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: use the live directory in
+<em>live</em>. Default is <tt>/run/s6-rc</tt>, or what was given to the
+<tt>--livedir</tt> configure option at compile time. </li>
+</ul>
+
+<h2> Exit codes </h2>
+
+<ul>
+ <li> 3: invalid service number </li>
+ <li> 4: invalid service database </li>
+ <li> 100: wrong usage </li>
+ <li> 111: system call failed </li>
+ <li> other exit codes: returned from the executed <tt>up</tt> or <tt>down</tt> script </li>
+</ul>
+
+</body>
+</html>
