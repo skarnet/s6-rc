@@ -86,17 +86,17 @@ static unsigned int compute_timeout (unsigned int i, int h)
 
 static pid_t start_oneshot (unsigned int i, int h)
 {
-  unsigned int argc = db->services[i].x.oneshot.argc[h] ;
-  char const *const *argv = db->argvs + db->services[i].x.oneshot.argv[h] ;
   unsigned int m = 0 ;
-  char const *newargv[9 + argc + !!dryrun[0] * 6] ;
-  char fmt[UINT32_FMT] ;
+  char const *newargv[11 + !!dryrun[0] * 6] ;
+  char tfmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
+  char ifmt[UINT_FMT] ;
   char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 12] ;
   byte_copy(socketfn, livelen, live) ;
   byte_copy(socketfn + livelen, 12 + S6RC_ONESHOT_RUNNER_LEN, "/scandir/" S6RC_ONESHOT_RUNNER "/s") ;
-  fmt[uint32_fmt(fmt, compute_timeout(i, h))] = 0 ;
+  tfmt[uint32_fmt(tfmt, compute_timeout(i, h))] = 0 ;
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
+  ifmt[uint_fmt(ifmt, i)] = 0 ;
   if (dryrun[0])
   {
     newargv[m++] = S6RC_BINPREFIX "s6-rc-dryrun" ;
@@ -111,10 +111,11 @@ static pid_t start_oneshot (unsigned int i, int h)
   newargv[m++] = "-t" ;
   newargv[m++] = "2000" ;
   newargv[m++] = "-T" ;
-  newargv[m++] = fmt ;
+  newargv[m++] = tfmt ;
   newargv[m++] = "--" ;
   newargv[m++] = socketfn ;
-  while (argc--) newargv[m++] = *argv++ ;
+  newargv[m++] = h ? "up" : "down" ;
+  newargv[m++] = ifmt ;
   newargv[m++] = 0 ;
   return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
 }
