@@ -87,7 +87,7 @@ static unsigned int compute_timeout (unsigned int i, int h)
 static pid_t start_oneshot (unsigned int i, int h)
 {
   unsigned int m = 0 ;
-  char const *newargv[11 + !!dryrun[0] * 6] ;
+  char const *newargv[11 + !!dryrun[0] * 8] ;
   char tfmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
   char ifmt[UINT_FMT] ;
@@ -116,6 +116,11 @@ static pid_t start_oneshot (unsigned int i, int h)
   newargv[m++] = socketfn ;
   newargv[m++] = h ? "up" : "down" ;
   newargv[m++] = ifmt ;
+  if (dryrun[0])
+  {
+    newargv[m++] = " #" ;
+    newargv[m++] = db->string + db->services[i].name ;
+  }
   newargv[m++] = 0 ;
   return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
 }

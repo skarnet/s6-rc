@@ -44,7 +44,7 @@ S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
 EXECLINE_EXTBINPREFIX "getcwd WD\n" \
 EXECLINE_EXTBINPREFIX "import -u WD\n" \
 S6_EXTBINPREFIX "s6-sudod -t 2000 --\n" \
-S6RC_LIBEXECPREFIX "s6-rc-oneshot-run -l ${WD}/../.. --\n"
+S6RC_EXTLIBEXECPREFIX "s6-rc-oneshot-run -l ${WD}/../.. --\n"
 
 static unsigned int verbosity = 1 ;
 static stralloc keep = STRALLOC_ZERO ;
@@ -1037,7 +1037,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     EXECLINE_EXTBINPREFIX "exit 1\n  }\n  "
     EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    "
     S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
-    S6RC_LIBEXECPREFIX "s6-rc-fdholder-filler -1 -- ")
+    S6RC_EXTLIBEXECPREFIX "s6-rc-fdholder-filler -1 -- ")
    || !write_pipelines(&satmp, db)
    || !stralloc_cats(&satmp, "\n  }\n  "
     S6_EXTBINPREFIX "s6-svc -t .\n}\n")) dienomem() ;

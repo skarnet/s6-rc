@@ -248,6 +248,12 @@ restart. </li>
 <h2> Notes </h2>
 
 <ul>
+ <li> The <em>live</em> argument to the <tt>-l</tt> option, if present, should
+be the same argument that was given to the
+<a href="s6-rc-init.html">s6-rc-init</a> invocation when the system was
+booted. In other words: it should be the name of the symbolic link pointing
+to the real directory containing the live information, not the name of the
+real directory. </li>
  <li> The old compiled service database is left unchanged, and the new compiled
 service database is used in-place. If the machine is rebooted, the
 <a href="s6-rc-init.html">s6-rc-init</a> invocation will still boot on the
