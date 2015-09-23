@@ -116,7 +116,7 @@ the actual state of the machine.
 
 <ul>
  <li> Users are expected to write their service definitions - be it
-oneshots, longruns or bundles - in one ore more
+oneshots, longruns or bundles - in one or more
 <em>source directories</em>, in the s6-rc
 <a href="s6-rc-compile.html#source">source format</a>.
 The source format is simple to parse automatically - which is
@@ -163,8 +163,9 @@ for longruns, and a link to the current compiled state database.
 <a href="s6-rc-init.html">s6-rc-init</a> initializes the machine state
 as "every declared service is down". </li>
  <li> <em>stage2</em> should then invoke the
-<a href="s6-rc.html">s6-rc</a> program with the names of the services that
-should be brought up given as arguments. Of course, bundles can be used
+<a href="s6-rc.html">s6-rc</a> program (<tt>s6-rc change</tt>) with, as
+arguments, the names of the services that
+should be brought up. Of course, bundles can be used
 for shortcuts. </li>
  <li> That's it, the services are up and the initialization should be
 over. If the service database has been properly written, a <em>stage2</em>

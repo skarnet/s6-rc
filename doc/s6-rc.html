@@ -35,8 +35,9 @@ should be achieved by a single <tt>s6-rc change</tt> invocation.
 </p>
 
 <p>
- s6-rc should only be run as root, especially when asking for a state
-change.
+ Except in test installations with specifically made compiled
+databases and live directories, s6-rc should only be run as root -
+especially when asking for a state change.
 </p>
 
 <h2> Interface </h2>
@@ -50,9 +51,7 @@ change.
 
 <ul>
  <li> s6-rc expects to find a functional <em>live state</em> in
-<em>live</em> (by default <tt>/run/s6-rc</tt>, unless changed when the package
-was compiled). The live state is
-normally created at boot time by
+<em>live</em>. The live state is normally created at boot time by
 <a href="s6-rc-init.html">s6-rc-init</a>. If the live state is
 invalid, s6-rc complains and exits 4. </li>
  <li> Depending on the arguments given, it prints the requested
@@ -78,8 +77,9 @@ state change. </li>
 The arguments <em>servicenames...</em> may be atomic services or
 bundles; they are resolved into a set of atomic services, which is
 called the <em>selection</em>. If the <tt>-a</tt> option is present,
-the current set of <em>up</em> services is added to the selection.
-The s6-rc command operates on the selection.
+the current set of active services (i.e. services that are up) is
+added to the selection.
+<strong>The s6-rc command always operates on the selection</strong>.
 </p>
 
 <h2> Options </h2>
@@ -95,11 +95,6 @@ giving the <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. </li
 the selection. This is useful for instance at
 shutdown time: <tt>s6-rc -da change</tt>
 will stop all services. </li>
- <li> <tt>-X</tt>&nbsp;: don't lock the live state or the compile
-database. This option should never be used when s6-rc is run
-manually; it's only used by commands such as
-<a href="s6-rc-update.html">s6-rc-update</a> that spawn a s6-rc
-instance while already holding the necessary locks. </li>
 </ul>
 
 <h3> Up or down </h3>
@@ -259,7 +254,7 @@ should work with s6-rc with no additional effort.
 <h4> Oneshot transitions </h4>
 
 <p>
- Transitions for oneshot services involve running the <em>up</em>
+ Transitions for oneshot services amount to running the <em>up</em>
 or <em>down</em> script for the service; those scripts are stored
 in the compiled service database that is linked from the live state.
 The transition is considered successful if the script exits zero,

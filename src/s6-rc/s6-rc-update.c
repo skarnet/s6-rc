@@ -753,7 +753,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Down transition */
 
       {
-        char const *newargv[11 + (dryrun * 5) + want_count(oldstate, oldn)] ;
+        char const *newargv[12 + (dryrun * 4) + want_count(oldstate, oldn)] ;
         unsigned int m = 0, i = oldn ;
         int wstat ;
         char vfmt[UINT_FMT] ;
@@ -775,7 +775,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        newargv[m++] = "-Xd" ;
+        if (!dryrun) newargv[m++] = "-X" ;
+        newargv[m++] = "-d" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
         while (i--) if (oldstate[i] & 2)
@@ -818,7 +819,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Up transition */
 
       {
-        char const *newargv[11 + (dryrun * 5) + want_count(newstate, newn)] ;
+        char const *newargv[12 + (dryrun * 4) + want_count(newstate, newn)] ;
         unsigned int m = 0, i = newn ;
         char vfmt[UINT_FMT] ;
         char tfmt[UINT_FMT] ;
@@ -839,7 +840,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        newargv[m++] = "-Xua" ;
+        if (!dryrun) newargv[m++] = "-X" ;
+        newargv[m++] = "-u" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
         while (i--) if (newstate[i] & 2)

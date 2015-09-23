@@ -26,14 +26,15 @@
 <a href="http://smarden.org/runit/">runit</a>,
 <a href="http://b0llix.net/perp/">perp</a> or
 <a href="http://cr.yp.to/daemontools.html">daemontools</a>
-define a <em>service</em> as a long-lived process, a.k.a a
+define a <em>service</em> as a long-lived process, a.k.a
 daemon. They provide tools to run the daemon in a reproducible
 way in a controlled environment and keep it alive if it dies;
 they also provide daemon management tools to, among others,
 send signals to the daemon without knowing its PID. They can
-control individual long-lived process perfectly well, and
+control individual long-lived processes perfectly well, and
 <a href="http://skarnet.org/software/s6/">s6</a> also provides
-tools to manage a whole supervision tree.
+tools to manage a whole supervision tree. To any system administrator
+concerned about reliability, supervision suites are a good thing.
 </p>
 
 <p>
@@ -45,22 +46,24 @@ tools to manage a whole supervision tree.
 management is doable on simple systems, where there aren't
 many dependencies, and where most of the one-time initialization
 can take place in stage 1, before any daemons are launched.
-On embedded systems, for instance, this is perfectly reasonable.
+On some embedded systems, for instance, this is perfectly reasonable.
 </p>
 
 <p>
- On bigger systems, though, it is more problematic. Here are a few
+ On other systems, though, it is more problematic. Here are a few
 issues encountered:
 </p>
 
 <ul>
  <li> With a pure supervision tree, all daemons are launched in
 parallel; if their dependencies are not met, daemons just die, and
-are restarted by the supervisors, and so on; so eventually everything
+are restarted by the supervisors, and so on; so eventually the
+dependency tree is correctly built and everything
 is brought up. This is okay with lightweight daemons that do not take
 up too many resources when starting; but with heavyweight daemons,
-bringing them up at the wrong time can significantly expend CPU and
-increase the total booting time. </li>
+bringing them up at the wrong time can expend CPU or cause heavy
+disk access, and
+increase the total booting time significantly. </li>
  <li> The <a href="http://smarden.org/runit/">runit</a> model of
 separating one-time initialization (stage 1) and daemon management
 (stage 2) does not always work: some one-time initialization may
@@ -73,7 +76,7 @@ alive and ease their administration; dependency across those
 daemons is not their concern, and one-time initialization scripts
 are entirely foreign to them. So a situation like <tt>udevd</tt>
 where it is necessary to interleave daemons and one-time scripts
-is very badly handled by them. </li>
+is not handled properly by them. </li>
 </ul>
 
 <p>
@@ -140,9 +143,10 @@ that it has a significant performance impact.
 <p>
  (Note that <a href="https://wiki.gentoo.org/wiki/Project:OpenRC">OpenRC</a>
 has an option to start services in parallel, but at the time of this
-writing, it has no readiness notification mechanism when this option
-is used, and all the services are started in parallel without regard
-for the dependency graph, so it is not reliable.)
+writing, it uses polling on a lock file to check whether a service
+has completed all its dependencies; this is heavily prone to race
+conditions, and is not the correct mechanism to ensure proper service
+ordering, so this option cannot be considered reliable.)
 </p>
 
 <p>
@@ -163,8 +167,8 @@ boilerplate, which adds to the inefficiency problem.
 the flaws of traditional service starters, and provide supervision,
 dependency management and sometimes readiness notification, while
 reducing the amount of scripting needed.
-Unfortunately, the results were tightly integrated, monolithic init
-systems straying very far away from Unix core principles, with
+Unfortunately, the results are tightly integrated, monolithic init
+systems straying far away from Unix core principles, with
 design flaws that make the historical inits' design flaws look like
 a joke.
 </p>
@@ -174,7 +178,10 @@ a joke.
 one. On the front page, in the "feature highlights" section:
 "Tasks and Services are started and stopped
 by events. Events are generated as tasks and services are started
-and stopped." Do you understand what that means? I don't. </li>
+and stopped." Do you understand what that means? I don't. Also,
+Upstart was the first system that used <tt>ptrace</tt> on the
+processes it spawned in order to keep track of their forks. If
+you don't know what that means: it was pure insanity. </li>
  <li> <a href="https://en.wikipedia.org/wiki/Launchd">launchd</a>,
 Darwin's init and service manager. The wikipedia page (linked here
 because Apple doesn't see fit to provide a documentation page for
@@ -216,8 +223,9 @@ such as minimal software dependencies and shortness of code paths. </li>
 </ul>
 
 <p>
- Pages and pages could be written about the shortcomings of integrated
-init systems; one fact remains - they are not a satisfying solution
+ Pages and pages could be - and have been - written about the shortcomings
+of integrated
+init systems, but one fact remains: they are not a satisfying solution
 to the problem of service management under Unix.
 </p>
 

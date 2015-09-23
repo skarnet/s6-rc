@@ -90,8 +90,9 @@ to operate the database. If neither option is used, then root
  It is important to <em>only</em> use the <tt>-u</tt> or <tt>-g</tt>
 options when the user owning the supervision tree is not root. The
 internal s6-rc mechanisms allow uids and gids specified by those
-options to run any program as the user owning the supervision tree;
-if that user is root, this becomes an easy avenue for unwanted
+options to run any oneshot in the compiled service database as the
+user owning the supervision tree;
+if that user is root, this becomes an avenue for unwanted
 privilege gain. Only specify users that have the right to operate
 the supervision tree!
 </p>
@@ -201,7 +202,8 @@ compiled database in an internal form. <tt>up</tt> will be run when
 the service is started, and <tt>down</tt> will be executed when the service
 is stopped. <tt>up</tt> is mandatory, but <tt>down</tt> is optional;
 if no <tt>down</tt> file is provided in the source definition directory,
-then s6-rc will consider that the down transition for this service
+then it is treated as the empty script. If a script is empty,
+then s6-rc will consider that the corresponding transition for this service
 does nothing and always succeeds. </li>
 </ul>
 
@@ -302,10 +304,14 @@ use relative paths, not absolute ones.
 </p>
 
 <p>
- Note that you cannot create a <tt>down</tt> file in a generated service
+ Note that you cannot create a <tt>./down</tt> file for
+<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+in a generated service
 directory. Even if such a file exists in the definition directory, it will
-be ignored. This is intentional:
-<a href="s6-rc.html">s6-rc</a> internally uses down files to mark longrun
+be ignored - it will not be replicated in the service directory.
+This is intentional:
+<a href="s6-rc.html">s6-rc</a> internally uses <tt>./down</tt> files in
+the service directories it manages, to mark longrun
 services that are down.
 </p>
 
@@ -338,9 +344,7 @@ indefinite number of longrun services this way.
  <li> The first producer may declare a name for the whole pipeline, in
 its <tt>pipeline-name</tt> file. If it does so, then a bundle is automatically
 created with
-the given name, and it contains all the services in the pipeline (plus the
-automatically generated supporting services that open and store the
-pipes). </li>
+the given name, and it contains all the services in the pipeline. </li>
 </ul>
 
 <p>
@@ -357,7 +361,8 @@ detect and reject cycles as well as collisions.
 </p>
 
 <p>
- The pipe linking a producer and a consumer is created and stored at run-time in a
+ The pipe linking a producer with a consumer is created and stored at
+run-time in a
 <a href="http://skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
 instance managed by an automatically generated longrun service named
 <tt>s6rc-fdholder</tt>.

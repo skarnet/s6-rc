@@ -64,7 +64,7 @@ option to <tt>./configure</tt>. </li>
  <li> <tt>-f</tt>&nbsp;: force. s6-rc-bundle will not complain
 when given a nonexisting name to delete (it will do nothing), or
 when given an existing name to add (it will replace the definition).
-By default, s6-rc-bundle will exit when asked to delete a
+By default, s6-rc-bundle will complain and exit when asked to delete a
 nonexistent name or to add an existing name. </li>
 </ul>
 
@@ -124,7 +124,7 @@ deleted from the database. </li>
   <li> One argument that is the name of the bundle to add </li>
   <li> One block listing the services contained in the
 new bundle. The names in the block are resolved before any addition
-is made to the database. </li>
+or deletion is made to the database. </li>
  </ul> </li>
 </ul>
 

@@ -16,13 +16,62 @@
 <a href="http://skarnet.org/">skarnet.org</a>
 </p>
 
-<h1> s6-rc: FAQ </h1>
+<h1> s6-rc: Frequently Asked Questions </h1>
+
+<h2> Quick recipes </h2>
+
+<h3> How do I... </h3>
+
+<h4> list every active service&nbsp;? </h4>
+
+<pre>s6-rc -a list </pre>
+
+<h4> list every service in the current live database, active or not&nbsp;? </h4>
+
+<pre>s6-rc -d list </pre>
+<p>or</p>
+<pre>s6-rc-db list services</pre>
+
+<h4> bring up service <em>foo</em>&nbsp;? </h4>
+
+<pre>s6-rc -u change foo</pre>
+
+<h4> bring down everything&nbsp;? </h4>
+
+<pre>s6-rc -da change</pre>
+
+<h4> print the "up" script for oneshot service <em>foo</em>&nbsp;? </h4>
+
+<pre>s6-rc-db -u script foo | xargs -0 printf "%s "</pre>
+
+<h4> see what pipeline longrun service <em>foo</em> is a part of&nbsp;? </h4>
+
+<pre>s6-rc-db pipeline foo</pre>
+
+<h4> see the list of all services that depend on <em>foo</em>,
+directly or indirectly&nbsp;? </h4>
+
+<pre>s6-rc-db -d all-dependencies foo</pre>
+
+<h4> see what services will restart if I update my live service database to
+<em>newcompiled</em>&nbsp;? </h4>
+
+<pre>s6-rc-update -n newcompiled</pre>
+
+<p>
+ The first line is the <a href="s6-rc.html">s6-rc</a> invocation that
+will bring the old services down. The services that will stop are listed
+after <tt>-- change</tt>.
+ The second line is the <a href="s6-rc.html">s6-rc</a> invocation that
+will bring the new services up. The services that will start are listed
+after <tt>-- change</tt>.
+</p>
 
 <h2> The s6-rc-compile source format </h2>
 
 <h3> The source format for
 <a href="s6-rc-compile.html">s6-rc-compile</a> is not very convenient.
-Why not put all the information for a service in a single file? </h3>
+Why not put all the information for a service in a single file&nbsp;? </h3>
 
 <p>
  Because parsing sucks. Writing parsers is an annoying, ungrateful task,
@@ -37,16 +86,17 @@ file.
 <p>
 Using the filesystem as a key-value store is
 a good technique to avoid parsing, and skarnet.org packages do it
-everywhere: for instance, look at
-<a href="http://skarnet.org/software/s6/s6-envdir.html">s6-envdir</a>.
+everywhere: for instance,
+<a href="http://skarnet.org/software/s6/s6-envdir.html">s6-envdir</a>
+uses the file name as a key and the file contents as a value.
 The s6-rc-compile source format is just another instance of this
 technique.
 </p>
 
 <p>
- This format generally plays well with automated tools, be it for
+ The source format generally plays well with automated tools, be it for
 reading, as s6-rc-compile does, as for writing.
-I fully expect the s6-rc-compile source format
+I fully expect it
 to be used as the input (resp. the output) of some automated tools that
 would convert
 service definitions to (resp. from) another format, such as systemd
@@ -55,17 +105,19 @@ s6-rc source format will make it easy on those tools.
 </p>
 
 <p>
- And if you love configuration files, don't mind writing a parser (which is
+ And if you love configuration files, are ok with writing a parser (which is
 indubitably easier to do in other languages than C), and want to write
 a program that takes a text file, parses it and outputs a service
-definition directory, it should also be rather easy.
+definition directory in the s6-rc-compile source format, it should also be
+rather easy - please, feel free!
 </p>
 
 <h3> There are no "Provides:", no virtual services. What do I do
-if I have several implementations for a service? </h3>
+if I have several implementations for a service&nbsp;? </h3>
 
 <p>
- Use bundles. Bundles are awesome.
+ Use bundles. Bundles are the solution to most of the questions in
+the same vein.
 </p>
 
 <p>
@@ -84,7 +136,7 @@ will resolve to <em>opensshd</em>, and the compiled service database
 will consider <em>opensshd</em> to be the "real" service; but users
 will still be able to run
 <a href="s6-rc.html">s6-rc</a> commands involving <em>sshd</em>.
-And if users want to change the default to <em>dropbear</em>, just
+And if you want to change the default to <em>dropbear</em>, just
 change the <em>sshd</em><tt>/contents</tt> file to <tt>dropbear</tt>,
 recompile the database, and
 run <a href="s6-rc-update.html">s6-rc-update</a>.
@@ -113,7 +165,7 @@ one of them.
 
 <h3> I have a collection of init scripts in another format,
 but don't want to wait until the whole collection is converted
-before switching to s6-rc. Is there a smooth way in? </h3>
+before switching to s6-rc. Is there a smooth way in&nbsp;? </h3>
 
 <p>
  Yes.
@@ -163,7 +215,7 @@ you fix it.
 <h3> There are no runlevels in s6-rc. I like runlevels. </h3>
 
 <p>
- You have better than runlevels. <em>You have bundles.</em>
+ You have better than runlevels. You have bundles.
 </p>
 
 <p>
@@ -209,11 +261,57 @@ for.
  When in doubt, use bundles.
 </p>
 
+<h3> There are no intermediate states in s6-rc. There's just "up"
+and "down", no "starting", no "failed", etc. Why&nbsp;? </h3>
+
+<p>
+ Because those intermediate states are unnecessary.
+</p>
+
+<p>
+ From the machine's point of view, things are simple: a service is
+either up or it's not. If a service fails to start, then it's still
+down. Note that it is recommended to write <em>atomic</em> oneshots
+for this very reason.
+</p>
+
+<p>
+ Service managers that use intermediate states do so in order to keep
+track of what they're doing and what they have done. But this
+introduces needless complexity: the reality is that the service is
+either up or down, it's either in the state you wanted it to be or
+not. A model should not be more complex than the reality.
+</p>
+
+<p>
+ s6-rc does not keep track of "failed" states: a service that fails
+to start simply remains down, and
+<a href="s6-rc.html">s6-rc</a> exits 1 to report that something
+went wrong. To know what services failed to start, compare the
+result of <tt>s6-rc -a list</tt> against your expected machine state.
+</p>
+
+<p>
+ The reason for this design is simple: if the
+<a href="s6-rc.html">s6-rc</a> process is killed in the middle of a transition
+while a service state is "starting", what should the next invocation do?
+This is unclear, and the intermediate state introduces ambiguity where
+there should not be. Also,
+if there is a "failed" service, what should the next invocation do? Try
+and restart it, or not? This depends on what the user wants; this is
+policy, not mechanism. Simply reporting the error while keeping the
+state as "down" allows users to apply their chosen policies - see below.
+</p>
+
+<p>
+ Keep it simple, stupid.
+</p>
+
 <h2> Mechanism vs. policy </h2>
 
 <h3> s6-rc feels bare: there are tools, but no wrappers, no pre-packaged
 scripts to boot my machines, no default runlevels. By comparison, OpenRC
-provides a complete default set of scripts! </h3>
+provides a complete default set of scripts&nbsp;! </h3>
 
 <p>
  In the world of software development, it is important to distinguish
@@ -248,7 +346,8 @@ distributors' job!
 <em>for</em> a Linux distribution, so with that in mind, the OpenRC
 developers did not have to think much about separating mechanism from policy.
 It works very well for Gentoo and Gentoo-derived distributions; but it
-requires more work to use OpenRC outside of that frame.
+requires adaptation and more work for the admin to use OpenRC outside of
+that frame.
 </p>
 
 </body>

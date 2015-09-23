@@ -43,7 +43,8 @@ situations it cannot solve.
 
 <ul>
  <li> s6-rc-update analyzes the current live state, the current compiled service
-database, and the compiled service database contained at <em>newdb</em>. </li>
+database, and the compiled service database contained at <em>newdb</em>
+(which must be an absolute path). </li>
  <li> Additionally, it can process an optional <em>conversion file</em> containing
 instructions. </li>
  <li> It computes the necessary service transitions to safely update the live
@@ -85,7 +86,8 @@ The default is 0, meaning infinite (no timeout). Be aware that timing
 out and exiting may leave the live database in an inconsistent state,
 so use of this option is not recommended. </li>
  <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
-live state in <em>live</em>. Default is <tt>/run/s6-rc</tt>.
+live state in <em>live</em>. It must be an absolute path.
+Default is <tt>/run/s6-rc</tt>.
 The default can be changed at compile-time by giving the
 <tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. </li>
  <li> <tt>-f&nbsp;<em>convfile</em></tt>&nbsp;: use the conversion
@@ -97,11 +99,11 @@ meaning no special instructions. </li>
 
 <p>
  s6-rc-update's job is to ensure consistency of the live state across
-a change of compiled service database. To do so, it must make sure
+a change of compiled service databases. To do so, it must make sure
 that the services that are up at the time of its invocation are still
 up after its invocation; but service definitions in the new compiled
-may be different from those in the old one; in particular, dependencies
-may change, or a service can change types - a oneshot can become
+may be different from those in the old one - in particular, dependencies
+may change, or a service can change types: a oneshot can become
 a longrun and vice-versa, and an atomic service can even become a
 bundle.
 </p>
@@ -112,7 +114,7 @@ bundle.
  s6-rc-update examines atomic services, as defined in the old compiled,
 that are up at invocation time, and computes what is necessary for the
 "same" service, as defined in the new compiled, to be up. Barring
-conversion file instructions, the service is "the same" if it has the
+instructions from the conversion file, the service is "the same" if it has the
 same name in the new compiled, no matter its type.
 </p>
 
@@ -208,11 +210,7 @@ matter whether a service is renamed or not, changing its type will force a
 restart.
 </p>
 
-<p>
- Note that renaming a longrun without restarting it will keep the same
-<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
-process supervising the longrun: this process will appear in a
-<tt>ps</tt> output as supervising the old name. This is only cosmetic and
+<tt>ps</tt> output as supervising the old name. This is purely cosmetic and
 will have no impact on the service; nevertheless, if you wish to avoid that,
 simply force a restart on every service you rename.
 </p>
@@ -258,9 +256,9 @@ real directory. </li>
 but not restarted, the
 <a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
 process in charge of it will still show up in the process list as
-<tt>s6-supervise <em>oldname</em></tt>. This is purely cosmetic. To make
-s6-supervise pick up the new name, make sure to restart the service when
-invoking s6-rc-update. </li>
+<tt>s6-supervise <em>oldname</em></tt>. This is purely cosmetic and
+will have no impact on the service; nevertheless, if you wish to avoid that,
+simply force a restart on every longrun you rename. </li>
  <li> After a s6-rc-update invocation, the old compiled service database
 is left unchanged where it was, and the new compiled
 service database is used in-place. If the machine is rebooted, the

@@ -36,7 +36,7 @@ invocation of the
 absolute paths. </li>
  <li> s6-rc-init expects to find a <em>compiled service database</em>
 in <em>compiled</em>. It expects to be able to create a directory
-at <em>live</em>. It also expects that an instance of
+named <em>live</em>. It also expects that an instance of
 <a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
 is running on <em>scandir</em>. </li>
  <li> s6-rc-init initializes the live state in <em>live</em>. It
@@ -44,13 +44,13 @@ declares <em>compiled</em> as the current service database and
 sets the state as "all services down". </li>
  <li> It then copies verbatim all
 the service directories declared by <em>compiled</em> into a
-subdirectory of <em>live</em>, adds down files to the live copies
-and links them into <em>scandir</em>. It then triggers
+subdirectory of <em>live</em>, adds <tt>./down</tt> files to the live copies
+and links those live copies into <em>scandir</em>. It then triggers
 <a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>,
 which will pick up the new service directories and start
 <a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
 processes on them - but the service themselves will not be started
-right away, because of the down files. </li>
+right away, because of the <tt>./down</tt> files. </li>
  <li> s6-rc-init waits for all s6-supervise processes to be
 operational, then exits 0. </li>
 </ul>
@@ -94,6 +94,22 @@ invocation of the <a href="s6-rc.html">s6-rc change</a> command.)
 <tt>s6-rc-init</tt> should be the first command in the
 <em>stage2</em> (by default <tt>/etc/rc.init</tt>) script.
 </p>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> The directory created by s6-rc-init will actually be called
+<em>live</em><tt>:initial</tt>, and <em>live</em> will be a symbolic
+link to that directory. Users should ignore this, and always refer
+to the live directory as <em>live</em> in their future
+<a href="s6-rc.html">s6-rc</a> or <a href="s6-rc-update.html">s6-rc-update</a>
+invocations. The reason for this behaviour is that
+<a href="s6-rc-update.html">s6-rc-update</a> creates another,
+similarly named, directory (<em>live</em><tt>:<em>suffix</em></tt>)
+and updates the live state by atomically changing the target of the
+<em>live</em> symlink - so <em>live</em> will not change names, whereas
+the real directory may.) </li>
+</ul>
 
 </body>
 </html>
