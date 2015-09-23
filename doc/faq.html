@@ -271,8 +271,11 @@ and "down", no "starting", no "failed", etc. Why&nbsp;? </h3>
 <p>
  From the machine's point of view, things are simple: a service is
 either up or it's not. If a service fails to start, then it's still
-down. Note that it is recommended to write <em>atomic</em> oneshots
-for this very reason.
+down. Note that it is recommended to write <em>transactional</em> oneshots
+for this very reason: it is simple to try starting again a service that
+failed to start, but it is hard to recover from a service that is
+only "partially up" - and this is true whether you're using s6-rc
+or another service manager. 
 </p>
 
 <p>
@@ -280,7 +283,8 @@ for this very reason.
 track of what they're doing and what they have done. But this
 introduces needless complexity: the reality is that the service is
 either up or down, it's either in the state you wanted it to be or
-not. A model should not be more complex than the reality.
+not. If it's in some other, weird, state, then the service scripts
+have not been properly designed - they are not transactional.
 </p>
 
 <p>
