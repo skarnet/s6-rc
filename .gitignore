@@ -1,5 +1,4 @@
 *.o
-*.a
+*.a.xyzzy
 *.lo
-*.so
-*.so.*
+*.so.xyzzy
