@@ -41,7 +41,8 @@ static unsigned int verbosity = 1 ;
  /* Conversions and transitions */
 
 
- /* oldstate flags:
+ /*
+  oldstate flags:
      1 -> is up
      2 -> wanted down
      4 -> restart
@@ -50,13 +51,14 @@ static unsigned int verbosity = 1 ;
     32 -> wanted down after closure
     64 -> appears in convfile
 
-    newstate flags:
+  newstate flags:
      1 -> is up (converted from old up)
      2 -> wanted up
      4 -> is a bijective conversion target
      8 -> is a conversion target
     16 -> changed names
     32 -> is up after closure (i.e. includes new deps)
+   128 -> depends on a new service, has to be restarted
  */
 
 static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
@@ -223,10 +225,11 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
 {
   unsigned int oldn = olddb->nshort + olddb->nlong ;
   unsigned int newn = newdb->nshort + newdb->nlong ;
+  unsigned int newm = bitarray_div8(newn) ;
   unsigned int oldindex[oldn] ;
   unsigned int sabase = sa->len ;
-  unsigned char conversion_table[oldn * bitarray_div8(newn)] ;
-  byte_zero(conversion_table, oldn * bitarray_div8(newn)) ;
+  unsigned char conversion_table[oldn * newm] ;
+  byte_zero(conversion_table, oldn * newm) ;
   stuff_with_oldc(oldstate, fdoldc, olddb, convfile, oldindex, sa) ;
   stuff_with_newc(fdnewc, newfn, conversion_table, oldstate, newstate, sa->s + sabase, oldindex, invimage, olddb, newdb) ;
   sa->len = sabase ;
@@ -234,32 +237,57 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
   for (;;)
   {
     int done = 1 ;
-    unsigned int i = oldn ;
+    unsigned int i = newn ;
+    while (i--) newstate[i] &= 28 ;
+
+   /*
+     If an old service needs to restart, mark it wanted down, as well
+     as everything that depends on it.
+   */
+
+    i = oldn ;
     while (i--)
     {
-      if (oldstate[i] & 1 && (oldstate[i] & 4 || !(oldstate[i] & 8))) oldstate[i] |= 34 ;
+      if (oldstate[i] & 1 && (oldstate[i] & 4 || !(oldstate[i] & 8)))
+        oldstate[i] |= 34 ;
       else oldstate[i] &= 221 ;
     }
     s6rc_graph_closure(olddb, oldstate, 5, 0) ;
-    i = newn ; while (i--) newstate[i] &= 28 ;
+
+
+   /*
+      Convert the old state to the new state: if an old service is up,
+      the new service will be either up or wanted up.
+      This part runs in O(oldn*newn). There are no syscalls in the loop,
+      so it should still be negligible unless you have 10k services.
+   */
+
     i = oldn ;
     while (i--) if (oldstate[i] & 1)
     {
       register unsigned int j = newn ;
-      while (j--) if (bitarray_peek(conversion_table + i * bitarray_div8(newn), j))
+      while (j--) if (bitarray_peek(conversion_table + i * newm, j))
         newstate[j] |= (oldstate[i] & 32) ? 2 : 33 ;
     }
+
+
+   /*
+     Check for new dependencies. If a new service is still up but depends on a
+     new service that is not, it has to be restarted. Mark the old service for
+     restart and loop until there are no new dependencies.
+   */
+
     s6rc_graph_closure(newdb, newstate, 5, 1) ;
     i = newn ;
     while (i--) if ((newstate[i] & 33) == 32)
     {
       done = 0 ;
-      newstate[i] |= 4 ;
+      newstate[i] |= 128U ;
     }
     if (done) break ;
-    s6rc_graph_closure(newdb, newstate, 2, 0) ;
+    s6rc_graph_closure(newdb, newstate, 7, 0) ;
     i = newn ;
-    while (i--) if ((newstate[i] & 5) == 5) oldstate[invimage[i]] |= 4 ;
+    while (i--) if ((newstate[i] & 129U) == 129U) oldstate[invimage[i]] |= 4 ;
   }
 }
 
