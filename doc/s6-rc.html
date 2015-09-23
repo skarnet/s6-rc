@@ -223,10 +223,11 @@ it will exit 1. </li>
 <h4> Longrun transitions </h4>
 
 <p>
- Transitions for longrun services are simple: s6-rc removes or create
-a down file, then sends a command
+ Transitions for longrun services are simple: s6-rc removes or creates
+a <tt>./down</tt> file in the live service directory for the longrun
+service, then sends a command
 to the supervision tree to start or stop the service. (A service that
-is considered down by s6-rc will have a down file in its live service
+is considered down by s6-rc will have a <tt>./down</tt> file in its live service
 directory; a service that is considered up by s6-rc will not.) The
 transition is considered successful as soon as the daemon dies (for
 down transitions), or becomes up and
@@ -236,7 +237,7 @@ readiness notification, the
 <a href="http://skarnet.org/software/s6/s6-svc.html">s6-svc</a>
 command that is invoked by s6-rc will print a warning message, and
 the transition will be considered successful as soon as the daemon
-is up, i.e. as soon as the <tt>run</tt> script is executed by
+is up, i.e. as soon as the <tt>./run</tt> script is executed by
 <a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>.
 </p>
 

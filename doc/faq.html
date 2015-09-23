@@ -25,10 +25,13 @@
 Why not put all the information for a service in a single file? </h3>
 
 <p>
- Because parsing sucks. Writing parsers is an annoying, ungrateful task;
-and automatic parser generators produce big and inefficient code. For
+ Because parsing sucks. Writing parsers is an annoying, ungrateful task,
+with significant risks of bugs and security holes;
+and automatic parser generators produce big and inefficient code - and
+they are not immune to bugs or security holes either. For
 security, efficiency and maintainability reasons, I prefer to focus my
-efforts on code that actually does stuff, not parsing code.
+efforts on code that actually does stuff, not code that parses a text
+file.
 </p>
 
 <p>
@@ -204,6 +207,48 @@ for.
 
 <p>
  When in doubt, use bundles.
+</p>
+
+<h2> Mechanism vs. policy </h2>
+
+<h3> s6-rc feels bare: there are tools, but no wrappers, no pre-packaged
+scripts to boot my machines, no default runlevels. By comparison, OpenRC
+provides a complete default set of scripts! </h3>
+
+<p>
+ In the world of software development, it is important to distinguish
+<em>mechanism</em> from <em>policy</em>. Mechanism is "how do I perform
+the job", and should, theoretically, be addressed by software authors.
+Policy is "what are the details of the job I perform, where should I
+put my files, what conventions do I use", and should, theoretically, be
+addressed by <em>Unix distributions</em>.
+</p>
+
+<p>
+ Like the rest of <a href="http://skarnet.org/software/">skarnet.org
+software</a>, s6-rc aims to provide <em>mechanism, not policy</em>:
+it is OS-agnostic and distribution-agnostic. Providing boot scripts,
+or anything of this kind, would go against this principle; it is
+possible that a policy defined by software conflicts with a
+policy defined by a distribution, for instance the provided boot
+scripts do not match the distribution's needs, and so the distributors
+have to patch the software!
+</p>
+
+<p>
+ The s6-rc tools only provide mechanism, so they can be used as is by
+individual users, or by a distribution. They do not need to be patched.
+It is up to distributions to provide their own policy surrounding those
+tools, including complete service databases. It is literally the
+distributors' job!
+</p>
+
+<p>
+ OpenRC is a different case, because it was developed <em>by</em> and
+<em>for</em> a Linux distribution, so with that in mind, the OpenRC
+developers did not have to think much about separating mechanism from policy.
+It works very well for Gentoo and Gentoo-derived distributions; but it
+requires more work to use OpenRC outside of that frame.
 </p>
 
 </body>

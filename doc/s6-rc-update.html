@@ -32,7 +32,7 @@ s6-rc-update will do its best on its own, but it lets the user
 give it instructions to handle
 difficult cases; and rather than implement doubtful
 heuristics, it will fail with an error message in
-situations it really cannot solve.
+situations it cannot solve.
 </p>
 
 <h2> Interface </h2>
@@ -254,13 +254,21 @@ be the same argument that was given to the
 booted. In other words: it should be the name of the symbolic link pointing
 to the real directory containing the live information, not the name of the
 real directory. </li>
- <li> The old compiled service database is left unchanged, and the new compiled
+ <li> If a longrun service is renamed from <em>oldname</em> to <em>newname</em>,
+but not restarted, the
+<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+process in charge of it will still show up in the process list as
+<tt>s6-supervise <em>oldname</em></tt>. This is purely cosmetic. To make
+s6-supervise pick up the new name, make sure to restart the service when
+invoking s6-rc-update. </li>
+ <li> After a s6-rc-update invocation, the old compiled service database
+is left unchanged where it was, and the new compiled
 service database is used in-place. If the machine is rebooted, the
 <a href="s6-rc-init.html">s6-rc-init</a> invocation will still boot on the
 old compiled unless more work is performed. It is recommended to keep a
 <tt>current</tt> symbolic link to the current compiled, to always
 <a href="s6-rc-init.html">s6-rc-init</a> on <tt>current</tt>, and to
-make <tt>current</tt> point to the new compiled right after a s6-rc-update
+make <tt>current</tt> a link to the new compiled right after a s6-rc-update
 invocation. </li>
 </ul>
 
