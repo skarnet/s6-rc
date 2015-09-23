@@ -53,7 +53,9 @@ static unsigned int verbosity = 1 ;
     newstate flags:
      1 -> is up (converted from old up)
      2 -> wanted up
+     4 -> is a bijective conversion target
      8 -> is a conversion target
+    16 -> changed names
     32 -> is up after closure (i.e. includes new deps)
  */
 
@@ -190,9 +192,14 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
           strerr_diefu4x(6, "convert database: new service ", newdb->string + newdb->services[x].name, " is a target for more than one conversion, including old service ", olddb->string + olddb->services[i].name) ;
         newstate[x] |= 8 ;
         invimage[x] = i ;
+        if (oldstate[i] & 16) newstate[x] |= 16 ;
         bitarray_set(conversion_table + i * bitarray_div8(newn), x) ;
-        if (oldstate[i] & 8 && (i < olddb->nlong) != (x < newdb->nlong))
-          oldstate[i] |= 4 ;
+        if (oldstate[i] & 8)
+        {
+          newstate[x] |= 4 ;
+          if ((i < olddb->nlong) != (x < newdb->nlong))
+            oldstate[i] |= 4 ;
+        }
       }
     }
   }
@@ -234,7 +241,7 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
       else oldstate[i] &= 221 ;
     }
     s6rc_graph_closure(olddb, oldstate, 5, 0) ;
-    i = newn ; while (i--) newstate[i] &= 8 ;
+    i = newn ; while (i--) newstate[i] &= 28 ;
     i = oldn ;
     while (i--) if (oldstate[i] & 1)
     {
@@ -320,7 +327,6 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   llen = sa->len ;
   if (!random_sauniquename(sa, 8) || !stralloc_0(sa)) dienomem() ;
   newlen = --sa->len ;
-  rm_rf(sa->s + sabase) ;
   if (mkdir(sa->s + sabase, 0755) < 0) strerr_diefu2sys(111, "mkdir ", sa->s + sabase) ;
   {
     unsigned int tmplen = satmp.len ;
@@ -419,13 +425,13 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
 }
 
 
- /* Pipe updates */
+ /* Updating the pipes contained in the fdholder */
 
-static inline int delete_old_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, unsigned char const *oldstate, tain_t const *deadline)
+static inline int delete_unused_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, unsigned char const *oldstate, tain_t const *deadline)
 {
   unsigned int i = olddb->nlong ;
   while (i--)
-    if (!(oldstate[i] & 32) && oldstate[i] & 16
+    if (!(oldstate[i] & 8)
      && olddb->services[i].x.longrun.pipeline[0] < olddb->nlong)
     {
       unsigned int len = str_len(olddb->string + olddb->services[i].name) ;
@@ -439,38 +445,86 @@ static inline int delete_old_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, un
   return 1 ;
 }
 
-static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, unsigned char const *newstate, tain_t const *deadline)
+static inline int rename_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, s6rc_db_t const *newdb, unsigned char const *newstate, unsigned int const *invimage, tain_t const *deadline)
 {
   tain_t nano1 = { .sec = TAI_ZERO, .nano = 1 } ;
   tain_t limit ;
   tain_add_g(&limit, &tain_infinite_relative) ;
   unsigned int i = newdb->nlong ;
   while (i--)
-    if (newstate[i] & 4 && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
+  {
+    if ((newstate[i] & 20) == 20 && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
+    {
+      int fd ;
+      unsigned int oldlen = str_len(olddb->string + olddb->services[invimage[i]].name) ;
+      unsigned int newlen = str_len(newdb->string + newdb->services[i].name) ;
+      char oldpipename[oldlen + 13] ;
+      char newpipename[newlen + 13] ;
+      byte_copy(oldpipename, 12, "pipe:s6rc-r-") ;
+      byte_copy(oldpipename + 12, oldlen + 1, olddb->string + olddb->services[invimage[i]].name) ;
+      byte_copy(newpipename, 12, "pipe:s6rc-r-") ;
+      byte_copy(newpipename + 12, newlen + 1, newdb->string + newdb->services[i].name) ;
+      fd = s6_fdholder_retrieve_delete_g(a, oldpipename, deadline) ;
+      if (fd < 0) return 0 ;
+      if (!s6_fdholder_store_g(a, fd, newpipename, &limit, deadline))
+      {
+        close(fd) ;
+        return 0 ;
+      }
+      close(fd) ;
+      tain_add(&limit, &limit, &nano1) ;
+      oldpipename[10] = 'w' ;
+      newpipename[10] = 'w' ;
+      fd = s6_fdholder_retrieve_delete_g(a, oldpipename, deadline) ;
+      if (fd < 0) return 0 ;
+      if (!s6_fdholder_store_g(a, fd, newpipename, &limit, deadline))
+      {
+        close(fd) ;
+        return 0 ;
+      }
+      close(fd) ;
+      tain_add(&limit, &limit, &nano1) ;
+    }
+  }
+  return 1 ;
+}
+
+static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, unsigned char const *newstate, tain_t const *deadline)
+{
+  tain_t nano1 = { .sec = TAI_ZERO, .nano = newdb->nlong % 1000000000U } ;
+  tain_t limit ;
+  unsigned int i = newdb->nlong ;
+  tain_add_g(&limit, &tain_infinite_relative) ;
+  tain_add(&limit, &limit, &nano1) ;
+  nano1.nano = 1 ;
+  while (i--)
+  {
+    if (!(newstate[i] & 4) && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
     {
       int p[2] ;
       unsigned int len = str_len(newdb->string + newdb->services[i].name) ;
       char pipename[len + 13] ;
-      byte_copy(pipename, 12, "pipe:s6rc-w-") ;
+      byte_copy(pipename, 12, "pipe:s6rc-r-") ;
       byte_copy(pipename + 12, len + 1, newdb->string + newdb->services[i].name) ;
       if (pipe(p) < 0) return 0 ;
-      tain_add(&limit, &limit, &nano1) ;
-      if (!s6_fdholder_store_g(a, p[1], pipename, &limit, deadline))
-      {
-        close(p[1]) ;
-        close(p[0]) ;
-        return 0 ;
-      }
-      close(p[1]) ;
-      pipename[10] = 'r' ;
-      tain_add(&limit, &limit, &nano1) ;
       if (!s6_fdholder_store_g(a, p[0], pipename, &limit, deadline))
       {
         close(p[0]) ;
+        close(p[1]) ;
         return 0 ;
       }
       close(p[0]) ;
+      tain_add(&limit, &limit, &nano1) ;
+      pipename[10] = 'w' ;
+      if (!s6_fdholder_store_g(a, p[1], pipename, &limit, deadline))
+      {
+        close(p[1]) ;
+        return 0 ;
+      }
+      close(p[1]) ;
+      tain_add(&limit, &limit, &nano1) ;
     }
+  }
   return 1 ;
 }
 
@@ -485,7 +539,7 @@ static void fill_tfmt (char *tfmt, tain_t const *deadline)
   tfmt[uint_fmt(tfmt, t)] = 0 ;
 }
 
-static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldstate, s6rc_db_t const *newdb, unsigned char const *newstate, char const *const *envp, tain_t const *deadline)
+static inline void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldstate, s6rc_db_t const *newdb, unsigned char const *newstate, unsigned int const *invimage, char const *const *envp, tain_t const *deadline)
 {
   int fdsocket ;
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
@@ -501,7 +555,8 @@ static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldsta
     else goto closehammer ;
   }
   s6_fdholder_init(&a, fdsocket) ;
-  if (!delete_old_pipes(&a, olddb, oldstate, deadline)) goto freehammer ;
+  if (!delete_unused_pipes(&a, olddb, oldstate, deadline)) goto freehammer ;
+  if (!rename_pipes(&a, olddb, newdb, newstate, invimage, deadline)) goto freehammer ;
   if (!create_new_pipes(&a, newdb, newstate, deadline)) goto freehammer ;
   s6_fdholder_free(&a) ;
   close(fdsocket) ;
@@ -517,7 +572,7 @@ static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldsta
     pid_t pid ;
     int wstat ;
     char tfmt[UINT_FMT] ;
-    char const *newargv[7] = { S6_EXTBINPREFIX "s6-svc", "-T", tfmt, "-t", "--", fnsocket, 0 } ;
+    char const *newargv[7] = { S6_EXTBINPREFIX "s6-svc", "-T", tfmt, "-twR", "--", fnsocket, 0 } ;
     fill_tfmt(tfmt, deadline) ;
     fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER) - 1] = 0 ;
     pid = child_spawn0(newargv[0], newargv, envp) ;
@@ -525,7 +580,7 @@ static void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldsta
     if (wait_pid(pid, &wstat) < 0) strerr_diefu1sys(111, "waitpid") ;
     tain_now_g() ;
     if (WIFSIGNALED(wstat) || WEXITSTATUS(wstat))
-      if (verbosity) strerr_warnw1x("restart s6rc-fdholder") ;
+      if (verbosity) strerr_warnwu1x("restart s6rc-fdholder") ;
     if (!tain_future(deadline)) strerr_dief1x(2, "timed out during s6rc-fdholder update") ;
   }
 }
@@ -728,7 +783,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         if (verbosity >= 2)
           strerr_warni1x("updating s6rc-fdholder pipe storage") ;
 
-        update_fdholder(&olddb, oldstate, &newdb, newstate, envp, &deadline) ;
+        update_fdholder(&olddb, oldstate, &newdb, newstate, invimage, envp, &deadline) ;
       }
 
 
