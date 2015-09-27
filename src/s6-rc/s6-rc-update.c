@@ -65,7 +65,6 @@ static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, u
 {
   unsigned int base = sa->len ;
   unsigned int oldn = olddb->nshort + olddb->nlong ;
-  unsigned int max ;
   int n ;
   if (!stralloc_readyplus(sa, slen)) dienomem() ;
   sa->len += slen ;
@@ -77,7 +76,6 @@ static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, u
     case -3 : strerr_dief2x(100, "mismatched braces in conversion file: ", s) ; 
     default : break ;
   }
-  max = sa->len ;
   sa->len = base ;
   if (n--)
   {
