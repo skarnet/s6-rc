@@ -563,8 +563,7 @@ int main (int argc, char const *const *argv)
         return 0 ;
       }
 
-      if (!tain_now_g())
-        strerr_warnwu1x("get correct TAI time. (Do you have a valid leap seconds file?)") ;
+      tain_now_g() ;
       tain_add_g(&deadline, &deadline) ;
 
 

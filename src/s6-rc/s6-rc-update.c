@@ -663,8 +663,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     unsigned int oldn, newn ;
     char dbfn[livelen + 10] ;
 
-    if (!tain_now_g())
-      strerr_warnwu1x("get correct TAI time. (Do you have a valid leap seconds file?)") ;
+    tain_now_g() ;
     tain_add_g(&deadline, &deadline) ;
 
 
