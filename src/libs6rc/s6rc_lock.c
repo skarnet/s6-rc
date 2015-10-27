@@ -8,7 +8,7 @@
 
 int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int cwhat, int *ccfd)
 {
-  int e ;
+  int e = 0 ;
   int lfd = -1, cfd = -1 ;
 
   if (lwhat)

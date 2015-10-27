@@ -190,8 +190,12 @@ create a service definition directory named <em>foo</em>:
  <li> <tt><em>foo</em>/type</tt> contains <tt>oneshot</tt> </li>
  <li> <tt><em>foo</em>/dependencies</tt> contains the list of
 dependencies for <em>foo</em> </li>
- <li> <tt><em>foo</em>/up</tt> contains <tt>/etc/init.d/<em>foo</em> start</tt> </li>
- <li> <tt><em>foo</em>/down</tt> contains <tt>/etc/init.d/<em>foo</em> stop</tt> </li>
+ <li> <tt><em>foo</em>/up</tt> contains <tt>/etc/init.d/<em>foo</em> start</tt>
+if you're using sysv-rc, or <tt>rc-service start foo -D -q</tt> if you're
+using OpenRC </li>
+ <li> <tt><em>foo</em>/down</tt> contains <tt>/etc/init.d/<em>foo</em> stop</tt>
+if you're using sysv-rc, or <tt>rc-service stop foo -D -q</tt> if you're
+using OpenRC </li>
 </ul>
 
 <p>
