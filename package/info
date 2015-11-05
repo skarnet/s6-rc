@@ -1,4 +1,4 @@
 package=s6-rc
-version=0.0.1.4
+version=0.0.1.5
 category=admin
 package_macro_name=S6RC
