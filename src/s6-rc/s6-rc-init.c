@@ -90,8 +90,10 @@ int main (int argc, char const *const *argv)
     if (mkdir(satmp.s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", satmp.s) ;
     if (!s6rc_lock(satmp.s, 2, &fdlock, 0, 0, 0))
     {
+      char tmp[satmp.len] ;
+      byte_copy(tmp, satmp.len, satmp.s) ;
       cleanup() ;
-      strerr_diefu2sys(111, "take lock on ", satmp.s) ;
+      strerr_diefu2sys(111, "take lock on ", tmp) ;
     }
     byte_copy(lfn, llen, satmp.s) ;
     lfn[llen] = 0 ;
