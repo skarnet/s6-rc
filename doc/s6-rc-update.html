@@ -59,12 +59,14 @@ live compiled service database. </li>
 
 <ul>
  <li> 0: success </li>
- <li> 1: failure to perform some state transitions </li>
- <li> 2: timed out </li>
+ <li> 1: failure to perform some state transitions, but the database was switched to <em>newdb</em> </li>
+ <li> 2: timed out, but the database was switched to <em>newdb</em> </li>
  <li> 3: unknown service name in the conversion file </li>
  <li> 4: invalid service database </li>
  <li> 5: wrong service type in the conversion file </li>
  <li> 6: duplicate service in the conversion file </li>
+ <li> 9: failure to perform some state transitions, and the database was not switched </li>
+ <li> 10: timed out, and the database was not switched </li>
  <li> 100: wrong usage </li>
  <li> 111: system call failed </li>
 </ul>
@@ -208,11 +210,6 @@ will then rename it. It is possible
 to rename an atomic service to another atomic service or a bundle, but no
 matter whether a service is renamed or not, changing its type will force a
 restart.
-</p>
-
-<tt>ps</tt> output as supervising the old name. This is purely cosmetic and
-will have no impact on the service; nevertheless, if you wish to avoid that,
-simply force a restart on every service you rename.
 </p>
 
 <h4> Restarting </h4>

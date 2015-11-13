@@ -744,7 +744,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       if (verbosity >= 2) strerr_warni1x("computing state adjustments") ;
       compute_transitions(convfile, oldstate, fdoldc, &olddb, newstate, invimage, fdnewc, argv[0], &newdb, &sa) ;
       tain_now_g() ;
-      if (!tain_future(&deadline)) strerr_dief1x(2, "timed out while computing state adjutments") ;
+      if (!tain_future(&deadline)) strerr_dief1x(10, "timed out while computing state adjutments") ;
 
 
      /* Down transition */
@@ -786,7 +786,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
         if (wait_pid(pid, &wstat) < 0) strerr_diefu1sys(111, "waitpid") ;
         tain_now_g() ;
         if (WIFSIGNALED(wstat) || WEXITSTATUS(wstat))
-          strerr_dief1x(wait_estatus(wstat), "first s6-rc invocation failed") ;
+        {
+          wstat = wait_estatus(wstat) ;
+          if (wstat == 1 || wstat == 2) wstat += 8 ;
+          strerr_dief1x(wstat, "first s6-rc invocation failed") ;
+        }
       }
 
       if (!dryrun)

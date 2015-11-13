@@ -195,7 +195,7 @@ managed by s6-rc should be brought down in the proper order (via the
 brought down successfully, the final shutdown procedure can take place;
 for instance, if s6-svscan is running as process 1 with the
 <a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>
-defaults, <tt>s6-svscanctl -t /run/service</tt> will kill the
+defaults, <tt>s6-svscanctl -6 /run/service</tt> will kill the
 supervision tree and call <tt>/etc/rc.shutdown reboot</tt>, which should
 reboot the machine.
 </p>

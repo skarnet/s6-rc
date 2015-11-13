@@ -109,6 +109,12 @@ similarly named, directory (<em>live</em><tt>:<em>suffix</em></tt>)
 and updates the live state by atomically changing the target of the
 <em>live</em> symlink - so <em>live</em> will not change names, whereas
 the real directory may.) </li>
+ <li> Similarly, it is recommended that administrators store their
+compiled service databases into some versioned directory, and that
+<em>compiled</em> be a symbolic link to the database currently in
+use. This will make it easier to create new compiled databases and
+switch them with <a href="s6-rc-update.html">s6-rc-update</a>
+without having to change the s6-rc-init invocation in boot scripts. </li>
 </ul>
 
 </body>
