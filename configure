@@ -182,7 +182,7 @@ for arg ; do
     --enable-slashpackage) sproot= ; slashpackage=true ;;
     --disable-slashpackage) sproot= ; slashpackage=false ;;
     --enable-cross=*) cross=${arg#*=} ;;
-    --enable-cross) cross= ;;
+    --enable-cross) ;;
     --disable-cross) cross= ;;
     --livedir=*) livedir=${arg#*=} ;;
     --enable-*|--disable-*|--with-*|--without-*|--*dir=*|--build=*) ;;
