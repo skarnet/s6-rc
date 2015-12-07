@@ -41,10 +41,8 @@ EXECLINE_EXTBINPREFIX "fdmove 1 3\n" \
 S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n" \
 S6_EXTBINPREFIX "s6-ipcserverd -1 --\n" \
 S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n" \
-EXECLINE_EXTBINPREFIX "getcwd WD\n" \
-EXECLINE_EXTBINPREFIX "import -u WD\n" \
 S6_EXTBINPREFIX "s6-sudod -t 2000 --\n" \
-S6RC_EXTLIBEXECPREFIX "s6-rc-oneshot-run -l ${WD}/../.. --\n"
+S6RC_EXTLIBEXECPREFIX "s6-rc-oneshot-run -l ../.. --\n"
 
 static unsigned int verbosity = 1 ;
 static stralloc keep = STRALLOC_ZERO ;
