@@ -8,7 +8,7 @@ Build Instructions
   - GNU make version 3.81 or later
   - skalibs version 2.3.8.3 or later: http://skarnet.org/software/skalibs/
   - execline version 2.1.4.5 or later: http://skarnet.org/software/execline/
-  - s6 version 2.2.4.0 or later: http://skarnet.org/software/s6/
+  - s6 version 2.2.4.2 or later: http://skarnet.org/software/s6/
 
  This software will run on any operating system that implements
 POSIX.1-2008, available at:
