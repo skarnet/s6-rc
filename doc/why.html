@@ -187,8 +187,9 @@ Darwin's init and service manager. The wikipedia page (linked here
 because Apple doesn't see fit to provide a documentation page for
 launchd) is very clear: it replaces init, rc, init.d/rc.d,
 SystemStarter, inetd, crontd, atd and watchdogd. It does all of this
-in process 1. And it uses XML for daemon configuration, so process 1
-has to link in a XML parsing library. Is this the sleek, elegant
+in process 1. And it uses XML for daemon configuration, so launchctl
+has to link in a XML parsing library, and it communicates with process 1
+via a Mach-specific IPC mechanism. Is this the sleek, elegant
 design that Apple is usually known for? Stick to selling iPhones,
 guys. </li>
  <li> <a href="http://www.freedesktop.org/wiki/Software/systemd/">systemd</a>,
