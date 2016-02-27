@@ -115,7 +115,7 @@ bundle.
 <p>
  s6-rc-update examines atomic services, as defined in the old compiled,
 that are up at invocation time, and computes what is necessary for the
-"same" service, as defined in the new compiled, to be up. Barring
+"same" services, as defined in the new compiled, to be up. Barring
 instructions from the conversion file, the service is "the same" if it has the
 same name in the new compiled, no matter its type.
 </p>
@@ -159,7 +159,7 @@ exist or that was previously down. </li>
 <ul>
  <li> Invoke <a href="s6-rc.html">s6-rc</a> to stop old services. </li>
  <li> Update the live directory with the data from the new compiled.
-This is the critical part; s6-rc should not be interrupted at this point.
+This is the critical part; s6-rc-update should not be interrupted at this point.
 It does its best to avoid risking leaving behind an inconsistent state,
 but a 100% atomicity guarantee is impossible to achieve. </li>
  <li> Adjust pipe names for the existing pipelines, if needed. </li>
