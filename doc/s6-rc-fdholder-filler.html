@@ -1,0 +1,95 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-fdholder-filler program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-fdholder-filler program" />
+    <meta name="Keywords" content="s6-rc dry run s6-rc-fdholder-filler internal s6-rc fdholder s6rc-fdholder pipe" />
+    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="http://skarnet.org/software/">Software</a><br />
+<a href="http://skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-fdholder-filler internal program </h1>
+
+<p>
+ s6-rc-fdholder-filler creates anonymous pipes and stores them into a
+<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+"fd-holding" daemon.
+</p>
+
+<p>
+ s6-rc-fdholder-filler is not meant to be used directly; it is used
+in internal scripts created by
+<a href="s6-rc-compile.html">s6-rc-compile</a>, which are invoked during an
+<a href="s6-rc.html">s6-rc</a> execution.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-fdholder-filler [ -1 ] [ -t <em>timeout</em> ] <em>longrunnames...</em>
+</pre>
+
+<ul>
+ <li> s6-rc-fdholder-filler expects file descriptor 6 to be open and
+connected to the
+<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+daemon instance managed by s6-rc as the internal <em>s6rc-fdholder</em> service. </li>
+ <li> For every argument <em>longrun</em> in <em>longrunnames...</em>, it
+creates an anonymous pipe, and stores both ends of that pipe into the
+<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+instance, with the <tt>pipe:s6-rc-r-<em>longrun</em></tt> (for the reading
+end) and <tt>pipe:s6-rc-w-<em>longrun</em></tt> (for the writing end)
+identifiers, and an infinite timeout. </li>
+ <li> It then exits 0. </li>
+</ul>
+
+<h2> Options </h2>
+
+<ul>
+ <li> <tt>-1</tt>&nbsp;: write a newline to stdout before exiting after
+successful operation. This is used as a notification mechanism. </li>
+ <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: if the operation cannot be
+achieved in <em>timeout</em> milliseconds, abort and report failure. By
+default, <em>timeout</em> is 0, meaning infinite. </li>
+</ul>
+
+<h2> Exit codes </h2>
+
+<ul>
+ <li> 0: success </li>
+ <li> 100: wrong usage </li>
+ <li> 111: system call failed </li>
+</ul>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> s6-rc-fdholder-filler is never meant to be used manually; this page
+should only be used to understand s6-rc internals. </li>
+ <li> s6-rc-fdholder-filler is used in the <tt>s6rc-fdholder</tt> internal
+service's run script, right after the
+<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+daemon is started; its arguments are the names of all the consumer longrun
+services declared in the service database. </li>
+ <li> The point is to create all the pipes for the longrun pipelines in
+advance, every time the <tt>s6rc-fdholder</tt> service is started, and
+make them available in the fd holder. This way, pipelined services
+can simply retrieve their stdin (for consumers) or stdout (for producers)
+from the fd holder, at any time: even if a pipeline service dies and is
+restarted, the pipe will remain valid. </li>
+ <li> If the fd holder itself dies, it will be refilled with a new set
+of pipes as soon as it is restarted. Pipelined services will not be
+impacted until one of them restarts; then all the pipeline will
+restart. </li>
+</ul>
+
+</body>
+</html>
