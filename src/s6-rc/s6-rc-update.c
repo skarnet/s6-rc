@@ -224,8 +224,8 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
   unsigned int oldn = olddb->nshort + olddb->nlong ;
   unsigned int newn = newdb->nshort + newdb->nlong ;
   unsigned int newm = bitarray_div8(newn) ;
-  unsigned int oldindex[oldn] ;
   unsigned int sabase = sa->len ;
+  unsigned int oldindex[oldn] ;
   unsigned char conversion_table[oldn * newm] ;
   byte_zero(conversion_table, oldn * newm) ;
   stuff_with_oldc(oldstate, fdoldc, olddb, convfile, oldindex, sa) ;
