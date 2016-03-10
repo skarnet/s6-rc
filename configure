@@ -44,7 +44,7 @@ Optional features:
   --enable-static-libc          make entirely static binaries [disabled]
   --enable-slashpackage[=ROOT]  assume /package installation at ROOT [disabled]
   --enable-cross=CROSS          prefix toolchain executable names with CROSS [none]
-  --livedir=DIR                 default live directory [/run/s6]
+  --livedir=DIR                 default live directory [/run/s6-rc]
 
 EOF
 exit 0
