@@ -9,15 +9,27 @@
 #include <skalibs/tai.h>
 #include <skalibs/direntry.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <s6/s6-supervise.h>
 #include <s6/ftrigr.h>
 #include <s6/ftrigw.h>
 #include <s6-rc/s6rc-servicedir.h>
 
+static void rollback (char const *live, char const *s, unsigned int len)
+{
+  while (len)
+  {
+    unsigned int n = str_len(s) + 1 ;
+    s6rc_servicedir_unsupervise(live, s, 0) ;
+    s += n ; len -= n ;
+  }
+}
+
 int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *stamp)
 {
   ftrigr_t a = FTRIGR_ZERO ;
+  stralloc newnames = STRALLOC_ZERO ;
   genalloc ids = GENALLOC_ZERO ; /* uint16 */
   gid_t gid = getgid() ;
   unsigned int livelen = str_len(live) ;
@@ -62,7 +74,19 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
       byte_copy(dstfn, livelen, live) ;
       byte_copy(dstfn + livelen, 9, "/scandir/") ;
       byte_copy(dstfn + livelen + 9, len + 1, d->d_name) ;
-      if (symlink(srcfn, dstfn) < 0 && (!r || errno != EEXIST)) { e = errno ; goto err ; }
+      if (symlink(srcfn, dstfn) < 0)
+      {
+        if (!r || errno != EEXIST) { e = errno ; goto err ; }
+      }
+      else if (!r)
+      {
+        if (!stralloc_catb(&newnames, d->d_name, len + 1))
+        {
+          e = errno ;
+          s6rc_servicedir_unsupervise(live, d->d_name, 0) ;
+          goto err ;
+        }
+      }
     }
   }
   if (errno) { e = errno ; goto err ; }
@@ -79,15 +103,18 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
     { e = errno ; goto closederr ; }
   }
 
-  genalloc_free(uint16, &ids) ;
   ftrigr_end(&a) ;
+  genalloc_free(uint16, &ids) ;
+  stralloc_free(&newnames) ;
   return ok ;
 
  err:
   dir_close(dir) ;
  closederr:
-  genalloc_free(uint16, &ids) ;
   ftrigr_end(&a) ;
+  genalloc_free(uint16, &ids) ;
+  rollback(live, newnames.s, newnames.len) ;
+  stralloc_free(&newnames) ;
   errno = e ;  
   return 0 ;
 }

@@ -323,23 +323,6 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
   }
 }
 
-static inline void unsupervise (char const *llive, char const *name, int keepsupervisor)
-{
-  unsigned int namelen = str_len(name) ;
-  unsigned int llen = str_len(llive) ;
-  char fn[llen + 14 + namelen] ;
-  byte_copy(fn, llen, llive) ;
-  byte_copy(fn + llen, 9, "/scandir/") ;
-  byte_copy(fn + llen + 9, namelen + 1, name) ;
-  unlink(fn) ;
-  if (!keepsupervisor)
-  {
-    byte_copy(fn + llen + 1, 12, "servicedirs/") ;
-    byte_copy(fn + llen + 13, namelen + 1, name) ;
-    s6_svc_writectl(fn, S6_SUPERVISE_CTLDIR, "x", 1) ;
-  }
-}
-
 static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *invimage, stralloc *sa)
 {
   unsigned int tmpbase = satmp.len ;
@@ -431,7 +414,8 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   if (!stralloc_catb(sa, satmp.s + tmpbase, satmp.len - tmpbase) || !stralloc_0(sa))
     dienomem() ;
   i = olddb->nlong ;
-  while (i--) unsupervise(sa->s + sabase, olddb->string + olddb->services[i].name, (oldstate[i] & 33) == 1) ;
+  while (i--)
+    s6rc_servicedir_unsupervise(sa->s + sabase, olddb->string + olddb->services[i].name, (oldstate[i] & 33) == 1) ;
   rm_rf(sa->s + sabase) ;
 
   sa->len = sabase ;
