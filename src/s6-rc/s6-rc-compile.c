@@ -325,7 +325,8 @@ static void read_script (before_t *be, int dirfd, char const *srcdir, char const
     r = el_parse_from_buffer(&keep, &b) ;
     switch (r)
     {
-      case -3 : strerr_dief7x(1, "syntax error in ", srcdir, "/", name, "/", script, ": missing }");
+      case -4 : strerr_dief8x(1, "syntax error in ", srcdir, "/", name, "/", script, ": unmatched ", "}");
+      case -3 : strerr_dief8x(1, "syntax error in ", srcdir, "/", name, "/", script, ": unmatched ", "{");
       case -2 : strerr_dief6x(1, "syntax error in ", srcdir, "/", name, "/", script) ;
       case -1 : strerr_diefu6sys(111, "parse ", srcdir, "/", name, "/", script) ;
     }
