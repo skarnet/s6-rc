@@ -325,11 +325,9 @@ static int doit (int spfd, int h)
   i = n ;
   while (i--) examine(i, h) ;
 
-  for (;;)
+  while (npids)
   {
-    register int r ;
-    if (!npids) break ;
-    r = iopause_g(&x, 1, &deadline) ;
+    register int r = iopause_g(&x, 1, &deadline) ;
     if (r < 0) strerr_diefu1sys(111, "iopause") ;
     if (!r) strerr_dief1x(2, "timed out") ;
     if (!handle_signals(h)) exitcode = 1 ;
