@@ -18,7 +18,10 @@
 
 <h1> s6-rc: Frequently Asked Questions </h1>
 
+
+<a name="quickrecipes">
 <h2> Quick recipes </h2>
+</a>
 
 <h3> How do I... </h3>
 
@@ -67,7 +70,10 @@ will bring the new services up. The services that will start are listed
 after <tt>-- change</tt>.
 </p>
 
+
+<a name="sourceformat">
 <h2> The s6-rc-compile source format </h2>
+</a>
 
 <h3> The source format for
 <a href="s6-rc-compile.html">s6-rc-compile</a> is not very convenient.
@@ -161,7 +167,82 @@ Bundles have multiple uses, and virtual services are definitely
 one of them.
 </p>
 
+
+<a name="compiledmanagement">
+<h2> Managing compiled databases </h2>
+</a>
+
+<h3> How do I safely update my compiled database? It is a directory, so
+I cannot atomically replace my old database with the new one. </h3>
+
+<p>
+ Use symbolic links. You can atomically replace a symbolic link, and the
+s6-rc programs have been designed with that mechanism in mind. Here is
+the simplest way of managing your compiled databases: (change the names
+according to your preferences, but keep the same idea)
+</p>
+
+<ul>
+ <li> Make sure your <a href="s6-rc-init.html">s6-rc-init</a> invocation,
+in your init scripts, always uses the <tt>/etc/s6-rc/compiled</tt> name
+to refer to the database to use at boot time. </li>
+ <li> Make sure <tt>/etc/s6-rc/compiled</tt> is a <em>symbolic link</em>
+that points to your current compiled database. For instance, the first
+time you compile a service database, you could run:
+<pre>
+ s6-rc-compile /etc/s6-rc/compiled-initial /etc/s6-rc/source-initial
+ ln -sf compiled-initial /etc/s6-rc/compiled
+</pre> </li>
+ <li> When you compile a new service database, always compile it to a
+unique name, preferrably in the same directory as your current compiled
+database. You can for instance use a TAI64N timestamp, obtained by
+<a href="http://skarnet.org/software/s6-portable-utils/s6-clock.html">s6-clock</a>,
+to create such a name:
+<pre>
+ stamp=`s6-clock`
+ s6-rc-compile /etc/s6-rc/compiled-$stamp /etc/s6-rc/source-current
+</pre> </li>
+ <li> To replace your current compiled database with the one you just
+created, run <a href="s6-rc-update.html">s6-rc-update</a> on the new
+name:
+<pre>
+ s6-rc-update /etc/s6-rc/compiled-$stamp
+</pre> </li>
+ <li> At this point, your current database is the new one, but if
+your machine reboots, it will still use the old one (because
+the <tt>/etc/s6-rc/compiled</tt> link is still pointing to the old one).
+To ensure that the
+new database will be used on the next boot, atomically update the link:
+<pre>
+ olddb=`s6-linkname -f /etc/s6-rc/compiled`
+ s6-ln -sf compiled-$stamp /etc/s6-rc/compiled
+</pre>
+ The use of the
+<a href="http://skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>
+utility is recommended, because not all implementations of the
+<a href="http://pubs.opengroup.org/onlinepubs/9699919799/utilities/ln.html">ln</a>
+standard actually perform an atomic replacement. (For instance, <tt>ln -sf</tt>
+from GNU coreutils first removes the old link, then creates the new one:
+this is not atomic and may break your system if you're unlucky and get a
+power failure at the wrong time.) s6-ln is guaranteed to do the right thing.
+Alternatively, you could run something like <tt>ln -sf compiled-$stamp
+/etc/s6-rc/compiled.new ; mv -f /etc/s6-rc/compiled.new
+/etc/s6-rc/compiled</tt>, but that's more complex and may also fail with
+bad <tt>mv</tt> implementations. </li>
+ <li> Your current compiled database, stored in
+<tt>/etc/s6-rc/compiled-$stamp</tt>, is now accessible via the
+<tt>/etc/s6-rc/compiled</tt> symlink and will be used at boot time. You do
+not need to modify your init scripts. If you wish, you can dispose of the
+old database you just replaced:
+<pre>
+ rm -rf $olddb
+</pre> </li>
+</ul>	
+
+
+<a name="switching">
 <h2> Switching from another service manager </h2>
+</a>
 
 <h3> I have a collection of init scripts in another format,
 but don't want to wait until the whole collection is converted
@@ -315,7 +396,10 @@ state as "down" allows users to apply their chosen policies - see below.
  Keep it simple, stupid.
 </p>
 
+
+<a name="nopolicy">
 <h2> Mechanism vs. policy </h2>
+</a>
 
 <h3> s6-rc feels bare: there are tools, but no wrappers, no pre-packaged
 scripts to boot my machines, no default runlevels. By comparison, OpenRC
