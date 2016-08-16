@@ -46,7 +46,7 @@ s6-rc-dryrun: EXTRA_LIBS := ${TAINNOW_LIB}
 s6-rc-dryrun: src/s6-rc/s6-rc-dryrun.o -lskarnet
 s6-rc-fdholder-filler: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
 s6-rc-fdholder-filler: src/s6-rc/s6-rc-fdholder-filler.o -ls6 -lskarnet
-s6-rc-init: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
+s6-rc-init: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
 s6-rc-init: src/s6-rc/s6-rc-init.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-oneshot-run: EXTRA_LIBS :=
 s6-rc-oneshot-run: src/s6-rc/s6-rc-oneshot-run.o ${LIBS6RC} -lskarnet

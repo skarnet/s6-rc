@@ -3,3 +3,4 @@ ${LIBS6RC}
 -lskarnet
 ${TAINNOW_LIB}
 ${SOCKET_LIB}
+${SPAWN_LIB}
