@@ -1141,10 +1141,11 @@ static void dircopy (char const *compiled, char const *srcfn, char const *dstfn)
   }
 }
 
-static inline void write_run_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, unsigned int fd)
+static inline void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, unsigned int fd, char const *exe, int needargs)
 {
   unsigned int base = satmp.len ;
-  if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n")) dienomem() ;
+  if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -")
+   || !stralloc_cats(&satmp, needargs ? "S0\n" : "P\n")) dienomem() ;
   if (db->services[i].x.longrun.pipeline[0] < db->nlong)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-r-")
@@ -1165,7 +1166,10 @@ static inline void write_run_wrapper (char const *compiled, char const *fn, s6rc
      || !stralloc_cats(&satmp, fd == 3 ? "4" : "3")
      || !stralloc_cats(&satmp, "\n")) dienomem() ;
   }
-  if (!stralloc_cats(&satmp, "./run.user\n")) dienomem() ;
+  if (!stralloc_cats(&satmp, "./")
+   || !stralloc_cats(&satmp, exe)
+   || !stralloc_cats(&satmp, ".user")
+   || !stralloc_cats(&satmp, needargs ? " $@\n" : "\n")) dienomem() ;
   auto_file(compiled, fn, satmp.s + base, satmp.len - base) ;
   satmp.len = base ;
   auto_rights(compiled, fn, 0755) ;
@@ -1219,7 +1223,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     byte_copy(dstfn + clen + 13 + len, 5, "/run") ;
     if (db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong)
     {
-      write_run_wrapper(compiled, dstfn + clen + 1, db, i, fd) ;
+      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "run", 0) ;
       byte_copy(dstfn + clen + 17 + len, 6, ".user") ;
     }
     byte_copy(srcfn + srcdirlen + 1 + len, 5, "/run") ;
@@ -1229,6 +1233,11 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
     }
     byte_copy(dstfn + clen + 14 + len, 7, "finish") ;
+    if (db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong)
+    {
+      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "finish", 1) ;
+      byte_copy(dstfn + clen + 20 + len, 6, ".user") ;
+    }
     byte_copy(srcfn + srcdirlen + len + 2, 7, "finish") ;
     filecopy_unsafe(srcfn, dstfn, 0755) ;
     byte_copy(dstfn + clen + 14 + len, 15, "timeout-finish") ;
