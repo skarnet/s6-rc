@@ -1186,6 +1186,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     unsigned int srcdirlen = str_len(srcdirs[i]) ;
     unsigned int len = str_len(db->string + db->services[i].name) ;
     unsigned int fd = 0 ;
+    int ispipelined = db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong ;
     register int r ;
     char srcfn[srcdirlen + len + 18] ;
     char dstfn[clen + len + 30] ;
@@ -1220,28 +1221,37 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       }
     }
 
+    byte_copy(srcfn + srcdirlen + 1 + len, 5, "/run") ;
     byte_copy(dstfn + clen + 13 + len, 5, "/run") ;
-    if (db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong)
+    if (ispipelined)
     {
       write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "run", 0) ;
       byte_copy(dstfn + clen + 17 + len, 6, ".user") ;
     }
-    byte_copy(srcfn + srcdirlen + 1 + len, 5, "/run") ;
     if (!filecopy_unsafe(srcfn, dstfn, 0755))
     {
       cleanup(compiled) ;
       strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
     }
-    byte_copy(dstfn + clen + 14 + len, 7, "finish") ;
-    if (db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong)
-    {
-      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "finish", 1) ;
-      byte_copy(dstfn + clen + 20 + len, 6, ".user") ;
-    }
+
     byte_copy(srcfn + srcdirlen + len + 2, 7, "finish") ;
-    filecopy_unsafe(srcfn, dstfn, 0755) ;
-    byte_copy(dstfn + clen + 14 + len, 15, "timeout-finish") ;
+    if (access(srcfn, R_OK) == 0)
+    {
+      byte_copy(dstfn + clen + 14 + len, 7, "finish") ;
+      if (ispipelined)
+      {
+        write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "finish", 1) ;
+        byte_copy(dstfn + clen + 20 + len, 6, ".user") ;
+      }
+      if (!filecopy_unsafe(srcfn, dstfn, 0755))
+      {
+        cleanup(compiled) ;
+        strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
+      }
+    }
+
     byte_copy(srcfn + srcdirlen + len + 2, 15, "timeout-finish") ;
+    byte_copy(dstfn + clen + 14 + len, 15, "timeout-finish") ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;
 
     byte_copy(srcfn + srcdirlen + len + 2, 9, "nosetsid") ;
@@ -1269,6 +1279,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     byte_copy(dstfn + clen + 14 + len, 5, "data") ;
     byte_copy(srcfn + srcdirlen + len + 2, 5, "data") ;
     dircopy(compiled, srcfn, dstfn) ;
+
     byte_copy(dstfn + clen + 14 + len, 4, "env") ;
     byte_copy(srcfn + srcdirlen + len + 2, 4, "env") ;
     dircopy(compiled, srcfn, dstfn) ;
