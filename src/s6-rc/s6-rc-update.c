@@ -334,7 +334,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   if (sareadlink(&satmp, live) < 0) strerr_diefu2sys(111, "readlink ", live) ;
   if (!s6rc_sanitize_dir(sa, live, &dirlen)) dienomem() ;
   llen = sa->len ;
-  if (!random_sauniquename(sa, 8)) || !stralloc_0(sa)) dienomem() ;
+  if (!random_sauniquename(sa, 8) || !stralloc_0(sa)) dienomem() ;
   newlen = --sa->len ;
   if (mkdir(sa->s + sabase, 0755) < 0) strerr_diefu2sys(111, "mkdir ", sa->s + sabase) ;
   {
