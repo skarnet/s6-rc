@@ -334,7 +334,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   if (sareadlink(&satmp, live) < 0) strerr_diefu2sys(111, "readlink ", live) ;
   if (!s6rc_sanitize_dir(sa, live, &dirlen)) dienomem() ;
   llen = sa->len ;
-  if (random_sauniquename(sa, 8) < 0 || !stralloc_0(sa)) dienomem() ;
+  if (!random_sauniquename(sa, 8)) || !stralloc_0(sa)) dienomem() ;
   newlen = --sa->len ;
   if (mkdir(sa->s + sabase, 0755) < 0) strerr_diefu2sys(111, "mkdir ", sa->s + sabase) ;
   {
@@ -640,6 +640,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
   if (live[0] != '/')
     strerr_dief2x(100, live, " is not an absolute path") ;
   livelen = str_len(live) ;
+
+  if (!random_init())
+    strerr_diefu1sys(111, "init random generator") ;
+
   {
     int livelock, oldlock, newlock ;
     int fdoldc, fdnewc ;
