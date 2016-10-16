@@ -417,12 +417,15 @@ EOF
 if $slashpackage ; then
   echo "#define ${package_macro_name}_BINPREFIX \"$bindir/\""
   echo "#define ${package_macro_name}_EXTBINPREFIX \"$extbinprefix/\""
+  echo "#define ${package_macro_name}_EXTLIBEXECPREFIX \"$extbinprefix/\"
 elif $abspath ; then
   echo "#define ${package_macro_name}_BINPREFIX \"$bindir/\""
   echo "#define ${package_macro_name}_EXTBINPREFIX \"$bindir/\""
+  echo "#define ${package_macro_name}_EXTLIBEXECPREFIX \"$libexecdir/\"
 else
   echo "#define ${package_macro_name}_BINPREFIX \"\""
   echo "#define ${package_macro_name}_EXTBINPREFIX \"\""
+  echo "#define ${package_macro_name}_EXTLIBEXECPREFIX \"$libexecdir/\"
 fi
 echo "#define ${package_macro_name}_LIBEXECPREFIX \"$libexecdir/\""
 echo
