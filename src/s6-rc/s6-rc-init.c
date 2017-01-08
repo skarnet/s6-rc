@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 #include <skalibs/uint.h>
@@ -17,7 +18,7 @@
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
-static unsigned int llen ;
+static size_t llen ;
 
 static void cleanup (void)
 {
@@ -33,7 +34,7 @@ static void cleanup (void)
 int main (int argc, char const *const *argv)
 {
   tain_t deadline, tto ;
-  unsigned int dirlen ;
+  size_t dirlen ;
   char const *live = S6RC_LIVE_BASE ;
   char const *compiled = S6RC_COMPILED_BASE ;
   PROG = "s6-rc-init" ;

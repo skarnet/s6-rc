@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <errno.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/diuint.h>
@@ -13,7 +14,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
 
   if (lwhat)
   {
-    unsigned int llen = str_len(live) ;
+    size_t llen = str_len(live) ;
     char lfn[llen + 6] ;
     byte_copy(lfn, llen, live) ;
     byte_copy(lfn + llen, 6, "/lock") ;
@@ -24,7 +25,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
 
   if (cwhat)
   {
-    unsigned int clen = str_len(compiled) ;
+    size_t clen = str_len(compiled) ;
     char cfn[clen + 6] ;
     byte_copy(cfn, clen, compiled) ;
     byte_copy(cfn + clen, 6, "/lock") ;

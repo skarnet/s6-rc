@@ -1,5 +1,7 @@
 /* ISC license. */
 
+#include <sys/types.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
@@ -22,8 +24,8 @@
 
 static void cleanup (char const *compiled)
 {
+  size_t len = str_len(compiled) ;
   int e = errno ;
-  unsigned int len = str_len(compiled) ;
   char fn[len + sizeof("/resolve.cdb.new")] ;
   byte_copy(fn, len, compiled) ;
   byte_copy(fn + len, sizeof("/resolve.cdb.new"), "/resolve.cdb.new") ;
@@ -36,9 +38,9 @@ static void cleanup (char const *compiled)
 
 static inline int renameit (char const *compiled, char const *src, char const *dst)
 {
-  unsigned int clen = str_len(compiled) ;
-  unsigned int srclen = str_len(src) ;
-  unsigned int dstlen = str_len(dst) ;
+  size_t clen = str_len(compiled) ;
+  size_t srclen = str_len(src) ;
+  size_t dstlen = str_len(dst) ;
   char srcfn[clen + srclen + 2] ;
   char dstfn[clen + dstlen + 2] ;
   byte_copy(srcfn, clen, compiled) ;
@@ -52,7 +54,7 @@ static inline int renameit (char const *compiled, char const *src, char const *d
 
 static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force, char const *compiled)
 {
-  unsigned int namelen = str_len(name) ;
+  size_t namelen = str_len(name) ;
   register int r = cdb_find(cr, name, namelen) ;
   if (r < 0) strerr_diefu3sys(111, "cdb_find in ", compiled, "/resolve.cdb") ;
   if (!r)
@@ -65,7 +67,7 @@ static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force,
     strerr_dief4x(1, "identifier ", name, " already exists in database ", compiled) ;
   if (cdb_datalen(cr) == 4)
   {
-    uint32 x ;
+    uint32_t x ;
     char pack[4] ;
     if (cdb_read(cr, pack, 4, cdb_datapos(cr)) < 0)
       strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
@@ -81,7 +83,7 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
 {
   cdb_t cr = CDB_ZERO ;
   struct cdb_make cw = CDB_MAKE_ZERO ;
-  uint32 kpos ;
+  uint32_t kpos ;
   unsigned int i = toaddn ;
   int fdw ;
   int fdr = open_readatb(fdcompiled, "resolve.cdb") ;
@@ -160,7 +162,7 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
         j >>= 2 ;
         while (j--)
         {
-          uint32 x ;
+          uint32_t x ;
           uint32_unpack_big(pack + (j << 2), &x) ;
           if (x >= db->nshort + db->nlong)
             strerr_dief2x(4, "invalid database in ", compiled) ;
@@ -171,7 +173,7 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
     {
       char pack[(total << 2) + 1] ;
       char *s = pack ;
-      uint32 j = n ;
+      uint32_t j = n ;
       while (j--) if (bitarray_peek(bits, j))
       {
         uint32_pack_big(s, j) ;
@@ -287,7 +289,7 @@ int main (int argc, char const **argv)
   if (what != 2 && argc < 2) dieusage() ;
 
   {
-    unsigned int livelen = str_len(live) ;
+    size_t livelen = str_len(live) ;
     int fdcompiled = -1 ;
     int compiledlock ;
     s6rc_db_t dbblob ;
@@ -320,7 +322,7 @@ int main (int argc, char const **argv)
       unsigned int n = dbblob.nshort + dbblob.nlong ;
       s6rc_service_t serviceblob[n] ;
       char const *argvblob[dbblob.nargvs] ;
-      uint32 depsblob[dbblob.ndeps << 1] ;
+      uint32_t depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
       register int r ;
 

@@ -1,6 +1,7 @@
 /* ISC license. */
 
 #include <sys/types.h>
+#include <stdint.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
@@ -33,7 +34,7 @@
 #define dienomem() strerr_diefu1sys(111, "build string") ;
 
 static char const *live = S6RC_LIVE_BASE ;
-static unsigned int livelen = sizeof(S6RC_LIVE_BASE) - 1 ;
+static size_t livelen = sizeof(S6RC_LIVE_BASE) - 1 ;
 static unsigned int verbosity = 1 ;
 
 
@@ -61,9 +62,9 @@ static unsigned int verbosity = 1 ;
    128 -> depends on a new service, has to be restarted
  */
 
-static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
+static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
 {
-  unsigned int base = sa->len ;
+  size_t base = sa->len ;
   unsigned int oldn = olddb->nshort + olddb->nlong ;
   int n ;
   if (!stralloc_readyplus(sa, slen)) dienomem() ;
@@ -80,7 +81,7 @@ static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, u
   if (n--)
   {
     char pack[4] ;
-    uint32 x ;
+    uint32_t x ;
     unsigned int cur ;
     register int r = cdb_find(oldc, sa->s + base + slen, str_len(sa->s + base + slen)) ;
     if (r < 0) strerr_diefu3sys(111, "read ", live, "/compiled/resolve.cdb") ;
@@ -96,7 +97,7 @@ static inline void parse_line (stralloc *sa, char const *s, unsigned int slen, u
     cur = base + slen + str_len(sa->s + base + slen) + 1 ;
     if (n >= 2 && !str_diff(sa->s + cur, "->"))
     {
-      register unsigned int newnamelen = str_len(sa->s + cur + 3) ;
+      register size_t newnamelen = str_len(sa->s + cur + 3) ;
       byte_copy(sa->s + sa->len, newnamelen + 1, sa->s + cur + 3) ;
       newnames[x] = sa->len ; oldstate[x] |= 16 ;
       sa->len += newnamelen + 1 ;
@@ -118,7 +119,7 @@ static inline void parse_conversion_file (char const *convfile, stralloc *sa, un
   int fd = open_readb(convfile) ;
   char buf[4096] ;
   buffer b = BUFFER_INIT(&fd_readsv, fd, buf, 4096) ;
-  unsigned int base = satmp.len ;
+  size_t base = satmp.len ;
   if (fd < 0) strerr_diefu2sys(111, "open ", convfile) ;
 
   for (;;)
@@ -184,7 +185,7 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
       if (len == 1) oldstate[i] |= 8 ;
       while (len--)
       {
-        uint32 x ;
+        uint32_t x ;
         uint32_unpack_big(p, &x) ; p += 4 ;
         if (x >= newn)
           strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
@@ -221,10 +222,10 @@ static inline void stuff_with_newc (int fdnewc, char const *newfn, unsigned char
 
 static void compute_transitions (char const *convfile, unsigned char *oldstate, int fdoldc, s6rc_db_t const *olddb, unsigned char *newstate, unsigned int *invimage, int fdnewc, char const *newfn, s6rc_db_t const *newdb, stralloc *sa)
 {
+  size_t sabase = sa->len ;
   unsigned int oldn = olddb->nshort + olddb->nlong ;
   unsigned int newn = newdb->nshort + newdb->nlong ;
   unsigned int newm = bitarray_div8(newn) ;
-  unsigned int sabase = sa->len ;
   unsigned int oldindex[oldn] ;
   unsigned char conversion_table[oldn * newm] ;
   byte_zero(conversion_table, oldn * newm) ;
@@ -296,11 +297,11 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
 
 static inline void rollback_servicedirs (char const *newlive, unsigned char const *newstate, unsigned int const *invimage, s6rc_db_t const *olddb, s6rc_db_t const *newdb, unsigned int n)
 {
-  unsigned int newllen = str_len(newlive) ;
+  size_t newllen = str_len(newlive) ;
   unsigned int i = n ;
   while (i--)
   {
-    unsigned int newnamelen = str_len(newdb->string + newdb->services[i].name) ;
+    size_t newnamelen = str_len(newdb->string + newdb->services[i].name) ;
     char newfn[newllen + 14 + newnamelen] ;
     byte_copy(newfn, newllen, newlive) ;
     byte_copy(newfn + newllen, 13, "/servicedirs/") ;
@@ -308,7 +309,7 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
     if (newstate[i] & 1)
     {
       char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
-      unsigned int oldnamelen = str_len(oldname) ;
+      size_t oldnamelen = str_len(oldname) ;
       char oldfn[livelen + 23 + oldnamelen] ;
       byte_copy(oldfn, livelen, live) ;
       byte_copy(oldfn + livelen, 22, "/compiled/servicedirs/") ;
@@ -325,10 +326,10 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
 
 static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *invimage, stralloc *sa)
 {
-  unsigned int tmpbase = satmp.len ;
-  unsigned int sabase = sa->len ;
-  unsigned int newclen = str_len(newcompiled) ;
-  unsigned int dirlen, llen, newlen, sdlen ;
+  size_t tmpbase = satmp.len ;
+  size_t sabase = sa->len ;
+  size_t newclen = str_len(newcompiled) ;
+  size_t dirlen, llen, newlen, sdlen ;
   int e = 0 ;
   unsigned int i = 0 ;
   if (sareadlink(&satmp, live) < 0) strerr_diefu2sys(111, "readlink ", live) ;
@@ -338,7 +339,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   newlen = --sa->len ;
   if (mkdir(sa->s + sabase, 0755) < 0) strerr_diefu2sys(111, "mkdir ", sa->s + sabase) ;
   {
-    unsigned int tmplen = satmp.len ;
+    size_t tmplen = satmp.len ;
     char fn[llen - sabase + 9] ;
     if (!stralloc_cats(sa, "/scandir") || !stralloc_0(sa)) { e = errno ; goto err ; }
     byte_copy(fn, llen - sabase, sa->s + sabase) ;
@@ -366,7 +367,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
 
   for (; i < newdb->nlong ; i++)
   {
-    unsigned int newnamelen = str_len(newdb->string + newdb->services[i].name) ;
+    size_t newnamelen = str_len(newdb->string + newdb->services[i].name) ;
     char newfn[newclen + 14 + newnamelen] ;
     byte_copy(newfn, newclen, newcompiled) ;
     byte_copy(newfn + newclen, 13, "/servicedirs/") ;
@@ -377,7 +378,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
     if (newstate[i] & 1)
     {
       char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
-      unsigned int oldnamelen = str_len(oldname) ;
+      size_t oldnamelen = str_len(oldname) ;
       char oldfn[livelen + 14 + oldnamelen] ;
       byte_copy(oldfn, livelen, live) ;
       byte_copy(oldfn + livelen, 13, "/servicedirs/") ;
@@ -444,7 +445,7 @@ static inline int delete_unused_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb,
     if (!(oldstate[i] & 8)
      && olddb->services[i].x.longrun.pipeline[0] < olddb->nlong)
     {
-      unsigned int len = str_len(olddb->string + olddb->services[i].name) ;
+      size_t len = str_len(olddb->string + olddb->services[i].name) ;
       char pipename[len + 13] ;
       byte_copy(pipename, 12, "pipe:s6rc-w-") ;
       byte_copy(pipename + 12, len + 1, olddb->string + olddb->services[i].name) ;
@@ -466,8 +467,8 @@ static inline int rename_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, s6rc_d
     if ((newstate[i] & 20) == 20 && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
     {
       int fd ;
-      unsigned int oldlen = str_len(olddb->string + olddb->services[invimage[i]].name) ;
-      unsigned int newlen = str_len(newdb->string + newdb->services[i].name) ;
+      size_t oldlen = str_len(olddb->string + olddb->services[invimage[i]].name) ;
+      size_t newlen = str_len(newdb->string + newdb->services[i].name) ;
       char oldpipename[oldlen + 13] ;
       char newpipename[newlen + 13] ;
       byte_copy(oldpipename, 12, "pipe:s6rc-r-") ;
@@ -512,7 +513,7 @@ static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, un
     if (!(newstate[i] & 4) && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
     {
       int p[2] ;
-      unsigned int len = str_len(newdb->string + newdb->services[i].name) ;
+      size_t len = str_len(newdb->string + newdb->services[i].name) ;
       char pipename[len + 13] ;
       byte_copy(pipename, 12, "pipe:s6rc-r-") ;
       byte_copy(pipename + 12, len + 1, newdb->string + newdb->services[i].name) ;
@@ -684,10 +685,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
       stralloc sa = STRALLOC_ZERO ;
       s6rc_service_t oldserviceblob[oldn] ;
       char const *oldargvblob[olddb.nargvs] ;
-      uint32 olddepsblob[olddb.ndeps << 1] ;
+      uint32_t olddepsblob[olddb.ndeps << 1] ;
       s6rc_service_t newserviceblob[newn] ;
       char const *newargvblob[newdb.nargvs] ;
-      uint32 newdepsblob[newdb.ndeps << 1] ;
+      uint32_t newdepsblob[newdb.ndeps << 1] ;
       unsigned int invimage[newn] ;
       char oldstringblob[olddb.stringlen] ;
       char newstringblob[newdb.stringlen] ;
@@ -718,8 +719,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Initial state */
 
       byte_copy(dbfn + livelen + 1, 6, "state") ;
-      r = openreadnclose(dbfn, (char *)oldstate, oldn) ;
-      if (r != oldn) strerr_diefu2sys(111, "read ", dbfn) ;
+      {
+        register ssize_t rr = openreadnclose(dbfn, (char *)oldstate, oldn) ;
+        if (rr != oldn) strerr_diefu2sys(111, "read ", dbfn) ;
+      }
       r = oldn ;
       while (r--) oldstate[r] &= 1 ;
       byte_zero(newstate, newn) ;
@@ -783,8 +786,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
       if (!dryrun)
       {
-        int r ;
-
        /* Update state and service directories */
 
         if (verbosity >= 2)

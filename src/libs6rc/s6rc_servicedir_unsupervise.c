@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <unistd.h>
 #include <skalibs/bytestr.h>
 #include <s6/s6-supervise.h>
@@ -7,8 +8,8 @@
 
 void s6rc_servicedir_unsupervise (char const *live, char const *name, int keepsupervisor)
 {
-  unsigned int namelen = str_len(name) ;
-  unsigned int livelen = str_len(live) ;
+  size_t namelen = str_len(name) ;
+  size_t livelen = str_len(live) ;
   char fn[livelen + 14 + namelen] ;
   byte_copy(fn, livelen, live) ;
   byte_copy(fn + livelen, 9, "/scandir/") ;

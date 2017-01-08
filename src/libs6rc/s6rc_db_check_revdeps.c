@@ -1,13 +1,14 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/bitarray.h>
 #include <s6-rc/s6rc-db.h>
 
 int s6rc_db_check_revdeps (s6rc_db_t const *db)
 {
-  unsigned int n = db->nshort + db->nlong ;
-  unsigned int m = bitarray_div8(n) ;
+  size_t n = db->nshort + db->nlong ;
+  size_t m = bitarray_div8(n) ;
   unsigned char matrix[n * m] ;
   register unsigned int i = n ;
   register unsigned char const *p = matrix ;
@@ -23,7 +24,7 @@ int s6rc_db_check_revdeps (s6rc_db_t const *db)
     register unsigned int j = db->services[i].ndeps[0] ;
     while (j--) bitarray_not(matrix + m * db->deps[db->services[i].deps[0] + j], i, 1) ;
   }
-  i = n * m ;
-  while (i--) if (*p++) return 1 ;
+  n *= m ;
+  while (n--) if (*p++) return 1 ;
   return 0 ;
 }

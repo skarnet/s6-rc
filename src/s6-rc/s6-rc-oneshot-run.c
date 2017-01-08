@@ -1,5 +1,7 @@
 /* ISC license. */
 
+#include <sys/types.h>
+#include <stdint.h>
 #include <skalibs/uint.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/sgetopt.h>
@@ -39,7 +41,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
   if (!uint0_scan(argv[1], &number)) dieusage() ;
 
   {
-    unsigned int livelen = str_len(live) ;
+    size_t livelen = str_len(live) ;
     int fdcompiled, compiledlock ;
     s6rc_db_t db ;
     char compiled[livelen + 10] ;
@@ -68,7 +70,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     {
       s6rc_service_t serviceblob[db.nshort + db.nlong] ;
       char const *argvblob[db.nargvs] ;
-      uint32 depsblob[db.ndeps << 1] ;
+      uint32_t depsblob[db.ndeps << 1] ;
       char stringblob[db.stringlen] ;
       register int r ;
 

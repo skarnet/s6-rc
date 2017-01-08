@@ -1,5 +1,7 @@
 /* ISC license. */
 
+#include <sys/types.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -96,8 +98,8 @@ struct common_s
   unsigned int kname ; /* pos in keep */
   unsigned int ndeps ;
   unsigned int depindex ; /* pos in indices */
-  uint32 annotation_flags ;
-  uint32 timeout[2] ;
+  uint32_t annotation_flags ;
+  uint32_t timeout[2] ;
 } ;
 
 typedef struct oneshot_s oneshot_t, *oneshot_t_ref ;
@@ -133,7 +135,7 @@ struct before_s
   genalloc longruns ; /* longrun_t */
   genalloc bundles ; /* bundle_t */
   unsigned int nargvs ;
-  uint32 specialdeps[2] ;
+  uint32_t specialdeps[2] ;
 } ;
 
 #define BEFORE_ZERO { .indices = GENALLOC_ZERO, .oneshots = GENALLOC_ZERO, .longruns = GENALLOC_ZERO, .bundles = GENALLOC_ZERO, .nargvs = 0, .specialdeps = { 0, 0 } } ;
@@ -212,7 +214,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
            0,
       .type = type
     } ;
-    unsigned int namelen = str_len(name) ;
+    size_t namelen = str_len(name) ;
     unsigned int i = genalloc_len(nameinfo_t, &nameinfo) ;
     if (type == SVTYPE_ONESHOT || type == SVTYPE_LONGRUN)
       if (!stralloc_catb(&keep, name, namelen + 1)) dienomem() ;
@@ -266,7 +268,7 @@ static int uint_uniq (unsigned int const *list, unsigned int n, unsigned int pos
 static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
 {
   buffer b ;
-  unsigned int start = satmp.len ;
+  size_t start = satmp.len ;
   int cont = 1 ;
   char buf[2048] ;
   int fd = open_readatb(dirfd, list) ;
@@ -279,7 +281,7 @@ static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const
     if (!r) cont = 0 ;
     else
     {
-      unsigned int i = start ;
+      size_t i = start ;
       if (r < 0)
       {
         if (errno != EPIPE) strerr_diefu6sys(111, "read ", srcdir, "/", name, "/", list) ;
@@ -336,11 +338,11 @@ static void read_script (before_t *be, int dirfd, char const *srcdir, char const
   be->nargvs += r+1 ;
 }
 
-static uint32 read_timeout (int dirfd, char const *srcdir, char const *name, char const *tname)
+static uint32_t read_timeout (int dirfd, char const *srcdir, char const *name, char const *tname)
 {
   char buf[64] ;
-  uint32 timeout = 0 ;
-  unsigned int r = openreadnclose_at(dirfd, tname, buf, 63) ;
+  uint32_t timeout = 0 ;
+  size_t r = openreadnclose_at(dirfd, tname, buf, 63) ;
   if (!r)
   {
     if (errno && errno != ENOENT)
@@ -470,7 +472,7 @@ static inline void add_bundle (before_t *be, int dirfd, char const *srcdir, char
 static inline void add_source (before_t *be, int dirfd, char const *srcdir, char const *name)
 {
   char typestr[8] = "" ;
-  register unsigned int r ;
+  register size_t r ;
   if (verbosity >= 2) strerr_warni4x("parsing ", srcdir, "/", name) ;
   r = openreadnclose_at(dirfd, "type", typestr, 8) ;
   if (!r)
@@ -488,8 +490,8 @@ static inline void add_source (before_t *be, int dirfd, char const *srcdir, char
 
 static inline void add_sources (before_t *be, char const *srcdir)
 {
-  unsigned int start = satmp.len ;
-  unsigned int cur ;
+  size_t start = satmp.len ;
+  size_t cur ;
   DIR *dir = opendir(srcdir) ;
   if (!dir) strerr_diefu2sys(111, "opendir ", srcdir) ;
   if (!stralloc_cats(&satmp, srcdir) || !stralloc_catb(&satmp, "/", 1)) dienomem() ;
@@ -640,7 +642,7 @@ static inline void flatlist_bundles (bundle_t *bundles, unsigned int nbundles, u
   for (; i < nbundles ; i++)
   {
     unsigned char const *mybits = barray + i * nbits ;
-    uint32 *mydeps = bdeps + bundles[i].listindex ;
+    uint32_t *mydeps = bdeps + bundles[i].listindex ;
     unsigned int j = 0, k = 0 ;
     for (; k < bundles[i].n ; j++)
       if (bitarray_peek(mybits, j)) mydeps[k++] = j ;
@@ -786,7 +788,7 @@ static inline void flatlist_services (s6rc_db_t *db, unsigned char const *sarray
   if (verbosity >= 3) strerr_warni1x("converting service dependency array") ;
   for (; i < n ; i++)
   {
-    uint32 *mydeps = db->deps + db->services[i].deps[0] ;
+    uint32_t *mydeps = db->deps + db->services[i].deps[0] ;
     unsigned int j = 0, k = 0 ;
     for (; k < db->services[i].ndeps[0] ; j++)
       if (bitarray_peek(sarray + j * nbits, i)) mydeps[k++] = j ;
@@ -823,8 +825,8 @@ static void cleanup (char const *compiled)
 
 static void auto_dir (char const *compiled, char const *dir)
 {
-  unsigned int clen = str_len(compiled) ;
-  unsigned int dlen = str_len(dir) ;
+  size_t clen = str_len(compiled) ;
+  size_t dlen = str_len(dir) ;
   char fn[clen + dlen + 2] ;
   byte_copy(fn, clen, compiled) ;
   fn[clen] = dlen ? '/' : 0 ;
@@ -838,8 +840,8 @@ static void auto_dir (char const *compiled, char const *dir)
 
 static void auto_file (char const *compiled, char const *file, char const *s, unsigned int n)
 {
-  unsigned int clen = str_len(compiled) ;
-  unsigned int flen = str_len(file) ;
+  size_t clen = str_len(compiled) ;
+  size_t flen = str_len(file) ;
   char fn[clen + flen + 2] ;
   byte_copy(fn, clen, compiled) ;
   fn[clen] = '/' ;
@@ -853,8 +855,8 @@ static void auto_file (char const *compiled, char const *file, char const *s, un
 
 static void auto_symlink (char const *compiled, char const *name, char const *target)
 {
-  unsigned int clen = str_len(compiled) ;
-  unsigned int flen = str_len(name) ;
+  size_t clen = str_len(compiled) ;
+  size_t flen = str_len(name) ;
   char fn[clen + flen + 2] ;
   byte_copy(fn, clen, compiled) ;
   fn[clen] = '/' ;
@@ -868,8 +870,8 @@ static void auto_symlink (char const *compiled, char const *name, char const *ta
 
 static void auto_rights (char const *compiled, char const *file, mode_t mode)
 {
-  unsigned int clen = str_len(compiled) ;
-  unsigned int flen = str_len(file) ;
+  size_t clen = str_len(compiled) ;
+  size_t flen = str_len(file) ;
   char fn[clen + flen + 2] ;
   byte_copy(fn, clen, compiled) ;
   fn[clen] = '/' ;
@@ -895,19 +897,19 @@ static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
 {
   char pack[20] ;
   if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/n") ;
-  uint32_pack_big(pack, (uint32)db->nshort) ;
-  uint32_pack_big(pack + 4, (uint32)db->nlong) ;
-  uint32_pack_big(pack + 8, (uint32)db->stringlen) ;
-  uint32_pack_big(pack + 12, (uint32)db->nargvs) ;
-  uint32_pack_big(pack + 16, (uint32)db->ndeps) ;
+  uint32_pack_big(pack, (uint32_t)db->nshort) ;
+  uint32_pack_big(pack + 4, (uint32_t)db->nlong) ;
+  uint32_pack_big(pack + 8, (uint32_t)db->stringlen) ;
+  uint32_pack_big(pack + 12, (uint32_t)db->nargvs) ;
+  uint32_pack_big(pack + 16, (uint32_t)db->ndeps) ;
   auto_file(compiled, "n", pack, 20) ;
 }
 
 static void make_skel (char const *compiled, char const *name, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, unsigned int notif)
 {
-  unsigned int namelen = str_len(name) ;
+  size_t namelen = str_len(name) ;
   char fmt[UINT_FMT] ;
-  unsigned int i = uint_fmt(fmt, notif) ;
+  size_t i = uint_fmt(fmt, notif) ;
   fmt[i++] = '\n' ;
   char fn[namelen + 29] ;
   byte_copy(fn, 12, "servicedirs/") ;
@@ -938,7 +940,7 @@ static inline void write_oneshot_runner (char const *compiled, uint64 const *uid
     i = gidn ;
     while (i--)
     {
-      unsigned int len = gid_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, gids[i]) ;
+      size_t len = gid_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, gids[i]) ;
       fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
       auto_dir(compiled, fn) ;
       byte_copy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, 7, "/allow") ;
@@ -949,7 +951,7 @@ static inline void write_oneshot_runner (char const *compiled, uint64 const *uid
   i = uidn ;
   while (i--)
   {
-    unsigned int len = uint64_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, uids[i]) ;
+    size_t len = uint64_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, uids[i]) ;
     fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
     auto_dir(compiled, fn) ;
     byte_copy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, 7, "/allow") ;
@@ -961,21 +963,21 @@ static inline void write_oneshot_runner (char const *compiled, uint64 const *uid
 
 static inline int write_pipelines (stralloc *sa, s6rc_db_t const *db)
 {
-  uint32 i = db->nlong ;
+  uint32_t i = db->nlong ;
   unsigned char black[bitarray_div8(db->nlong)] ;
   byte_zero(black, bitarray_div8(db->nlong)) ;
   while (i--) if (!bitarray_peek(black, i))
   {
-    uint32 j = i ;
+    uint32_t j = i ;
     for (;;)
     {
-      register uint32 k = db->services[j].x.longrun.pipeline[0] ;
+      register uint32_t k = db->services[j].x.longrun.pipeline[0] ;
       if (k >= db->nlong) break ;
       j = k ;
     }
     for (;;)
     {
-      register uint32 k = db->services[j].x.longrun.pipeline[1] ;
+      register uint32_t k = db->services[j].x.longrun.pipeline[1] ;
       bitarray_set(black, j) ;
       if (k >= db->nlong) break ;
       if (!string_quote(sa, db->string + db->services[k].name, str_len(db->string + db->services[k].name))
@@ -988,12 +990,12 @@ static inline int write_pipelines (stralloc *sa, s6rc_db_t const *db)
 
 static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
 {
-  unsigned int base = satmp.len ;
+  size_t base = satmp.len ;
   make_skel(compiled, S6RC_FDHOLDER, uids, uidn, gids, gidn, 1) ;
   {
     char fn[62 + S6RC_FDHOLDER_LEN + UINT64_FMT] = "servicedirs/" S6RC_FDHOLDER "/data/rules/uid/" ;
     char fmt[7 + UINT64_FMT] = "../uid/" ;
-    unsigned int i = uint64_fmt(fmt + 7, uids[0]) ;
+    size_t i = uint64_fmt(fmt + 7, uids[0]) ;
     fmt[7 + i] = 0 ;
     byte_copy(fn + 28 + S6RC_FDHOLDER_LEN, i + 1, fmt + 7) ;
     auto_dir(compiled, fn) ;
@@ -1014,7 +1016,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     
     for (i = 1 ; i < uidn ; i++)
     {
-      unsigned int len = uint64_fmt(fn + 28 + S6RC_FDHOLDER_LEN, uids[i]) ;
+      size_t len = uint64_fmt(fn + 28 + S6RC_FDHOLDER_LEN, uids[i]) ;
       fn[28 + S6RC_FDHOLDER_LEN + len] = 0 ;
       auto_symlink(compiled, fn, fmt + 7) ;
     }
@@ -1022,7 +1024,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     i = gidn ;
     while (i--)
     {
-      unsigned int len = gid_fmt(fn + 28 + S6RC_FDHOLDER_LEN, gids[i]) ;
+      size_t len = gid_fmt(fn + 28 + S6RC_FDHOLDER_LEN, gids[i]) ;
       fn[28 + S6RC_FDHOLDER_LEN + len] = 0 ;
       auto_symlink(compiled, fn, fmt) ;
     }
@@ -1065,7 +1067,7 @@ static inline void write_specials (char const *compiled, s6rc_db_t const *db, ui
 
 static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps)
 {
-  unsigned int clen = str_len(compiled) ;
+  size_t clen = str_len(compiled) ;
   int fd ;
   struct cdb_make c = CDB_MAKE_ZERO ;
   unsigned int i = db->nshort + db->nlong ;
@@ -1089,7 +1091,7 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
   while (i--)
   {
     char pack[4] ;
-    uint32_pack_big(pack, (uint32)i) ;
+    uint32_pack_big(pack, i) ;
     if (cdb_make_add(&c, db->string + db->services[i].name, str_len(db->string + db->services[i].name), pack, 4) < 0)
     {
       cleanup(compiled) ;
@@ -1143,7 +1145,7 @@ static void dircopy (char const *compiled, char const *srcfn, char const *dstfn)
 
 static inline void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, unsigned int fd, char const *exe, int needargs)
 {
-  unsigned int base = satmp.len ;
+  size_t base = satmp.len ;
   if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -")
    || !stralloc_cats(&satmp, needargs ? "S0\n" : "P\n")) dienomem() ;
   if (db->services[i].x.longrun.pipeline[0] < db->nlong)
@@ -1177,14 +1179,14 @@ static inline void write_exe_wrapper (char const *compiled, char const *fn, s6rc
 
 static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db, char const *const *srcdirs)
 {
-  unsigned int clen = str_len(compiled) ;
+  size_t clen = str_len(compiled) ;
   unsigned int i = 2 ;
   if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/servicedirs") ;
   for (; i < db->nlong ; i++)
   {
     struct stat st ;
-    unsigned int srcdirlen = str_len(srcdirs[i]) ;
-    unsigned int len = str_len(db->string + db->services[i].name) ;
+    size_t srcdirlen = str_len(srcdirs[i]) ;
+    size_t len = str_len(db->string + db->services[i].name) ;
     unsigned int fd = 0 ;
     int ispipelined = db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong ;
     register int r ;
@@ -1211,7 +1213,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     if (r)
     {
       char fmt[UINT_FMT] ;
-      unsigned int fmtlen = uint_fmt(fmt, fd) ;
+      size_t fmtlen = uint_fmt(fmt, fd) ;
       fmt[fmtlen++] = '\n' ;
       byte_copy(dstfn + clen + 13 + len, 17, "/notification-fd") ;
       if (!openwritenclose_unsafe(dstfn, fmt, fmtlen))
@@ -1318,7 +1320,7 @@ static inline int write_service (buffer *b, s6rc_service_t const *sv, int type)
 
 static inline void write_db (char const *compiled, s6rc_db_t const *db)
 {
-  unsigned int clen = str_len(compiled) ;
+  size_t clen = str_len(compiled) ;
   buffer b ;
   int fd ;
   char buf[4096] ;
@@ -1346,7 +1348,7 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
 
   {
     unsigned int i = db->ndeps << 1 ;
-    uint32 const *deps = db->deps ;
+    uint32_t const *deps = db->deps ;
     while (i--)
     {
       char pack[4] ;
@@ -1461,7 +1463,7 @@ int main (int argc, char const *const *argv)
     genalloc_free(nameinfo_t, &nameinfo) ;
     avltree_free(&names_map) ;
     {
-      uint32 deps[db.ndeps << 1] ;
+      uint32_t deps[db.ndeps << 1] ;
       db.deps = deps ;
       flatlist_services(&db, sarray) ;
       write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, uids, uidn, gids, gidn, fdhuser) ;

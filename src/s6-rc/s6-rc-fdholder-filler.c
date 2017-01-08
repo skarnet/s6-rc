@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 #include <skalibs/uint.h>
@@ -49,7 +50,7 @@ int main (int argc, char const *const *argv)
     s6_fdholder_fd_t dump[n<<1] ;
     for (; i < n ; i++)
     {
-      unsigned int len = str_len(argv[i]) ;
+      size_t len = str_len(argv[i]) ;
       if (len + 12 > S6_FDHOLDER_ID_SIZE)
       {
         errno = ENAMETOOLONG ;

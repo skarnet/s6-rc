@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <errno.h>
 #include <unistd.h>
 #include <skalibs/uint.h>
@@ -27,9 +28,9 @@ unsigned int const s6rc_servicedir_file_maxlen = 15 ;
 
 int s6rc_servicedir_copy_one (char const *src, char const *dst, s6rc_servicedir_desc_t const *p)
 {
-  unsigned int srclen = str_len(src) ;
-  unsigned int dstlen = str_len(dst) ;
-  unsigned int plen = str_len(p->name) ;
+  size_t srclen = str_len(src) ;
+  size_t dstlen = str_len(dst) ;
+  size_t plen = str_len(p->name) ;
   char srcfn[srclen + plen + 2] ;
   char dstfn[dstlen + plen + 2] ;
   byte_copy(srcfn, srclen, src) ;

@@ -1,5 +1,7 @@
 /* ISC license. */
 
+#include <sys/types.h>
+#include <stdint.h>
 #include <errno.h>
 #include <skalibs/uint32.h>
 #include <skalibs/bytestr.h>
@@ -17,14 +19,14 @@
 #define DBG(...)
 #endif
 
-static int s6rc_db_check_valid_string (char const *string, unsigned int stringlen, unsigned int pos)
+static int s6rc_db_check_valid_string (char const *string, size_t stringlen, size_t pos)
 {
   if (pos >= stringlen) return 0 ;
   if (str_nlen(string + pos, stringlen - pos) == stringlen - pos) return 0 ;
   return 1 ;
 }
 
-static inline int s6rc_db_check_valid_strings (char const *string, unsigned int stringlen, unsigned int pos, unsigned int n)
+static inline int s6rc_db_check_valid_strings (char const *string, size_t stringlen, size_t pos, unsigned int n)
 {
   while (n--)
   {
@@ -34,9 +36,9 @@ static inline int s6rc_db_check_valid_strings (char const *string, unsigned int 
   return 1 ;
 }
 
-static inline int s6rc_db_read_deps (buffer *b, unsigned int max, uint32 *deps, unsigned int ndeps)
+static inline int s6rc_db_read_deps (buffer *b, unsigned int max, uint32_t *deps, unsigned int ndeps)
 {
-  uint32 x ;
+  uint32_t x ;
   ndeps <<= 1 ;
   while (ndeps--)
   {
@@ -99,7 +101,7 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
       DBG("  oneshot") ;
       for (; j < 2 ; j++)
       {
-        uint32 pos, argc ;
+        uint32_t pos, argc ;
         if (!s6rc_db_read_uint32(b, &argc)) return -1 ;
         DBG("    argc[%u] is %u, nargvs is %u", j, argc, nargvs) ;
         if (argc > nargvs) return 0 ;
@@ -111,7 +113,8 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
         sv->x.oneshot.argv[j] = argvpos ;
         sv->x.oneshot.argc[j] = argc ;
         argvpos += argc ; nargvs -= argc ;
-        if (!nargvs--) return 0 ; db->argvs[argvpos++] = 0 ;
+        if (!nargvs--) return 0 ;
+        db->argvs[argvpos++] = 0 ;
       }
     }
     {
@@ -124,9 +127,9 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
   return 1 ;
 }
 
-static inline int s6rc_db_read_string (buffer *b, char *string, unsigned int len)
+static inline int s6rc_db_read_string (buffer *b, char *string, size_t len)
 {
-  if (buffer_get(b, string, len) < (int)len) return -1 ;
+  if (buffer_get(b, string, len) < (ssize_t)len) return -1 ;
   return 1 ;
 }
 

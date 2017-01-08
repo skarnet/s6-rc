@@ -1,5 +1,7 @@
 /* ISC license. */
 
+#include <sys/types.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <skalibs/uint32.h>
 #include <skalibs/bytestr.h>
@@ -32,7 +34,7 @@ static void print_bundle_contents (char const *name)
   if (!r) strerr_dief3x(3, name, " is not a valid identifier in ", compiled) ;
   if (cdb_datalen(&c) == 4)
   {
-    uint32 x ;
+    uint32_t x ;
     char pack[4] ;
     if (cdb_read(&c, pack, 4, cdb_datapos(&c)) < 0)
       strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ; 
@@ -56,7 +58,7 @@ static void print_bundle_contents (char const *name)
       strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ; 
     while (len--)
     {
-      uint32 x ;
+      uint32_t x ;
       uint32_unpack_big(p, &x) ; p += 4 ;
       if (x >= db->nshort + db->nlong)
         strerr_dief2x(4, "invalid database in ", compiled) ;
@@ -86,7 +88,7 @@ static void print_services (unsigned int from, unsigned int to)
 static void print_all (int bundlesonly)
 {
   cdb_t c = CDB_ZERO ;
-  uint32 kpos ;
+  uint32_t kpos ;
   int fd = open_readatb(fdcompiled, "resolve.cdb") ;
   if (fd < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
   if (!cdb_init_map(&c, fd, 1))
@@ -102,7 +104,7 @@ static void print_all (int bundlesonly)
       strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
     if (bundlesonly && cdb_datalen(&c) == 4)
     {
-      uint32 x ;
+      uint32_t x ;
       char pack[4] ;
       if (cdb_read(&c, pack, 4, cdb_datapos(&c)) < 0)
         strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
@@ -127,7 +129,7 @@ static unsigned int resolve_service (char const *name)
 {
   cdb_t c = CDB_ZERO ;
   int fd = open_readatb(fdcompiled, "resolve.cdb") ;
-  uint32 x ;
+  uint32_t x ;
   char pack[4] ;
   register int r ;
   if (fd < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
@@ -160,8 +162,8 @@ static void print_type (char const *name)
 
 static void print_timeout (char const *name, int h)
 {
+  size_t len ;
   unsigned int n = resolve_service(name) ;
-  unsigned int len ;
   char fmt[UINT32_FMT] ;
   if (n >= db->nshort + db->nlong)
     strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents a bundle") ;
@@ -248,14 +250,14 @@ static void print_union (char const *const *argv, int h, int isdeps, int doclosu
         strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
       while (len--)
       {
-        uint32 x ;
+        uint32_t x ;
         uint32_unpack_big(p, &x) ; p += 4 ;
         if (x >= db->nshort + db->nlong)
           strerr_dief2x(4, "invalid database in ", compiled) ;
         if (isdeps)
         {
-          register uint32 ndeps = db->services[x].ndeps[h] ;
-          register uint32 const *deps = db->deps + h * db->ndeps + db->services[x].deps[h] ;
+          register uint32_t ndeps = db->services[x].ndeps[h] ;
+          register uint32_t const *deps = db->deps + h * db->ndeps + db->services[x].deps[h] ;
           while (ndeps--) state[*deps++] |= 1 ;
         }
         else state[x] |= 1 ;
@@ -373,7 +375,7 @@ int main (int argc, char const *const *argv)
   if (what == 2) subwhat = 1 + parse_list(argv[1]) ;
 
   {
-    unsigned int livelen = str_len(live) ;
+    size_t livelen = str_len(live) ;
     int compiledlock ;
     s6rc_db_t dbblob ;
     char compiledblob[compiled ? str_len(compiled) : livelen + 10] ;
@@ -406,7 +408,7 @@ int main (int argc, char const *const *argv)
       unsigned int n = dbblob.nshort + dbblob.nlong ;
       s6rc_service_t serviceblob[n] ;
       char const *argvblob[dbblob.nargvs] ;
-      uint32 depsblob[dbblob.ndeps << 1] ;
+      uint32_t depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
       register int r ;
 

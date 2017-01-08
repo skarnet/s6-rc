@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -11,8 +12,8 @@
 
 int s6rc_servicedir_copy_online (char const *src, char const *dst)
 {
-  unsigned int srclen = str_len(src) ;
-  unsigned int dstlen = str_len(dst) ;
+  size_t srclen = str_len(src) ;
+  size_t dstlen = str_len(dst) ;
   unsigned int n ;
   unsigned int i = 0 ;
   int wantup = 0 ;

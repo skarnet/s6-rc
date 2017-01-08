@@ -1,7 +1,8 @@
 /* ISC license. */
 
+#include <sys/types.h>
+#include <stdint.h>
 #include <errno.h>
-#include <skalibs/uint32.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
@@ -10,7 +11,7 @@
 
 static inline int s6rc_db_read_sizes_buffer (buffer *b, s6rc_db_t *db)
 {
-  uint32 x ;
+  uint32_t x ;
   if (!s6rc_db_read_uint32(b, &x)) return 0 ;
   db->nshort = x ;
   if (!s6rc_db_read_uint32(b, &x)) return 0 ;
@@ -38,7 +39,7 @@ int s6rc_db_read_sizes (int fdcompiled, s6rc_db_t *db)
   }
   {
     char c ;
-    register int r = buffer_get(&b, &c, 1) ;
+    register ssize_t r = buffer_get(&b, &c, 1) ;
     if (r < 0)
     {
       r = errno ;

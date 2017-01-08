@@ -1,16 +1,17 @@
 /* ISC license. */
 
+#include <sys/types.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <s6-rc/s6rc-utils.h>
 
-int s6rc_sanitize_dir (stralloc *sa, char const *fn, unsigned int *dirlen)
+int s6rc_sanitize_dir (stralloc *sa, char const *fn, size_t *dirlen)
 {
+  size_t base = sa->len ;
+  size_t fnlen = str_len(fn) ;
+  size_t ddirlen ;
   int wasnull = !sa->s ;
-  unsigned int base = sa->len ;
-  unsigned int fnlen = str_len(fn) ;
-  unsigned int ddirlen ;
   if (!sadirname(sa, fn, fnlen)) return 0 ;
   if (sa->len != base + 1 || sa->s[base] != '/')
     if (!stralloc_catb(sa, "/", 1)) goto err ;

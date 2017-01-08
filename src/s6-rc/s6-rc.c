@@ -35,7 +35,7 @@ struct pidindex_s
 
 static unsigned int verbosity = 1 ;
 static char const *live = S6RC_LIVE_BASE ;
-static unsigned int livelen ;
+static size_t livelen ;
 static pidindex_t *pidindex ;
 static unsigned int npids = 0 ;
 static s6rc_db_t *db ;
@@ -127,7 +127,7 @@ static pid_t start_oneshot (unsigned int i, int h)
 
 static pid_t start_longrun (unsigned int i, int h)
 {
-  unsigned int svdlen = str_len(db->string + db->services[i].name) ;
+  size_t svdlen = str_len(db->string + db->services[i].name) ;
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
@@ -172,7 +172,7 @@ static void success_longrun (unsigned int i, int h)
 {
   if (!dryrun[0])
   {
-    unsigned int svdlen = str_len(db->string + db->services[i].name) ;
+    size_t svdlen = str_len(db->string + db->services[i].name) ;
     char fn[livelen + svdlen + 15] ;
     byte_copy(fn, livelen, live) ;
     byte_copy(fn + livelen, 9, "/scandir/") ;
@@ -458,10 +458,9 @@ int main (int argc, char const *const *argv)
       int spfd ;
       s6rc_service_t serviceblob[n] ;
       char const *argvblob[dbblob.nargvs] ;
-      uint32 depsblob[dbblob.ndeps << 1] ;
+      uint32_t depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
       unsigned char stateblob[n] ;
-      register int r ;
 
       dbblob.services = serviceblob ;
       dbblob.argvs = argvblob ;
@@ -474,7 +473,7 @@ int main (int argc, char const *const *argv)
 
       byte_copy(dbfn + livelen + 1, 6, "state") ;
       {
-        r = openreadnclose(dbfn, (char *)state, n) ;
+        register ssize_t r = openreadnclose(dbfn, (char *)state, n) ;
         if (r != n) strerr_diefu2sys(111, "read ", dbfn) ;
         {
           register unsigned int i = n ;
@@ -484,10 +483,11 @@ int main (int argc, char const *const *argv)
 
 
      /* Read the db from the file */
-
-      r = s6rc_db_read(fdcompiled, &dbblob) ;
-      if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/db") ;
-      if (!r) strerr_dief3x(4, "invalid service database in ", dbfn, "/db") ;
+      {
+        register int r = s6rc_db_read(fdcompiled, &dbblob) ;
+        if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/db") ;
+        if (!r) strerr_dief3x(4, "invalid service database in ", dbfn, "/db") ;
+      }
 
 
      /* Resolve the args and add them to the selection */
@@ -501,8 +501,7 @@ int main (int argc, char const *const *argv)
         for (; *argv ; argv++)
         {
           unsigned int len ;
-          register int r ;
-          r = cdb_find(&c, *argv, str_len(*argv)) ;
+          register int r = cdb_find(&c, *argv, str_len(*argv)) ;
           if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
           if (!r)
             strerr_dief4x(3, *argv, " is not a recognized identifier in ", dbfn, "/resolve.cdb") ;
@@ -518,7 +517,7 @@ int main (int argc, char const *const *argv)
             if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
             while (len--)
             {
-              uint32 x ;
+              uint32_t x ;
               uint32_unpack_big(p, &x) ; p += 4 ;
               if (x >= n)
                 strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
@@ -574,6 +573,7 @@ int main (int argc, char const *const *argv)
 
       if (prune)
       {
+        register int r ;
         if (up) invert_selection() ;
         r = doit(spfd, 0) ;
         if (r) return r ;

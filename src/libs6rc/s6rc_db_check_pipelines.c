@@ -1,6 +1,6 @@
 /* ISC license. */
 
-#include <skalibs/uint32.h>
+#include <stdint.h>
 #include <skalibs/diuint32.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/bitarray.h>
@@ -8,16 +8,16 @@
 
 int s6rc_db_check_pipelines (s6rc_db_t const *db, diuint32 *problem)
 {
-  uint32 i = db->nlong ;
+  uint32_t i = db->nlong ;
   unsigned char black[bitarray_div8(db->nlong)] ;
   byte_zero(black, bitarray_div8(db->nlong)) ;
   while (i--) if (!bitarray_peek(black, i))
   {
-    uint32 j = i ;
-    uint32 start ;
+    uint32_t j = i ;
+    uint32_t start ;
     for (;;)
     {
-      register uint32 k = db->services[j].x.longrun.pipeline[0] ;
+      register uint32_t k = db->services[j].x.longrun.pipeline[0] ;
       if (k >= db->nlong) break ;
       if (k == i || bitarray_peek(black, k))
       {
@@ -31,7 +31,7 @@ int s6rc_db_check_pipelines (s6rc_db_t const *db, diuint32 *problem)
     j = i ;
     for (;;)
     {
-      register uint32 k = db->services[j].x.longrun.pipeline[1] ;
+      register uint32_t k = db->services[j].x.longrun.pipeline[1] ;
       if (k >= db->nlong) break ;
       if (k == i || bitarray_peek(black, k))
       {
