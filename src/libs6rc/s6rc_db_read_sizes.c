@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <errno.h>
-#include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>

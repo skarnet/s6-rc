@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
-#include <skalibs/tai.h>
 #include <skalibs/direntry.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>

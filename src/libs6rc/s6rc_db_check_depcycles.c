@@ -2,7 +2,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <skalibs/diuint32.h>
 #include <skalibs/bitarray.h>
 #include <s6-rc/s6rc-db.h>
 

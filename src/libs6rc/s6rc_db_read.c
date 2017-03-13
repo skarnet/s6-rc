@@ -3,9 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
-#include <skalibs/types.h>
 #include <skalibs/bytestr.h>
-#include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
