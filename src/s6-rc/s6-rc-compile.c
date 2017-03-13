@@ -1,16 +1,12 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <skalibs/uint32.h>
-#include <skalibs/uint64.h>
-#include <skalibs/uint.h>
-#include <skalibs/gidstuff.h>
-#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
 #include <skalibs/bitarray.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/sgetopt.h>
@@ -81,7 +77,7 @@ static void *names_dtok (unsigned int d, void *x)
 static int names_cmp (void const *a, void const *b, void *x)
 {
   (void)x ;
-  return str_diff((char const *)a, (char const *)b) ;
+  return strcmp((char const *)a, (char const *)b) ;
 }
 
 static genalloc nameinfo = GENALLOC_ZERO ; /* nameinfo_t */
@@ -214,7 +210,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
            0,
       .type = type
     } ;
-    size_t namelen = str_len(name) ;
+    size_t namelen = strlen(name) ;
     unsigned int i = genalloc_len(nameinfo_t, &nameinfo) ;
     if (type == SVTYPE_ONESHOT || type == SVTYPE_LONGRUN)
       if (!stralloc_catb(&keep, name, namelen + 1)) dienomem() ;
@@ -229,7 +225,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
 
 static void check_identifier (char const *srcdir, char const *s)
 {
-  if (!byte_diff(s, 5, "s6rc-") && !byte_diff(s, 6, "s6-rc-"))
+  if (!memcmp(s, "s6rc-", 5) && !memcmp(s, "s6-rc-", 6))
     strerr_dief5x(1, "in ", srcdir, ": identifier ", s, " starts with reserved prefix") ;
 }
 
@@ -273,11 +269,11 @@ static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const
   char buf[2048] ;
   int fd = open_readatb(dirfd, list) ;
   if (fd < 0) return 0 ;
-  buffer_init(&b, &fd_readsv, fd, buf, 2048) ;
+  buffer_init(&b, &buffer_read, fd, buf, 2048) ;
   *listindex = genalloc_len(unsigned int, &be->indices) ;
   while (cont)
   {
-    register int r = skagetln(&b, &satmp, '\n') ;
+    int r = skagetln(&b, &satmp, '\n') ;
     if (!r) cont = 0 ;
     else
     {
@@ -323,7 +319,7 @@ static void read_script (before_t *be, int dirfd, char const *srcdir, char const
   else
   {
     char buf[4096] ;
-    buffer b = BUFFER_INIT(&fd_readsv, fd, buf, 4096) ;
+    buffer b = BUFFER_INIT(&buffer_read, fd, buf, 4096) ;
     r = el_parse_from_buffer(&keep, &b) ;
     switch (r)
     {
@@ -472,7 +468,7 @@ static inline void add_bundle (before_t *be, int dirfd, char const *srcdir, char
 static inline void add_source (before_t *be, int dirfd, char const *srcdir, char const *name)
 {
   char typestr[8] = "" ;
-  register size_t r ;
+  size_t r ;
   if (verbosity >= 2) strerr_warni4x("parsing ", srcdir, "/", name) ;
   r = openreadnclose_at(dirfd, "type", typestr, 8) ;
   if (!r)
@@ -482,9 +478,9 @@ static inline void add_source (before_t *be, int dirfd, char const *srcdir, char
   }
   if (typestr[r-1] == '\n') r-- ;
   typestr[r++] = 0 ;
-  if (!str_diff(typestr, "oneshot")) add_oneshot(be, dirfd, srcdir, name) ;
-  else if (!str_diff(typestr, "longrun")) add_longrun(be, dirfd, srcdir, name) ;
-  else if (!str_diff(typestr, "bundle")) add_bundle(be, dirfd, srcdir, name) ;
+  if (!strcmp(typestr, "oneshot")) add_oneshot(be, dirfd, srcdir, name) ;
+  else if (!strcmp(typestr, "longrun")) add_longrun(be, dirfd, srcdir, name) ;
+  else if (!strcmp(typestr, "bundle")) add_bundle(be, dirfd, srcdir, name) ;
   else strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
 }
 
@@ -505,11 +501,11 @@ static inline void add_sources (before_t *be, char const *srcdir)
     d = readdir(dir) ;
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
-    if (d->d_name[str_chr(d->d_name, '\n')])
+    if (strchr(d->d_name, '\n'))
       strerr_dief3x(1, "subdirectory of ", srcdir, " contains a newline character") ;
     check_identifier(srcdir, d->d_name) ;
     satmp.len = cur ;
-    if (!stralloc_catb(&satmp, d->d_name, str_len(d->d_name) + 1)) dienomem() ;
+    if (!stralloc_catb(&satmp, d->d_name, strlen(d->d_name) + 1)) dienomem() ;
     if (stat(satmp.s + start, &st) < 0)
       strerr_diefu2sys(111, "stat ", satmp.s + start) ;
     if (!S_ISDIR(st.st_mode)) continue ;
@@ -589,7 +585,7 @@ static void resolve_bundle_rec (bundle_recinfo_t *recinfo, unsigned int i)
     for (; j < me->n ; j++)
     {
       unsigned int id ;
-      register nameinfo_t const *p ;
+      nameinfo_t const *p ;
       avltree_search(&names_map, data.s + listindex[j], &id) ;
       p = genalloc_s(nameinfo_t, &nameinfo) + id ;
       switch (p->type)
@@ -618,8 +614,8 @@ static inline unsigned int resolve_bundles (bundle_t const *oldb, bundle_t *newb
   unsigned char mark[nbundles] ;
   bundle_recinfo_t recinfo = { .oldb = oldb, .newb = newb, .n = nshort + nlong, .nlong = nlong, .nbits = bitarray_div8(nshort + nlong), .indices = indices, .barray = barray, .mark = mark } ;
   if (verbosity >= 2) strerr_warni1x("resolving bundle names") ;
-  byte_zero(barray, recinfo.nbits * nbundles) ;
-  byte_zero(mark, nbundles) ;
+  memset(barray, 0, recinfo.nbits * nbundles) ;
+  memset(mark, 0, nbundles) ;
   for (; i < nbundles ; i++)
   {
     newb[i].name = oldb[i].name ;
@@ -635,7 +631,7 @@ static inline unsigned int resolve_bundles (bundle_t const *oldb, bundle_t *newb
   return total ;
 }
 
-static inline void flatlist_bundles (bundle_t *bundles, unsigned int nbundles, unsigned int nbits, unsigned char const *barray, uint32 *bdeps)
+static inline void flatlist_bundles (bundle_t *bundles, unsigned int nbundles, unsigned int nbits, unsigned char const *barray, uint32_t *bdeps)
 {
   unsigned int i = 0 ;
   if (verbosity >= 3) strerr_warni1x("converting bundle array") ;
@@ -655,7 +651,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
   for (; j < me->ndeps ; j++)
   {
     unsigned int id ;
-    register nameinfo_t const *p ;
+    nameinfo_t const *p ;
     avltree_search(&names_map, data.s + indices[me->depindex + j], &id) ;
     p = genalloc_s(nameinfo_t, &nameinfo) + id ;
     switch (p->type)
@@ -693,10 +689,10 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
   }
 }
 
-static uint32 resolve_prodcons (longrun_t const *longruns, unsigned int i, int h, uint32 nlong)
+static uint32_t resolve_prodcons (longrun_t const *longruns, unsigned int i, int h, uint32_t nlong)
 {
   unsigned int j ;
-  register nameinfo_t const *p ;
+  nameinfo_t const *p ;
   if (!longruns[i].pipeline[h]) return nlong ;
   avltree_search(&names_map, data.s + longruns[i].pipeline[h], &j) ;
   p = genalloc_s(nameinfo_t, &nameinfo) + j ;
@@ -705,7 +701,7 @@ static uint32 resolve_prodcons (longrun_t const *longruns, unsigned int i, int h
     case SVTYPE_LONGRUN :
     {
       unsigned int k ;
-      register nameinfo_t const *q ;
+      nameinfo_t const *q ;
       avltree_search(&names_map, data.s + longruns[p->i].pipeline[!h], &k) ;
       q = genalloc_s(nameinfo_t, &nameinfo) + k ;
       if (q->type != SVTYPE_LONGRUN) goto err ;
@@ -741,7 +737,7 @@ static inline unsigned int resolve_services (s6rc_db_t *db, before_t const *be, 
   unsigned int total[2] = { 0, 0 } ;
   unsigned int i = 0 ;
   if (verbosity >= 2) strerr_warni1x("resolving service names") ;
-  byte_zero(sarray, nbits * n) ;
+  memset(sarray, 0, nbits * n) ;
   for (; i < db->nlong ; i++)
   {
     srcdirs[i] = longruns[i].srcdir ;
@@ -784,7 +780,7 @@ static inline void flatlist_services (s6rc_db_t *db, unsigned char const *sarray
   unsigned int nbits = bitarray_div8(n) ;
   diuint32 problem ;
   unsigned int i = 0 ;
-  register int r ;
+  int r ;
   if (verbosity >= 3) strerr_warni1x("converting service dependency array") ;
   for (; i < n ; i++)
   {
@@ -825,12 +821,12 @@ static void cleanup (char const *compiled)
 
 static void auto_dir (char const *compiled, char const *dir)
 {
-  size_t clen = str_len(compiled) ;
-  size_t dlen = str_len(dir) ;
+  size_t clen = strlen(compiled) ;
+  size_t dlen = strlen(dir) ;
   char fn[clen + dlen + 2] ;
-  byte_copy(fn, clen, compiled) ;
+  memcpy(fn, compiled, clen) ;
   fn[clen] = dlen ? '/' : 0 ;
-  byte_copy(fn + clen + 1, dlen + 1, dir) ;
+  memcpy(fn + clen + 1, dir, dlen + 1) ;
   if (mkdir(fn, 0755) < 0)
   {
     cleanup(compiled) ;
@@ -840,12 +836,12 @@ static void auto_dir (char const *compiled, char const *dir)
 
 static void auto_file (char const *compiled, char const *file, char const *s, unsigned int n)
 {
-  size_t clen = str_len(compiled) ;
-  size_t flen = str_len(file) ;
+  size_t clen = strlen(compiled) ;
+  size_t flen = strlen(file) ;
   char fn[clen + flen + 2] ;
-  byte_copy(fn, clen, compiled) ;
+  memcpy(fn, compiled, clen) ;
   fn[clen] = '/' ;
-  byte_copy(fn + clen + 1, flen + 1, file) ;
+  memcpy(fn + clen + 1, file, flen + 1) ;
   if (!openwritenclose_unsafe(fn, s, n))
   {
     cleanup(compiled) ;
@@ -855,12 +851,12 @@ static void auto_file (char const *compiled, char const *file, char const *s, un
 
 static void auto_symlink (char const *compiled, char const *name, char const *target)
 {
-  size_t clen = str_len(compiled) ;
-  size_t flen = str_len(name) ;
+  size_t clen = strlen(compiled) ;
+  size_t flen = strlen(name) ;
   char fn[clen + flen + 2] ;
-  byte_copy(fn, clen, compiled) ;
+  memcpy(fn, compiled, clen) ;
   fn[clen] = '/' ;
-  byte_copy(fn + clen + 1, flen + 1, name) ;
+  memcpy(fn + clen + 1, name, flen + 1) ;
   if (symlink(target, fn) < 0)
   {
     cleanup(compiled) ;
@@ -870,12 +866,12 @@ static void auto_symlink (char const *compiled, char const *name, char const *ta
 
 static void auto_rights (char const *compiled, char const *file, mode_t mode)
 {
-  size_t clen = str_len(compiled) ;
-  size_t flen = str_len(file) ;
+  size_t clen = strlen(compiled) ;
+  size_t flen = strlen(file) ;
   char fn[clen + flen + 2] ;
-  byte_copy(fn, clen, compiled) ;
+  memcpy(fn, compiled, clen) ;
   fn[clen] = '/' ;
-  byte_copy(fn + clen + 1, flen + 1, file) ;
+  memcpy(fn + clen + 1, file, flen + 1) ;
   if (chmod(fn, mode) < 0)
   {
     cleanup(compiled) ;
@@ -905,34 +901,34 @@ static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
   auto_file(compiled, "n", pack, 20) ;
 }
 
-static void make_skel (char const *compiled, char const *name, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, unsigned int notif)
+static void make_skel (char const *compiled, char const *name, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, unsigned int notif)
 {
-  size_t namelen = str_len(name) ;
+  size_t namelen = strlen(name) ;
   char fmt[UINT_FMT] ;
   size_t i = uint_fmt(fmt, notif) ;
   fmt[i++] = '\n' ;
   char fn[namelen + 29] ;
-  byte_copy(fn, 12, "servicedirs/") ;
-  byte_copy(fn + 12, namelen + 1, name) ;
+  memcpy(fn, "servicedirs/", 12) ;
+  memcpy(fn + 12, name, namelen + 1) ;
   auto_dir(compiled, fn) ;
-  byte_copy(fn + 12 + namelen, 17, "/notification-fd") ;
+  memcpy(fn + 12 + namelen, "/notification-fd", 17) ;
   auto_file(compiled, fn, fmt, i) ;
-  byte_copy(fn + 13 + namelen, 5, "data") ;
+  memcpy(fn + 13 + namelen, "data", 5) ;
   auto_dir(compiled, fn) ;
-  byte_copy(fn + 17 + namelen, 7, "/rules") ;
+  memcpy(fn + 17 + namelen, "/rules", 7) ;
   auto_dir(compiled, fn) ;
   if (gidn)
   {
-    byte_copy(fn + 23 + namelen, 5, "/gid") ;
+    memcpy(fn + 23 + namelen, "/gid", 5) ;
     auto_dir(compiled, fn) ;
   }
-  byte_copy(fn + 23 + namelen, 5, "/uid") ;
+  memcpy(fn + 23 + namelen, "/uid", 5) ;
   auto_dir(compiled, fn) ;
 }
 
-static inline void write_oneshot_runner (char const *compiled, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn)
+static inline void write_oneshot_runner (char const *compiled, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn)
 {
-  unsigned int i ;
+  size_t i ;
   char fn[34 + sizeof(S6RC_ONESHOT_RUNNER)] = "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/gid/" ;
   make_skel(compiled, S6RC_ONESHOT_RUNNER, uids, uidn, gids, gidn, 3) ;
   if (gidn)
@@ -943,7 +939,7 @@ static inline void write_oneshot_runner (char const *compiled, uint64 const *uid
       size_t len = gid_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, gids[i]) ;
       fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
       auto_dir(compiled, fn) ;
-      byte_copy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, 7, "/allow") ;
+      memcpy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, "/allow", 7) ;
       auto_file(compiled, fn, "", 0) ;
     }
   }
@@ -951,10 +947,10 @@ static inline void write_oneshot_runner (char const *compiled, uint64 const *uid
   i = uidn ;
   while (i--)
   {
-    size_t len = uint64_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, uids[i]) ;
+    size_t len = uid_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, uids[i]) ;
     fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
     auto_dir(compiled, fn) ;
-    byte_copy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, 7, "/allow") ;
+    memcpy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, "/allow", 7) ;
     auto_file(compiled, fn, "", 0) ;
   }
   auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", S6RC_ONESHOT_RUNNER_RUNSCRIPT, sizeof(S6RC_ONESHOT_RUNNER_RUNSCRIPT) - 1) ;
@@ -965,22 +961,22 @@ static inline int write_pipelines (stralloc *sa, s6rc_db_t const *db)
 {
   uint32_t i = db->nlong ;
   unsigned char black[bitarray_div8(db->nlong)] ;
-  byte_zero(black, bitarray_div8(db->nlong)) ;
+  memset(black, 0, bitarray_div8(db->nlong)) ;
   while (i--) if (!bitarray_peek(black, i))
   {
     uint32_t j = i ;
     for (;;)
     {
-      register uint32_t k = db->services[j].x.longrun.pipeline[0] ;
+      uint32_t k = db->services[j].x.longrun.pipeline[0] ;
       if (k >= db->nlong) break ;
       j = k ;
     }
     for (;;)
     {
-      register uint32_t k = db->services[j].x.longrun.pipeline[1] ;
+      uint32_t k = db->services[j].x.longrun.pipeline[1] ;
       bitarray_set(black, j) ;
       if (k >= db->nlong) break ;
-      if (!string_quote(sa, db->string + db->services[k].name, str_len(db->string + db->services[k].name))
+      if (!string_quote(sa, db->string + db->services[k].name, strlen(db->string + db->services[k].name))
        || !stralloc_catb(sa, " ", 1)) return 0 ;
       j = k ;
     }
@@ -988,35 +984,35 @@ static inline int write_pipelines (stralloc *sa, s6rc_db_t const *db)
   return 1 ;
 }
 
-static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
+static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, char const *fdhuser)
 {
   size_t base = satmp.len ;
   make_skel(compiled, S6RC_FDHOLDER, uids, uidn, gids, gidn, 1) ;
   {
-    char fn[62 + S6RC_FDHOLDER_LEN + UINT64_FMT] = "servicedirs/" S6RC_FDHOLDER "/data/rules/uid/" ;
-    char fmt[7 + UINT64_FMT] = "../uid/" ;
-    size_t i = uint64_fmt(fmt + 7, uids[0]) ;
+    char fn[62 + S6RC_FDHOLDER_LEN + UID_FMT] = "servicedirs/" S6RC_FDHOLDER "/data/rules/uid/" ;
+    char fmt[7 + UID_FMT] = "../uid/" ;
+    size_t i = uid_fmt(fmt + 7, uids[0]) ;
     fmt[7 + i] = 0 ;
-    byte_copy(fn + 28 + S6RC_FDHOLDER_LEN, i + 1, fmt + 7) ;
+    memcpy(fn + 28 + S6RC_FDHOLDER_LEN, fmt + 7, i + 1) ;
     auto_dir(compiled, fn) ;
-    byte_copy(fn + 28 + S6RC_FDHOLDER_LEN + i, 7, "/allow") ;
+    memcpy(fn + 28 + S6RC_FDHOLDER_LEN + i, "/allow", 7) ;
     auto_file(compiled, fn, "", 0) ;
-    byte_copy(fn + 29 + S6RC_FDHOLDER_LEN + i, 4, "env") ;
+    memcpy(fn + 29 + S6RC_FDHOLDER_LEN + i, "env", 4) ;
     auto_dir(compiled, fn) ;
-    byte_copy(fn + 32 + S6RC_FDHOLDER_LEN + i, 18, "/S6_FDHOLDER_LIST") ;
+    memcpy(fn + 32 + S6RC_FDHOLDER_LEN + i, "/S6_FDHOLDER_LIST", 18) ;
     auto_file(compiled, fn, "\n", 1) ;
-    byte_copy(fn + 45 + S6RC_FDHOLDER_LEN + i, 12, "STORE_REGEX") ;
+    memcpy(fn + 45 + S6RC_FDHOLDER_LEN + i, "STORE_REGEX", 12) ;
     auto_file(compiled, fn, "^pipe:s6rc-\n", 12) ;
-    byte_copy(fn + 45 + S6RC_FDHOLDER_LEN + i, 15, "RETRIEVE_REGEX") ;
+    memcpy(fn + 45 + S6RC_FDHOLDER_LEN + i, "RETRIEVE_REGEX", 15) ;
     auto_symlink(compiled, fn, "S6_FDHOLDER_STORE_REGEX") ;
-    byte_copy(fn + 45 + S6RC_FDHOLDER_LEN + i, 8, "SETDUMP") ;
+    memcpy(fn + 45 + S6RC_FDHOLDER_LEN + i, "SETDUMP", 8) ;
     auto_file(compiled, fn, "\n", 1) ;
     fn[45 + S6RC_FDHOLDER_LEN + i] = 'G' ;
     auto_file(compiled, fn, "\n", 1) ;
     
     for (i = 1 ; i < uidn ; i++)
     {
-      size_t len = uint64_fmt(fn + 28 + S6RC_FDHOLDER_LEN, uids[i]) ;
+      size_t len = uid_fmt(fn + 28 + S6RC_FDHOLDER_LEN, uids[i]) ;
       fn[28 + S6RC_FDHOLDER_LEN + len] = 0 ;
       auto_symlink(compiled, fn, fmt + 7) ;
     }
@@ -1045,7 +1041,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
   if (fdhuser)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-envuidgid -i -- ")
-     || !string_quote(&satmp, fdhuser, str_len(fdhuser))
+     || !string_quote(&satmp, fdhuser, strlen(fdhuser))
      || !stralloc_catb(&satmp, "\n", 1)) dienomem() ;
   }
   if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-daemon -1 ")) dienomem() ;
@@ -1059,22 +1055,22 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
   auto_rights(compiled, "servicedirs/" S6RC_FDHOLDER "/run", 0755) ;
 }
 
-static inline void write_specials (char const *compiled, s6rc_db_t const *db, uint64 const *uids, unsigned int uidn, gid_t const *gids, unsigned int gidn, char const *fdhuser)
+static inline void write_specials (char const *compiled, s6rc_db_t const *db, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, char const *fdhuser)
 {
   write_oneshot_runner(compiled, uids, uidn, gids, gidn) ;
   write_fdholder(compiled, db, uids, uidn, gids, gidn, fdhuser) ;
 }
 
-static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32 const *bdeps)
+static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32_t const *bdeps)
 {
-  size_t clen = str_len(compiled) ;
+  size_t clen = strlen(compiled) ;
   int fd ;
   struct cdb_make c = CDB_MAKE_ZERO ;
   unsigned int i = db->nshort + db->nlong ;
   char fn[clen + 13] ;
   if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/resolve.cdb") ;
-  byte_copy(fn, clen, compiled) ;
-  byte_copy(fn + clen, 13, "/resolve.cdb") ;
+  memcpy(fn, compiled, clen) ;
+  memcpy(fn + clen, "/resolve.cdb", 13) ;
   fd = open_trunc(fn) ;
   if (fd < 0 || ndelay_off(fd) < 0)
   {
@@ -1092,7 +1088,7 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
   {
     char pack[4] ;
     uint32_pack_big(pack, i) ;
-    if (cdb_make_add(&c, db->string + db->services[i].name, str_len(db->string + db->services[i].name), pack, 4) < 0)
+    if (cdb_make_add(&c, db->string + db->services[i].name, strlen(db->string + db->services[i].name), pack, 4) < 0)
     {
       cleanup(compiled) ;
       strerr_diefu1sys(111, "cdb_make_add") ;
@@ -1107,7 +1103,7 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
     char pack[(bundles[i].n << 2) + 1] ; /* +1 because braindead C standard */
     for (; j < bundles[i].n ; j++)
       uint32_pack_big(pack + (j << 2), bdeps[bundles[i].listindex + j]) ;
-    if (cdb_make_add(&c, data.s + bundles[i].name, str_len(data.s + bundles[i].name), pack, bundles[i].n << 2) < 0)
+    if (cdb_make_add(&c, data.s + bundles[i].name, strlen(data.s + bundles[i].name), pack, bundles[i].n << 2) < 0)
     {
       cleanup(compiled) ;
       strerr_diefu1sys(111, "cdb_make_add") ;
@@ -1151,7 +1147,7 @@ static inline void write_exe_wrapper (char const *compiled, char const *fn, s6rc
   if (db->services[i].x.longrun.pipeline[0] < db->nlong)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-r-")
-     || !string_quote_nodelim(&satmp, db->string + db->services[i].name, str_len(db->string + db->services[i].name))
+     || !string_quote_nodelim(&satmp, db->string + db->services[i].name, strlen(db->string + db->services[i].name))
      || !stralloc_cats(&satmp, "\"\n")) dienomem() ;
   }
   if (db->services[i].x.longrun.pipeline[1] < db->nlong)
@@ -1161,7 +1157,7 @@ static inline void write_exe_wrapper (char const *compiled, char const *fn, s6rc
      || !stralloc_cats(&satmp, fd == 3 ? "4" : "3")
      || !stralloc_cats(&satmp, " 0\n"
       S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-w-")
-     || !string_quote_nodelim(&satmp, consumername, str_len(consumername))
+     || !string_quote_nodelim(&satmp, consumername, strlen(consumername))
      || !stralloc_cats(&satmp, "\"\n"
       EXECLINE_EXTBINPREFIX "fdmove 1 0\n"
       EXECLINE_EXTBINPREFIX "fdmove 0 ")
@@ -1179,31 +1175,30 @@ static inline void write_exe_wrapper (char const *compiled, char const *fn, s6rc
 
 static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db, char const *const *srcdirs)
 {
-  size_t clen = str_len(compiled) ;
+  size_t clen = strlen(compiled) ;
   unsigned int i = 2 ;
   if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/servicedirs") ;
   for (; i < db->nlong ; i++)
   {
-    struct stat st ;
-    size_t srcdirlen = str_len(srcdirs[i]) ;
-    size_t len = str_len(db->string + db->services[i].name) ;
+    size_t srcdirlen = strlen(srcdirs[i]) ;
+    size_t len = strlen(db->string + db->services[i].name) ;
     unsigned int fd = 0 ;
     int ispipelined = db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong ;
-    register int r ;
+    int r ;
     char srcfn[srcdirlen + len + 18] ;
     char dstfn[clen + len + 30] ;
-    byte_copy(dstfn, clen, compiled) ;
-    byte_copy(dstfn + clen, 13, "/servicedirs/") ;
-    byte_copy(dstfn + clen + 13, len + 1, db->string + db->services[i].name) ;
+    memcpy(dstfn, compiled, clen) ;
+    memcpy(dstfn + clen, "/servicedirs/", 13) ;
+    memcpy(dstfn + clen + 13, db->string + db->services[i].name, len + 1) ;
     if (mkdir(dstfn, 0755) < 0)
     {
       cleanup(compiled) ;
       strerr_diefu2sys(111, "mkdir ", dstfn) ;
     }
-    byte_copy(srcfn, srcdirlen, srcdirs[i]) ;
+    memcpy(srcfn, srcdirs[i], srcdirlen) ;
     srcfn[srcdirlen] = '/' ;
-    byte_copy(srcfn + srcdirlen + 1, len, db->string + db->services[i].name) ;
-    byte_copy(srcfn + srcdirlen + 1 + len, 17, "/notification-fd") ;
+    memcpy(srcfn + srcdirlen + 1, db->string + db->services[i].name, len) ;
+    memcpy(srcfn + srcdirlen + 1 + len, "/notification-fd", 17) ;
     r = s6rc_read_uint(srcfn, &fd) ;
     if (r < 0)
     {
@@ -1215,7 +1210,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       char fmt[UINT_FMT] ;
       size_t fmtlen = uint_fmt(fmt, fd) ;
       fmt[fmtlen++] = '\n' ;
-      byte_copy(dstfn + clen + 13 + len, 17, "/notification-fd") ;
+      memcpy(dstfn + clen + 13 + len, "/notification-fd", 17) ;
       if (!openwritenclose_unsafe(dstfn, fmt, fmtlen))
       {
         cleanup(compiled) ;
@@ -1223,12 +1218,12 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       }
     }
 
-    byte_copy(srcfn + srcdirlen + 1 + len, 5, "/run") ;
-    byte_copy(dstfn + clen + 13 + len, 5, "/run") ;
+    memcpy(srcfn + srcdirlen + 1 + len, "/run", 5) ;
+    memcpy(dstfn + clen + 13 + len, "/run", 5) ;
     if (ispipelined)
     {
       write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "run", 0) ;
-      byte_copy(dstfn + clen + 17 + len, 6, ".user") ;
+      memcpy(dstfn + clen + 17 + len, ".user", 6) ;
     }
     if (!filecopy_unsafe(srcfn, dstfn, 0755))
     {
@@ -1236,14 +1231,14 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
     }
 
-    byte_copy(srcfn + srcdirlen + len + 2, 7, "finish") ;
+    memcpy(srcfn + srcdirlen + len + 2, "finish", 7) ;
     if (access(srcfn, R_OK) == 0)
     {
-      byte_copy(dstfn + clen + 14 + len, 7, "finish") ;
+      memcpy(dstfn + clen + 14 + len, "finish", 7) ;
       if (ispipelined)
       {
         write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "finish", 1) ;
-        byte_copy(dstfn + clen + 20 + len, 6, ".user") ;
+        memcpy(dstfn + clen + 20 + len, ".user", 6) ;
       }
       if (!filecopy_unsafe(srcfn, dstfn, 0755))
       {
@@ -1252,38 +1247,20 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       }
     }
 
-    byte_copy(srcfn + srcdirlen + len + 2, 15, "timeout-finish") ;
-    byte_copy(dstfn + clen + 14 + len, 15, "timeout-finish") ;
+    memcpy(srcfn + srcdirlen + len + 2, "timeout-finish", 15) ;
+    memcpy(dstfn + clen + 14 + len, "timeout-finish", 15) ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;
 
-    byte_copy(srcfn + srcdirlen + len + 2, 9, "nosetsid") ;
-    if (stat(srcfn, &st) < 0)
-    {
-      if (errno != ENOENT)
-      {
-        cleanup(compiled) ;
-        strerr_diefu2sys(111, "stat ", srcfn) ;
-      }
-    }
-    else
-    {
-      int fd ;
-      byte_copy(dstfn + clen + 14 + len, 9, "nosetsid") ;
-      fd = open_trunc(dstfn) ;
-      if (fd < 0)
-      {
-        cleanup(compiled) ;
-        strerr_diefu2sys(111, "touch ", dstfn) ;
-      }
-      close(fd) ;
-    }
+    memcpy(srcfn + srcdirlen + len + 2, "nosetsid", 9) ;
+    memcpy(dstfn + clen + 14 + len, "nosetsid", 9) ;
+    filecopy_unsafe(srcfn, dstfn, 0644) ;
 
-    byte_copy(dstfn + clen + 14 + len, 5, "data") ;
-    byte_copy(srcfn + srcdirlen + len + 2, 5, "data") ;
+    memcpy(srcfn + srcdirlen + len + 2, "data", 5) ;
+    memcpy(dstfn + clen + 14 + len, "data", 5) ;
     dircopy(compiled, srcfn, dstfn) ;
 
-    byte_copy(dstfn + clen + 14 + len, 4, "env") ;
-    byte_copy(srcfn + srcdirlen + len + 2, 4, "env") ;
+    memcpy(srcfn + srcdirlen + len + 2, "env", 4) ;
+    memcpy(dstfn + clen + 14 + len, "env", 4) ;
     dircopy(compiled, srcfn, dstfn) ;
   }
 }
@@ -1320,13 +1297,13 @@ static inline int write_service (buffer *b, s6rc_service_t const *sv, int type)
 
 static inline void write_db (char const *compiled, s6rc_db_t const *db)
 {
-  size_t clen = str_len(compiled) ;
+  size_t clen = strlen(compiled) ;
   buffer b ;
   int fd ;
   char buf[4096] ;
   char dbfn[clen + 4] ;
-  byte_copy(dbfn, clen, compiled) ;
-  byte_copy(dbfn + clen, 4, "/db") ;
+  memcpy(dbfn, compiled, clen) ;
+  memcpy(dbfn + clen, "/db", 4) ;
   if (verbosity >= 3) strerr_warni2x("writing ", dbfn) ;
   fd = open_trunc(dbfn) ;
   if (fd < 0)
@@ -1339,7 +1316,7 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
     cleanup(compiled) ;
     strerr_diefu2sys(111, "ndelay_off ", dbfn) ;
   }
-  buffer_init(&b, &fd_writesv, fd, buf, 4096) ;
+  buffer_init(&b, &buffer_write, fd, buf, 4096) ;
 
   if (buffer_put(&b, S6RC_DB_BANNER_START, S6RC_DB_BANNER_START_LEN) < 0)
     goto err ;
@@ -1382,11 +1359,11 @@ static inline void write_compiled (
   char const *const *srcdirs,
   bundle_t const *bundles,
   unsigned int nbundles,
-  uint32 const *bdeps,
-  uint64 const *uids,
-  unsigned int uidn,
+  uint32_t const *bdeps,
+  uid_t const *uids,
+  size_t uidn,
   gid_t const *gids,
-  unsigned int gidn,
+  size_t gidn,
   char const *fdhuser)
 {
   if (verbosity >= 2) strerr_warni2x("writing compiled information to ", compiled) ;
@@ -1404,20 +1381,20 @@ int main (int argc, char const *const *argv)
   before_t before = BEFORE_ZERO ;
   char const *compiled ;
   char const *fdhuser = 0 ;
-  unsigned int uidn = 0, gidn = 0 ;
-  uint64 uids[256] ;
+  size_t uidn = 0, gidn = 0 ;
+  uid_t uids[256] ;
   gid_t gids[256] ;
   PROG = "s6-rc-compile" ;
   {
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "v:u:g:h:", &l) ;
+      int opt = subgetopt_r(argc, argv, "v:u:g:h:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
         case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
-        case 'u' : if (!uint64_scanlist(uids, 255, l.arg, &uidn)) dieusage() ; break ;
+        case 'u' : if (!uid_scanlist(uids, 255, l.arg, &uidn)) dieusage() ; break ;
         case 'g' : if (!gid_scanlist(gids, 255, l.arg, &gidn)) dieusage() ; break ;
         case 'h' : fdhuser = l.arg ; break ;
         default : dieusage() ;
@@ -1452,7 +1429,7 @@ int main (int argc, char const *const *argv)
     bundle_t bundles[nbundles] ;
     unsigned char barray[nbits * nbundles] ;
     unsigned int nbdeps = resolve_bundles(genalloc_s(bundle_t, &before.bundles), bundles, db.nshort, db.nlong, nbundles, genalloc_s(unsigned int, &before.indices), barray) ;
-    uint32 bdeps[nbdeps] ;
+    uint32_t bdeps[nbdeps] ;
 
     genalloc_free(bundle_t, &before.bundles) ;
     flatlist_bundles(bundles, nbundles, nbits, barray, bdeps) ;

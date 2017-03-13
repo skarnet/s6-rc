@@ -1,14 +1,12 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <stdint.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
-#include <skalibs/uint32.h>
-#include <skalibs/uint.h>
-#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr2.h>
@@ -83,7 +81,7 @@ static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigne
     char pack[4] ;
     uint32_t x ;
     unsigned int cur ;
-    register int r = cdb_find(oldc, sa->s + base + slen, str_len(sa->s + base + slen)) ;
+    int r = cdb_find(oldc, sa->s + base + slen, strlen(sa->s + base + slen)) ;
     if (r < 0) strerr_diefu3sys(111, "read ", live, "/compiled/resolve.cdb") ;
     if (!r) strerr_dief5x(3, "unknown identifier in ", live, "/compiled/resolve.cdb", ": ", sa->s + base + slen) ;
     if (cdb_datalen(oldc) != 4) strerr_dief5x(5, "identifier ", sa->s + base + slen, " does not represent an atomic service in ", live, "/compiled") ;
@@ -94,11 +92,11 @@ static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigne
     if (oldstate[x] & 64)
       strerr_dief3x(6, "service ", olddb->string + olddb->services[x].name, " appears more than once in conversion file") ;
     oldstate[x] |= 64 ;
-    cur = base + slen + str_len(sa->s + base + slen) + 1 ;
-    if (n >= 2 && !str_diff(sa->s + cur, "->"))
+    cur = base + slen + strlen(sa->s + base + slen) + 1 ;
+    if (n >= 2 && !strcmp(sa->s + cur, "->"))
     {
-      register size_t newnamelen = str_len(sa->s + cur + 3) ;
-      byte_copy(sa->s + sa->len, newnamelen + 1, sa->s + cur + 3) ;
+      size_t newnamelen = strlen(sa->s + cur + 3) ;
+      memcpy(sa->s + sa->len, sa->s + cur + 3, newnamelen + 1) ;
       newnames[x] = sa->len ; oldstate[x] |= 16 ;
       sa->len += newnamelen + 1 ;
       cur += newnamelen + 4 ;
@@ -106,10 +104,10 @@ static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigne
     }
     while (n--)
     {
-      if (!str_diff(sa->s + cur, "restart")) oldstate[x] |= 4 ;
+      if (!strcmp(sa->s + cur, "restart")) oldstate[x] |= 4 ;
       else
         strerr_dief2x(100, "unknown keyword in conversion file: ", sa->s + cur) ;
-      cur += str_len(sa->s + cur) + 1 ;
+      cur += strlen(sa->s + cur) + 1 ;
     }
   }
 }
@@ -118,13 +116,13 @@ static inline void parse_conversion_file (char const *convfile, stralloc *sa, un
 {
   int fd = open_readb(convfile) ;
   char buf[4096] ;
-  buffer b = BUFFER_INIT(&fd_readsv, fd, buf, 4096) ;
+  buffer b = BUFFER_INIT(&buffer_read, fd, buf, 4096) ;
   size_t base = satmp.len ;
   if (fd < 0) strerr_diefu2sys(111, "open ", convfile) ;
 
   for (;;)
   {
-    register int r = skagetln(&b, &satmp, '\n') ;
+    int r = skagetln(&b, &satmp, '\n') ;
     if (!r) break ;
     if (r < 0)
     {
@@ -162,8 +160,8 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
   while (i--)
   {
     char const *newname = oldstate[i] & 16 ? namedata + oldindex[i] : olddb->string + olddb->services[i].name ;
-    unsigned int len ;
-    int r = cdb_find(newc, newname, str_len(newname)) ;
+    uint32_t len ;
+    int r = cdb_find(newc, newname, strlen(newname)) ;
     if (r < 0) strerr_diefu3sys(111, "read ", newfn, "/resolve.cdb") ;
     if (!r)
     {
@@ -228,7 +226,7 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
   unsigned int newm = bitarray_div8(newn) ;
   unsigned int oldindex[oldn] ;
   unsigned char conversion_table[oldn * newm] ;
-  byte_zero(conversion_table, oldn * newm) ;
+  memset(conversion_table, 0, oldn * newm) ;
   stuff_with_oldc(oldstate, fdoldc, olddb, convfile, oldindex, sa) ;
   stuff_with_newc(fdnewc, newfn, conversion_table, oldstate, newstate, sa->s + sabase, oldindex, invimage, olddb, newdb) ;
   sa->len = sabase ;
@@ -264,7 +262,7 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
     i = oldn ;
     while (i--) if (oldstate[i] & 1)
     {
-      register unsigned int j = newn ;
+      unsigned int j = newn ;
       while (j--) if (bitarray_peek(conversion_table + i * newm, j))
         newstate[j] |= (oldstate[i] & 32) ? 2 : 33 ;
     }
@@ -297,27 +295,27 @@ static void compute_transitions (char const *convfile, unsigned char *oldstate, 
 
 static inline void rollback_servicedirs (char const *newlive, unsigned char const *newstate, unsigned int const *invimage, s6rc_db_t const *olddb, s6rc_db_t const *newdb, unsigned int n)
 {
-  size_t newllen = str_len(newlive) ;
+  size_t newllen = strlen(newlive) ;
   unsigned int i = n ;
   while (i--)
   {
-    size_t newnamelen = str_len(newdb->string + newdb->services[i].name) ;
+    size_t newnamelen = strlen(newdb->string + newdb->services[i].name) ;
     char newfn[newllen + 14 + newnamelen] ;
-    byte_copy(newfn, newllen, newlive) ;
-    byte_copy(newfn + newllen, 13, "/servicedirs/") ;
-    byte_copy(newfn + newllen + 13, newnamelen + 1, newdb->string + newdb->services[i].name) ;
+    memcpy(newfn, newlive, newllen) ;
+    memcpy(newfn + newllen, "/servicedirs/", 13) ;
+    memcpy(newfn + newllen + 13, newdb->string + newdb->services[i].name, newnamelen + 1) ;
     if (newstate[i] & 1)
     {
       char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
-      size_t oldnamelen = str_len(oldname) ;
+      size_t oldnamelen = strlen(oldname) ;
       char oldfn[livelen + 23 + oldnamelen] ;
-      byte_copy(oldfn, livelen, live) ;
-      byte_copy(oldfn + livelen, 22, "/compiled/servicedirs/") ;
-      byte_copy(oldfn + livelen + 22, oldnamelen + 1, oldname) ;
+      memcpy(oldfn, live, livelen) ;
+      memcpy(oldfn + livelen, "/compiled/servicedirs/", 22) ;
+      memcpy(oldfn + livelen + 22, oldname, oldnamelen + 1) ;
       if (!s6rc_servicedir_copy_online(oldfn, newfn))
         strerr_diefu4sys(111, "rollback ", oldfn, " into ", newfn) ;
-      byte_copy(oldfn + livelen, 13, "/servicedirs/") ;
-      byte_copy(oldfn + livelen + 13, oldnamelen + 1, oldname) ;
+      memcpy(oldfn + livelen, "/servicedirs/", 13) ;
+      memcpy(oldfn + livelen + 13, oldname, oldnamelen + 1) ;
       if (rename(newfn, oldfn) < 0)
         strerr_diefu4sys(111, "rollback: can't rename ", newfn, " to ", oldfn) ;
     }
@@ -328,7 +326,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
 {
   size_t tmpbase = satmp.len ;
   size_t sabase = sa->len ;
-  size_t newclen = str_len(newcompiled) ;
+  size_t newclen = strlen(newcompiled) ;
   size_t dirlen, llen, newlen, sdlen ;
   int e = 0 ;
   unsigned int i = 0 ;
@@ -342,8 +340,8 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
     size_t tmplen = satmp.len ;
     char fn[llen - sabase + 9] ;
     if (!stralloc_cats(sa, "/scandir") || !stralloc_0(sa)) { e = errno ; goto err ; }
-    byte_copy(fn, llen - sabase, sa->s + sabase) ;
-    byte_copy(fn + llen - sabase, 9, "/scandir") ;
+    memcpy(fn, sa->s + sabase, llen - sabase) ;
+    memcpy(fn + llen - sabase, "/scandir", 9) ;
     if (sareadlink(&satmp, fn) < 0 || !stralloc_0(&satmp)) { e = errno ; goto err ; }
     if (symlink(satmp.s + tmplen, sa->s + sabase) < 0) { e = errno ; goto err ; }
     satmp.len = tmplen ;
@@ -367,22 +365,22 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
 
   for (; i < newdb->nlong ; i++)
   {
-    size_t newnamelen = str_len(newdb->string + newdb->services[i].name) ;
+    size_t newnamelen = strlen(newdb->string + newdb->services[i].name) ;
     char newfn[newclen + 14 + newnamelen] ;
-    byte_copy(newfn, newclen, newcompiled) ;
-    byte_copy(newfn + newclen, 13, "/servicedirs/") ;
-    byte_copy(newfn + newclen + 13, newnamelen + 1, newdb->string + newdb->services[i].name) ;
+    memcpy(newfn, newcompiled, newclen) ;
+    memcpy(newfn + newclen, "/servicedirs/", 13) ;
+    memcpy(newfn + newclen + 13, newdb->string + newdb->services[i].name, newnamelen + 1) ;
     sa->len = sdlen ;
     if (!stralloc_cats(sa, newdb->string + newdb->services[i].name)
      || !stralloc_0(sa)) { e = errno ; goto rollback ; }
     if (newstate[i] & 1)
     {
       char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
-      size_t oldnamelen = str_len(oldname) ;
+      size_t oldnamelen = strlen(oldname) ;
       char oldfn[livelen + 14 + oldnamelen] ;
-      byte_copy(oldfn, livelen, live) ;
-      byte_copy(oldfn + livelen, 13, "/servicedirs/") ;
-      byte_copy(oldfn + livelen + 13, oldnamelen + 1, oldname) ;
+      memcpy(oldfn, live, livelen) ;
+      memcpy(oldfn + livelen, "/servicedirs/", 13) ;
+      memcpy(oldfn + livelen + 13, oldname, oldnamelen + 1) ;
       if (rename(oldfn, sa->s + sabase) < 0) goto rollback ;
       if (!s6rc_servicedir_copy_online(newfn, sa->s + sabase)) { i++ ; e = errno ; goto rollback ; }
     }
@@ -393,8 +391,8 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   sa->s[sa->len++] = 0 ;
   {
     char tmpfn[llen + 5 - sabase] ;
-    byte_copy(tmpfn, llen - sabase, sa->s + sabase) ;
-    byte_copy(tmpfn + llen - sabase, 5, ".new") ;
+    memcpy(tmpfn, sa->s + sabase, llen - sabase) ;
+    memcpy(tmpfn + llen - sabase, ".new", 5) ;
     if (unlink(tmpfn) < 0 && errno != ENOENT) { e = errno ; goto rollback ; }
     if (symlink(sa->s + dirlen, tmpfn) < 0) { e = errno ; goto rollback ; }
 
@@ -445,10 +443,10 @@ static inline int delete_unused_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb,
     if (!(oldstate[i] & 8)
      && olddb->services[i].x.longrun.pipeline[0] < olddb->nlong)
     {
-      size_t len = str_len(olddb->string + olddb->services[i].name) ;
+      size_t len = strlen(olddb->string + olddb->services[i].name) ;
       char pipename[len + 13] ;
-      byte_copy(pipename, 12, "pipe:s6rc-w-") ;
-      byte_copy(pipename + 12, len + 1, olddb->string + olddb->services[i].name) ;
+      memcpy(pipename, "pipe:s6rc-w-", 12) ;
+      memcpy(pipename + 12, olddb->string + olddb->services[i].name, len + 1) ;
       if (!s6_fdholder_delete_g(a, pipename, deadline)) return 0 ;
       pipename[10] = 'r' ;
       if (!s6_fdholder_delete_g(a, pipename, deadline)) return 0 ;
@@ -467,14 +465,14 @@ static inline int rename_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, s6rc_d
     if ((newstate[i] & 20) == 20 && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
     {
       int fd ;
-      size_t oldlen = str_len(olddb->string + olddb->services[invimage[i]].name) ;
-      size_t newlen = str_len(newdb->string + newdb->services[i].name) ;
+      size_t oldlen = strlen(olddb->string + olddb->services[invimage[i]].name) ;
+      size_t newlen = strlen(newdb->string + newdb->services[i].name) ;
       char oldpipename[oldlen + 13] ;
       char newpipename[newlen + 13] ;
-      byte_copy(oldpipename, 12, "pipe:s6rc-r-") ;
-      byte_copy(oldpipename + 12, oldlen + 1, olddb->string + olddb->services[invimage[i]].name) ;
-      byte_copy(newpipename, 12, "pipe:s6rc-r-") ;
-      byte_copy(newpipename + 12, newlen + 1, newdb->string + newdb->services[i].name) ;
+      memcpy(oldpipename, "pipe:s6rc-r-", 12) ;
+      memcpy(oldpipename + 12, olddb->string + olddb->services[invimage[i]].name, oldlen + 1) ;
+      memcpy(newpipename, "pipe:s6rc-r-", 12) ;
+      memcpy(newpipename + 12, newdb->string + newdb->services[i].name, newlen + 1) ;
       fd = s6_fdholder_retrieve_delete_g(a, oldpipename, deadline) ;
       if (fd < 0) return 0 ;
       if (!s6_fdholder_store_g(a, fd, newpipename, &limit, deadline))
@@ -513,10 +511,10 @@ static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, un
     if (!(newstate[i] & 4) && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
     {
       int p[2] ;
-      size_t len = str_len(newdb->string + newdb->services[i].name) ;
+      size_t len = strlen(newdb->string + newdb->services[i].name) ;
       char pipename[len + 13] ;
-      byte_copy(pipename, 12, "pipe:s6rc-r-") ;
-      byte_copy(pipename + 12, len + 1, newdb->string + newdb->services[i].name) ;
+      memcpy(pipename, "pipe:s6rc-r-", 12) ;
+      memcpy(pipename + 12, newdb->string + newdb->services[i].name, len + 1) ;
       if (pipe(p) < 0) return 0 ;
       if (!s6_fdholder_store_g(a, p[0], pipename, &limit, deadline))
       {
@@ -556,8 +554,8 @@ static inline void update_fdholder (s6rc_db_t const *olddb, unsigned char const 
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
   char fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER "/s")] ;
   if (!(newstate[1] & 1)) return ;
-  byte_copy(fnsocket, livelen, live) ;
-  byte_copy(fnsocket + livelen, sizeof("/servicedirs/" S6RC_FDHOLDER "/s"), "/servicedirs/" S6RC_FDHOLDER "/s") ;
+  memcpy(fnsocket, live, livelen) ;
+  memcpy(fnsocket + livelen, "/servicedirs/" S6RC_FDHOLDER "/s", sizeof("/servicedirs/" S6RC_FDHOLDER "/s")) ;
   fdsocket = ipc_stream_nb() ;
   if (fdsocket < 0) goto hammer ;
   if (!ipc_timed_connect_g(fdsocket, fnsocket, deadline))
@@ -619,7 +617,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "v:t:nl:f:", &l) ;
+      int opt = subgetopt_r(argc, argv, "v:t:nl:f:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -640,7 +638,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
   if (live[0] != '/')
     strerr_dief2x(100, live, " is not an absolute path") ;
-  livelen = str_len(live) ;
+  livelen = strlen(live) ;
 
   if (!random_init())
     strerr_diefu1sys(111, "init random generator") ;
@@ -658,8 +656,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
    /* Take the live, old and new locks */
 
-    byte_copy(dbfn, livelen, live) ;
-    byte_copy(dbfn + livelen, 10, "/compiled") ;
+    memcpy(dbfn, live, livelen) ;
+    memcpy(dbfn + livelen, "/compiled", 10) ;
     if (!s6rc_lock(live, 2, &livelock, dbfn, 1, &oldlock))
       strerr_diefu4sys(111, "take lock on ", live, " and ", dbfn) ;
     if (!s6rc_lock(0, 0, 0, argv[0], 1, &newlock))
@@ -694,7 +692,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       char newstringblob[newdb.stringlen] ;
       unsigned char oldstate[oldn] ;
       unsigned char newstate[newn] ;
-      register int r ;
+      int r ;
 
       olddb.services = oldserviceblob ;
       olddb.argvs = oldargvblob ;
@@ -718,14 +716,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
      /* Initial state */
 
-      byte_copy(dbfn + livelen + 1, 6, "state") ;
+      memcpy(dbfn + livelen + 1, "state", 6) ;
       {
-        register ssize_t rr = openreadnclose(dbfn, (char *)oldstate, oldn) ;
+        ssize_t rr = openreadnclose(dbfn, (char *)oldstate, oldn) ;
         if (rr != oldn) strerr_diefu2sys(111, "read ", dbfn) ;
       }
       r = oldn ;
       while (r--) oldstate[r] &= 1 ;
-      byte_zero(newstate, newn) ;
+      memset(newstate, 0, newn) ;
       r = newn ;
       while (r--) invimage[r] = olddb.nlong + olddb.nshort ;
 

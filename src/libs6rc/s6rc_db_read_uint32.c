@@ -7,7 +7,7 @@
 
 int s6rc_db_read_uint32 (buffer *b, uint32_t *x)
 {
-  unsigned int w = 0 ;
+  size_t w = 0 ;
   char pack[4] ;
   if (buffer_getall(b, pack, 4, &w) <= 0) return 0 ;
   uint32_unpack_big(pack, x) ;

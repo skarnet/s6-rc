@@ -1,10 +1,9 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <skalibs/uint32.h>
-#include <skalibs/bytestr.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr2.h>
@@ -25,11 +24,11 @@ static void print_bundle_contents (char const *name)
 {
   cdb_t c = CDB_ZERO ;
   int fd = open_readatb(fdcompiled, "resolve.cdb") ;
-  register int r ;
+  int r ;
   if (fd < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
   if (!cdb_init_map(&c, fd, 1))
     strerr_diefu3sys(111, "cdb_init ", compiled, "/resolve.cdb") ;
-  r = cdb_find(&c, name, str_len(name)) ;
+  r = cdb_find(&c, name, strlen(name)) ;
   if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
   if (!r) strerr_dief3x(3, name, " is not a valid identifier in ", compiled) ;
   if (cdb_datalen(&c) == 4)
@@ -41,7 +40,7 @@ static void print_bundle_contents (char const *name)
     uint32_unpack_big(pack, &x) ;
     if (x >= db->nshort + db->nlong)
       strerr_dief2x(4, "invalid database in ", compiled) ;
-    if (!str_diff(name, db->string + db->services[x].name))
+    if (!strcmp(name, db->string + db->services[x].name))
       strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents an atomic service") ;
     if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
      || buffer_put(buffer_1, "\n", 1) < 0)
@@ -49,9 +48,9 @@ static void print_bundle_contents (char const *name)
   }
   else
   {
-    unsigned int len = cdb_datalen(&c) >> 2 ;
+    uint32_t len = cdb_datalen(&c) >> 2 ;
     char pack[cdb_datalen(&c) + 1] ;
-    register char const *p = pack ;
+    char const *p = pack ;
     if (cdb_datalen(&c) & 3)
       strerr_dief2x(4, "invalid database in ", compiled) ;
     if (cdb_read(&c, pack, cdb_datalen(&c), cdb_datapos(&c)) < 0)
@@ -63,7 +62,7 @@ static void print_bundle_contents (char const *name)
       if (x >= db->nshort + db->nlong)
         strerr_dief2x(4, "invalid database in ", compiled) ;
       if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
-       || buffer_put(buffer_1, "\n", 1) < 0)
+       || buffer_put(buffer_1, "\n", 1) < 1)
         strerr_diefu1sys(111, "write to stdout") ;
     }
   }
@@ -78,7 +77,7 @@ static void print_services (unsigned int from, unsigned int to)
   for (; from < to ; from++)
   {
     if (buffer_puts(buffer_1, db->string + db->services[from].name) < 0
-     || buffer_put(buffer_1, "\n", 1) < 0)
+     || buffer_put(buffer_1, "\n", 1) < 1)
       strerr_diefu1sys(111, "write to stdout") ;
   }
   if (!buffer_flush(buffer_1))
@@ -96,7 +95,7 @@ static void print_all (int bundlesonly)
   cdb_traverse_init(&c, &kpos) ;
   for (;;)
   {
-    register int r = cdb_nextkey(&c, &kpos) ;
+    int r = cdb_nextkey(&c, &kpos) ;
     char name[cdb_keylen(&c) + 1] ;
     if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
     if (!r) break ;
@@ -111,7 +110,7 @@ static void print_all (int bundlesonly)
       uint32_unpack_big(pack, &x) ;
       if (x >= db->nshort + db->nlong)
         strerr_dief2x(4, "invalid database in ", compiled) ;
-      if (!byte_diff(name, cdb_keylen(&c), db->string + db->services[x].name)
+      if (!memcmp(name, db->string + db->services[x].name, cdb_keylen(&c))
        && !db->string[db->services[x].name + cdb_keylen(&c)])
         continue ;
     }
@@ -131,11 +130,11 @@ static unsigned int resolve_service (char const *name)
   int fd = open_readatb(fdcompiled, "resolve.cdb") ;
   uint32_t x ;
   char pack[4] ;
-  register int r ;
+  int r ;
   if (fd < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
   if (!cdb_init_map(&c, fd, 1))
     strerr_diefu3sys(111, "cdb_init ", compiled, "/resolve.cdb") ;
-  r = cdb_find(&c, name, str_len(name)) ;
+  r = cdb_find(&c, name, strlen(name)) ;
   if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
   if (!r) strerr_dief3x(3, name, " is not a valid identifier in ", compiled) ;
   if (cdb_datalen(&c) != 4) return db->nshort + db->nlong ;
@@ -146,7 +145,7 @@ static unsigned int resolve_service (char const *name)
   close(fd) ;
   if (x >= db->nshort + db->nlong)
     strerr_dief2x(4, "invalid database in ", compiled) ;
-  if (str_diff(name, db->string + db->services[x].name))
+  if (strcmp(name, db->string + db->services[x].name))
     x = db->nshort + db->nlong ;
   return x ;
 }
@@ -186,7 +185,7 @@ static void print_script (char const *name, int h)
   argc = db->services[n].x.oneshot.argc[h] ;
   while (argc--)
     if (buffer_puts(buffer_1, *argv++) < 0
-     || buffer_put(buffer_1, "\0", 1) < 0)
+     || buffer_put(buffer_1, "\0", 1) < 1)
       strerr_diefu1sys(111, "write to stdout") ;
   if (!buffer_flush(buffer_1))
     strerr_diefu1sys(111, "write to stdout") ;
@@ -199,13 +198,13 @@ static inline void print_pipeline (char const *name)
     strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " does not represent a longrun") ;
   for (;;)
   {
-    register unsigned int j = db->services[n].x.longrun.pipeline[0] ;
+    unsigned int j = db->services[n].x.longrun.pipeline[0] ;
     if (j >= db->nlong) break ;
     n = j ;
   }
   for (;;)
   {
-    register unsigned int j = db->services[n].x.longrun.pipeline[1] ;
+    unsigned int j = db->services[n].x.longrun.pipeline[1] ;
     if (buffer_puts(buffer_1, db->string + db->services[n].name) < 0
      || buffer_put(buffer_1, "\n", 1) < 0)
       strerr_diefu1sys(111, "write to stdout") ;
@@ -236,16 +235,16 @@ static void print_union (char const *const *argv, int h, int isdeps, int doclosu
   if (fd < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
   if (!cdb_init_map(&c, fd, 1))
     strerr_diefu3sys(111, "cdb_init ", compiled, "/resolve.cdb") ;
-  byte_zero(state, n) ;
+  memset(state, 0, n) ;
   for (; *argv ; argv++)
   {
-    register int r = cdb_find(&c, *argv, str_len(*argv)) ;
+    int r = cdb_find(&c, *argv, strlen(*argv)) ;
     if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/resolve.cdb") ;
     if (!r) strerr_dief3x(3, *argv, " is not a valid identifier in ", compiled) ;
     {
-      unsigned int len = cdb_datalen(&c) >> 2 ;
+      uint32_t len = cdb_datalen(&c) >> 2 ;
       char pack[cdb_datalen(&c) + 1] ;
-      register char const *p = pack ;
+      char const *p = pack ;
       if (cdb_read(&c, pack, cdb_datalen(&c), cdb_datapos(&c)) < 0)
         strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
       while (len--)
@@ -256,8 +255,8 @@ static void print_union (char const *const *argv, int h, int isdeps, int doclosu
           strerr_dief2x(4, "invalid database in ", compiled) ;
         if (isdeps)
         {
-          register uint32_t ndeps = db->services[x].ndeps[h] ;
-          register uint32_t const *deps = db->deps + h * db->ndeps + db->services[x].deps[h] ;
+          uint32_t ndeps = db->services[x].ndeps[h] ;
+          uint32_t const *deps = db->deps + h * db->ndeps + db->services[x].deps[h] ;
           while (ndeps--) state[*deps++] |= 1 ;
         }
         else state[x] |= 1 ;
@@ -296,8 +295,8 @@ static inline void print_help (void)
 
 static unsigned int lookup (char const *const *table, char const *command)
 {
-  register unsigned int i = 0 ;
-  for (; table[i] ; i++) if (!str_diff(command, table[i])) break ;
+  unsigned int i = 0 ;
+  for (; table[i] ; i++) if (!strcmp(command, table[i])) break ;
   return i ;
 }
 
@@ -319,7 +318,7 @@ static inline unsigned int parse_command (char const *command)
     "all-dependencies",
     0
   } ;
-  register unsigned int i = lookup(command_table, command) ;
+  unsigned int i = lookup(command_table, command) ;
   if (!command_table[i]) dieusage() ;
   return i ;
 }
@@ -335,7 +334,7 @@ static inline unsigned int parse_list (char const *command)
     "bundles",
     0
   } ;
-  register unsigned int i = lookup(list_table, command) ;
+  unsigned int i = lookup(list_table, command) ;
   if (!list_table[i]) dieusage() ;
   return i ;
 }
@@ -350,7 +349,7 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "udl:c:", &l) ;
+      int opt = subgetopt_r(argc, argv, "udl:c:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -375,16 +374,16 @@ int main (int argc, char const *const *argv)
   if (what == 2) subwhat = 1 + parse_list(argv[1]) ;
 
   {
-    size_t livelen = str_len(live) ;
+    size_t livelen = strlen(live) ;
     int compiledlock ;
     s6rc_db_t dbblob ;
-    char compiledblob[compiled ? str_len(compiled) : livelen + 10] ;
+    char compiledblob[compiled ? strlen(compiled) : livelen + 10] ;
     db = &dbblob ;
 
     if (!compiled)
     {
-      byte_copy(compiledblob, livelen, live) ;
-      byte_copy(compiledblob + livelen, 10, "/compiled") ;
+      memcpy(compiledblob, live, livelen) ;
+      memcpy(compiledblob + livelen, "/compiled", 10) ;
       compiled = compiledblob ;
     }
 
@@ -410,7 +409,7 @@ int main (int argc, char const *const *argv)
       char const *argvblob[dbblob.nargvs] ;
       uint32_t depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
-      register int r ;
+      int r ;
 
       dbblob.services = serviceblob ;
       dbblob.argvs = argvblob ;

@@ -1,14 +1,12 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include <skalibs/uint32.h>
-#include <skalibs/uint.h>
-#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
 #include <skalibs/cdb.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/buffer.h>
@@ -51,8 +49,8 @@ static inline void announce (void)
   char fn[livelen + 7] ;
   char tmpstate[n] ;
   if (dryrun[0]) return ;
-  byte_copy(fn, livelen, live) ;
-  byte_copy(fn + livelen, 7, "/state") ;
+  memcpy(fn, live, livelen) ;
+  memcpy(fn + livelen, "/state", 7) ;
   while (i--) tmpstate[i] = !!(state[i] & 1) ;
   if (!openwritenclose_suffix(fn, tmpstate, n, ".new"))
     strerr_diefu2sys(111, "write ", fn) ;
@@ -60,7 +58,7 @@ static inline void announce (void)
 
 static void print_services (void)
 {
-  register unsigned int i = 0 ;
+  unsigned int i = 0 ;
   for (; i < n ; i++)
     if (state[i] & 2)
     {
@@ -71,16 +69,16 @@ static void print_services (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static unsigned int compute_timeout (unsigned int i, int h)
+static uint32_t compute_timeout (unsigned int i, int h)
 {
-  unsigned int t = db->services[i].timeout[h] ;
+  uint32_t t = db->services[i].timeout[h] ;
   int globalt ;
   tain_t globaltto ;
   tain_sub(&globaltto, &deadline, &STAMP) ;
   globalt = tain_to_millisecs(&globaltto) ;
   if (!globalt) globalt = 1 ;
   if (globalt > 0 && (!t || (unsigned int)globalt < t))
-    t = (unsigned int)globalt ;
+    t = (uint32_t)globalt ;
   return t ;
 }
 
@@ -92,8 +90,8 @@ static pid_t start_oneshot (unsigned int i, int h)
   char vfmt[UINT_FMT] ;
   char ifmt[UINT_FMT] ;
   char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 12] ;
-  byte_copy(socketfn, livelen, live) ;
-  byte_copy(socketfn + livelen, 12 + S6RC_ONESHOT_RUNNER_LEN, "/scandir/" S6RC_ONESHOT_RUNNER "/s") ;
+  memcpy(socketfn, live, livelen) ;
+  memcpy(socketfn + livelen, "/scandir/" S6RC_ONESHOT_RUNNER "/s", 12 + S6RC_ONESHOT_RUNNER_LEN) ;
   tfmt[uint32_fmt(tfmt, compute_timeout(i, h))] = 0 ;
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   ifmt[uint_fmt(ifmt, i)] = 0 ;
@@ -127,18 +125,18 @@ static pid_t start_oneshot (unsigned int i, int h)
 
 static pid_t start_longrun (unsigned int i, int h)
 {
-  size_t svdlen = str_len(db->string + db->services[i].name) ;
+  size_t svdlen = strlen(db->string + db->services[i].name) ;
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
   char servicefn[livelen + svdlen + 26] ;
   char const *newargv[7 + !!dryrun[0] * 6] ;
-  byte_copy(servicefn, livelen, live) ;
-  byte_copy(servicefn + livelen, 9, "/scandir/") ;
-  byte_copy(servicefn + livelen + 9, svdlen, db->string + db->services[i].name) ;
+  memcpy(servicefn, live, livelen) ;
+  memcpy(servicefn + livelen, "/scandir/", 9) ;
+  memcpy(servicefn + livelen + 9, db->string + db->services[i].name, svdlen) ;
   if (h)
   {
-    byte_copy(servicefn + livelen + 9 + svdlen, 17, "/notification-fd") ;
+    memcpy(servicefn + livelen + 9 + svdlen, "/notification-fd", 17) ;
     if (access(servicefn, F_OK) < 0)
     {
       h = 2 ;
@@ -172,12 +170,12 @@ static void success_longrun (unsigned int i, int h)
 {
   if (!dryrun[0])
   {
-    size_t svdlen = str_len(db->string + db->services[i].name) ;
+    size_t svdlen = strlen(db->string + db->services[i].name) ;
     char fn[livelen + svdlen + 15] ;
-    byte_copy(fn, livelen, live) ;
-    byte_copy(fn + livelen, 9, "/scandir/") ;
-    byte_copy(fn + livelen + 9, svdlen, db->string + db->services[i].name) ;
-    byte_copy(fn + livelen + 9 + svdlen, 6, "/down") ;
+    memcpy(fn, live, livelen) ;
+    memcpy(fn + livelen, "/scandir/", 9) ;
+    memcpy(fn + livelen + 9, db->string + db->services[i].name, svdlen) ;
+    memcpy(fn + livelen + 9 + svdlen, "/down", 6) ;
     if (h)
     {
       if (unlink(fn) < 0 && verbosity)
@@ -278,7 +276,7 @@ static int handle_signals (int h)
         {
           unsigned int j = 0 ;
           int wstat ;
-          register pid_t r = wait_nohang(&wstat) ;
+          pid_t r = wait_nohang(&wstat) ;
           if (r < 0)
             if (errno == ECHILD) break ;
             else strerr_diefu1sys(111, "wait for children") ;
@@ -327,7 +325,7 @@ static int doit (int spfd, int h)
 
   while (npids)
   {
-    register int r = iopause_g(&x, 1, &deadline) ;
+    int r = iopause_g(&x, 1, &deadline) ;
     if (r < 0) strerr_diefu1sys(111, "iopause") ;
     if (!r) strerr_dief1x(2, "timed out") ;
     if (!handle_signals(h)) exitcode = 1 ;
@@ -337,14 +335,14 @@ static int doit (int spfd, int h)
 
 static void invert_selection (void)
 {
-  register unsigned int i = n ;
+  unsigned int i = n ;
   while (i--) state[i] ^= 2 ;
 }
 
 static inline unsigned int lookup (char const *const *table, char const *command)
 {
-  register unsigned int i = 0 ;
-  for (; table[i] ; i++) if (!str_diff(command, table[i])) break ;
+  unsigned int i = 0 ;
+  for (; table[i] ; i++) if (!strcmp(command, table[i])) break ;
   return i ;
 }
 
@@ -358,7 +356,7 @@ static inline unsigned int parse_command (char const *command)
     "change",
     0
   } ;
-  register unsigned int i = lookup(command_table, command) ;
+  unsigned int i = lookup(command_table, command) ;
   if (!command_table[i]) dieusage() ;
   return i ;
 }
@@ -384,7 +382,7 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "v:n:t:l:udpaX", &l) ;
+      int opt = subgetopt_r(argc, argv, "v:n:t:l:udpaX", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -418,15 +416,15 @@ int main (int argc, char const *const *argv)
     return 0 ;
   }
 
-  livelen = str_len(live) ;
+  livelen = strlen(live) ;
 
   {
     int fdcompiled ;
     s6rc_db_t dbblob ;
     char dbfn[livelen + 10] ;
     db = &dbblob ;
-    byte_copy(dbfn, livelen, live) ;
-    byte_copy(dbfn + livelen, 10, "/compiled") ;
+    memcpy(dbfn, live, livelen) ;
+    memcpy(dbfn + livelen, "/compiled", 10) ;
 
 
    /* Take the locks on live and compiled */
@@ -471,12 +469,12 @@ int main (int argc, char const *const *argv)
 
      /* Read live state in bit 0 of state */
 
-      byte_copy(dbfn + livelen + 1, 6, "state") ;
+      memcpy(dbfn + livelen + 1, "state", 6) ;
       {
-        register ssize_t r = openreadnclose(dbfn, (char *)state, n) ;
+        ssize_t r = openreadnclose(dbfn, (char *)state, n) ;
         if (r != n) strerr_diefu2sys(111, "read ", dbfn) ;
         {
-          register unsigned int i = n ;
+          unsigned int i = n ;
           while (i--) state[i] &= 1 ;
         }
       }
@@ -484,7 +482,7 @@ int main (int argc, char const *const *argv)
 
      /* Read the db from the file */
       {
-        register int r = s6rc_db_read(fdcompiled, &dbblob) ;
+        int r = s6rc_db_read(fdcompiled, &dbblob) ;
         if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/db") ;
         if (!r) strerr_dief3x(4, "invalid service database in ", dbfn, "/db") ;
       }
@@ -500,8 +498,8 @@ int main (int argc, char const *const *argv)
           strerr_diefu3sys(111, "cdb_init ", dbfn, "/resolve.cdb") ;
         for (; *argv ; argv++)
         {
-          unsigned int len ;
-          register int r = cdb_find(&c, *argv, str_len(*argv)) ;
+          uint32_t len ;
+          int r = cdb_find(&c, *argv, strlen(*argv)) ;
           if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
           if (!r)
             strerr_dief4x(3, *argv, " is not a recognized identifier in ", dbfn, "/resolve.cdb") ;
@@ -535,7 +533,7 @@ int main (int argc, char const *const *argv)
 
       if (selectlive)
       {
-        register unsigned int i = n ;
+        unsigned int i = n ;
         while (i--) if (state[i] & 1) state[i] |= 2 ;
       }
 
@@ -573,7 +571,7 @@ int main (int argc, char const *const *argv)
 
       if (prune)
       {
-        register int r ;
+        int r ;
         if (up) invert_selection() ;
         r = doit(spfd, 0) ;
         if (r) return r ;

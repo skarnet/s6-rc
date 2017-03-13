@@ -1,9 +1,7 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <errno.h>
-#include <skalibs/bytestr.h>
-#include <skalibs/diuint.h>
 #include <skalibs/djbunix.h>
 #include <s6-rc/s6rc-utils.h>
 
@@ -14,10 +12,10 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
 
   if (lwhat)
   {
-    size_t llen = str_len(live) ;
+    size_t llen = strlen(live) ;
     char lfn[llen + 6] ;
-    byte_copy(lfn, llen, live) ;
-    byte_copy(lfn + llen, 6, "/lock") ;
+    memcpy(lfn, live, llen) ;
+    memcpy(lfn + llen, "/lock", 6) ;
     lfd = open_create(lfn) ;
     if (lfd < 0) return 0 ;
     if ((lwhat > 1 ? lock_ex(lfd) : lock_sh(lfd)) < 0) { e = errno ; goto lerr ; }
@@ -25,10 +23,10 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
 
   if (cwhat)
   {
-    size_t clen = str_len(compiled) ;
+    size_t clen = strlen(compiled) ;
     char cfn[clen + 6] ;
-    byte_copy(cfn, clen, compiled) ;
-    byte_copy(cfn + clen, 6, "/lock") ;
+    memcpy(cfn, compiled, clen) ;
+    memcpy(cfn + clen, "/lock", 6) ;
     cfd = open_create(cfn) ;
     if (cfd < 0)
       if (cwhat > 1 || errno != EROFS) { e = errno ; goto lerr ; }

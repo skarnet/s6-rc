@@ -1,9 +1,9 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <stdint.h>
 #include <errno.h>
-#include <skalibs/uint32.h>
+#include <skalibs/types.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
@@ -31,7 +31,7 @@ static inline int s6rc_db_check_valid_strings (char const *string, size_t string
   while (n--)
   {
     if (!s6rc_db_check_valid_string(string, stringlen, pos)) return 0 ;
-    pos += str_len(string + pos) + 1 ;
+    pos += strlen(string + pos) + 1 ;
   }
   return 1 ;
 }
@@ -54,7 +54,7 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
   unsigned int n = db->nshort + db->nlong ;
   unsigned int nargvs = db->nargvs ;
   unsigned int argvpos = 0 ;
-  register unsigned int i = 0 ;
+  unsigned int i = 0 ;
   for (; i < n ; i++)
   {
     s6rc_service_t *sv = db->services + i ;
@@ -138,11 +138,11 @@ static inline int s6rc_db_read_buffer (buffer *b, s6rc_db_t *db)
   {
     char banner[S6RC_DB_BANNER_START_LEN] ;
     if (buffer_get(b, banner, S6RC_DB_BANNER_START_LEN) < S6RC_DB_BANNER_START_LEN) return -1 ;
-    if (byte_diff(banner, S6RC_DB_BANNER_START_LEN, S6RC_DB_BANNER_START)) return 0 ;
+    if (memcmp(banner, S6RC_DB_BANNER_START, S6RC_DB_BANNER_START_LEN)) return 0 ;
   }
 
   {
-    register int r = s6rc_db_read_string(b, db->string, db->stringlen) ;
+    int r = s6rc_db_read_string(b, db->string, db->stringlen) ;
     if (r < 1) return r ;
     r = s6rc_db_read_deps(b, db->nshort + db->nlong, db->deps, db->ndeps) ;
     if (r < 1) return r ;
@@ -153,7 +153,7 @@ static inline int s6rc_db_read_buffer (buffer *b, s6rc_db_t *db)
   {
     char banner[S6RC_DB_BANNER_END_LEN] ;
     if (buffer_get(b, banner, S6RC_DB_BANNER_END_LEN) < S6RC_DB_BANNER_END_LEN) return -1 ;
-    if (byte_diff(banner, S6RC_DB_BANNER_END_LEN, S6RC_DB_BANNER_END)) return 0 ;
+    if (memcmp(banner, S6RC_DB_BANNER_END, S6RC_DB_BANNER_END_LEN)) return 0 ;
   }
   return 1 ;
 }
@@ -165,7 +165,7 @@ int s6rc_db_read (int fdcompiled, s6rc_db_t *db)
   char buf[BUFFER_INSIZE] ;
   int fd = open_readatb(fdcompiled, "db") ;
   if (fd < 0) return -1 ;
-  buffer_init(&b, &fd_readsv, fd, buf, BUFFER_INSIZE) ;
+  buffer_init(&b, &buffer_read, fd, buf, BUFFER_INSIZE) ;
   r = s6rc_db_read_buffer(&b, db) ;
   e = errno ;
   fd_close(fd) ;

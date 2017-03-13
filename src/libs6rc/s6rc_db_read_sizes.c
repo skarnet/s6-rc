@@ -31,7 +31,7 @@ int s6rc_db_read_sizes (int fdcompiled, s6rc_db_t *db)
   buffer b ;
   int fd = open_readatb(fdcompiled, "n") ;
   if (fd < 0) return 0 ;
-  buffer_init(&b, &fd_readsv, fd, buf, 64) ;
+  buffer_init(&b, &buffer_read, fd, buf, 64) ;
   if (!s6rc_db_read_sizes_buffer(&b, db))
   {
     fd_close(fd) ;
@@ -39,7 +39,7 @@ int s6rc_db_read_sizes (int fdcompiled, s6rc_db_t *db)
   }
   {
     char c ;
-    register ssize_t r = buffer_get(&b, &c, 1) ;
+    ssize_t r = buffer_get(&b, &c, 1) ;
     if (r < 0)
     {
       r = errno ;

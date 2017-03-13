@@ -1,12 +1,11 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <skalibs/uint32.h>
-#include <skalibs/bytestr.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/sgetopt.h>
@@ -24,11 +23,11 @@
 
 static void cleanup (char const *compiled)
 {
-  size_t len = str_len(compiled) ;
+  size_t len = strlen(compiled) ;
   int e = errno ;
   char fn[len + sizeof("/resolve.cdb.new")] ;
-  byte_copy(fn, len, compiled) ;
-  byte_copy(fn + len, sizeof("/resolve.cdb.new"), "/resolve.cdb.new") ;
+  memcpy(fn, compiled, len) ;
+  memcpy(fn + len, "/resolve.cdb.new", sizeof("/resolve.cdb.new")) ;
   unlink(fn) ;
   errno = e ;
 }
@@ -38,24 +37,24 @@ static void cleanup (char const *compiled)
 
 static inline int renameit (char const *compiled, char const *src, char const *dst)
 {
-  size_t clen = str_len(compiled) ;
-  size_t srclen = str_len(src) ;
-  size_t dstlen = str_len(dst) ;
+  size_t clen = strlen(compiled) ;
+  size_t srclen = strlen(src) ;
+  size_t dstlen = strlen(dst) ;
   char srcfn[clen + srclen + 2] ;
   char dstfn[clen + dstlen + 2] ;
-  byte_copy(srcfn, clen, compiled) ;
+  memcpy(srcfn, compiled, clen) ;
   srcfn[clen] = '/' ;
-  byte_copy(srcfn + clen + 1, srclen + 1, src) ;
-  byte_copy(dstfn, clen, compiled) ;
+  memcpy(srcfn + clen + 1, src, srclen + 1) ;
+  memcpy(dstfn, compiled, clen) ;
   dstfn[clen] = '/' ;
-  byte_copy(dstfn + clen + 1, dstlen + 1, dst) ;
+  memcpy(dstfn + clen + 1, dst, dstlen + 1) ;
   return rename(srcfn, dstfn) ;
 }
 
 static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force, char const *compiled)
 {
-  size_t namelen = str_len(name) ;
-  register int r = cdb_find(cr, name, namelen) ;
+  size_t namelen = strlen(name) ;
+  int r = cdb_find(cr, name, namelen) ;
   if (r < 0) strerr_diefu3sys(111, "cdb_find in ", compiled, "/resolve.cdb") ;
   if (!r)
   {
@@ -74,7 +73,7 @@ static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force,
     uint32_unpack_big(pack, &x) ;
     if (x >= db->nshort + db->nlong)
       strerr_dief2x(4, "invalid database in ", compiled) ;
-    if (!str_diff(name, db->string + db->services[x].name))
+    if (!strcmp(name, db->string + db->services[x].name))
       strerr_dief4x(5, "identifier ", name, " does not represent a bundle for database ", compiled) ;
   }
 }
@@ -105,7 +104,7 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
   cdb_traverse_init(&cr, &kpos) ;
   for (;;)
   {
-    register int r = cdb_nextkey(&cr, &kpos) ;
+    int r = cdb_nextkey(&cr, &kpos) ;
     if (r < 0)
     {
       cleanup(compiled) ;
@@ -113,19 +112,19 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
     }
     if (!r) break ;
     {
-      unsigned int klen = cdb_keylen(&cr) ;
+      uint32_t klen = cdb_keylen(&cr) ;
       char ktmp[klen + 1] ;
       if (cdb_read(&cr, ktmp, klen, cdb_keypos(&cr)) < 0)
       {
         cleanup(compiled) ;
         strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
       }
-      for (i = 0 ; i < todeln ; i++) if (!str_diffn(todel[i], ktmp, klen)) break ;
+      for (i = 0 ; i < todeln ; i++) if (!strncmp(todel[i], ktmp, klen)) break ;
       if (i < todeln) continue ;
-      for (i = 0 ; i < toaddn ; i++) if (!str_diffn(toadd[i], ktmp, klen)) break ;
+      for (i = 0 ; i < toaddn ; i++) if (!strncmp(toadd[i], ktmp, klen)) break ;
       if (i < toaddn) continue ;
       {
-        unsigned int dlen = cdb_datalen(&cr) ;
+        uint32_t dlen = cdb_datalen(&cr) ;
         char dtmp[dlen + 1] ;
         if (cdb_read(&cr, dtmp, dlen, cdb_datapos(&cr)) < 0)
         {
@@ -145,14 +144,14 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
   {
     char const *const *p = toadd_contents[i] ;
     unsigned int total = 0 ;
-    byte_zero(bits, bitarray_div8(n)) ;
+    memset(bits, 0, bitarray_div8(n)) ;
     for (; *p ; p++)
     {
-      register int r = cdb_find(&cr, *p, str_len(*p)) ;
+      int r = cdb_find(&cr, *p, strlen(*p)) ;
       if (r < 0) strerr_diefu3sys(111, "cdb_find in ", compiled, "/resolve.cdb") ;
       if (!r) strerr_dief4x(3, "identifier ", *p, " does not exist in database ", compiled) ;
       {
-        unsigned int j = cdb_datalen(&cr) ;
+        uint32_t j = cdb_datalen(&cr) ;
         char pack[j + 1] ;
         if (cdb_read(&cr, pack, j, cdb_datapos(&cr)) < 0)
         {
@@ -179,7 +178,7 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
         uint32_pack_big(s, j) ;
         s += 4 ;
       }
-      if (cdb_make_add(&cw, toadd[i], str_len(toadd[i]), pack, total << 2) < 0)
+      if (cdb_make_add(&cw, toadd[i], strlen(toadd[i]), pack, total << 2) < 0)
       {
         cleanup(compiled) ;
         strerr_diefu1sys(111, "cdb_make_add") ;
@@ -234,8 +233,8 @@ static inline void print_help (void)
 
 static inline unsigned int lookup (char const *const *table, char const *command)
 {
-  register unsigned int i = 0 ;
-  for (; table[i] ; i++) if (!str_diff(command, table[i])) break ;
+  unsigned int i = 0 ;
+  for (; table[i] ; i++) if (!strcmp(command, table[i])) break ;
   return i ;
 }
 
@@ -249,7 +248,7 @@ static inline unsigned int parse_command (char const *command)
     "multiple",
     0
   } ;
-  register unsigned int i = lookup(command_table, command) ;
+  unsigned int i = lookup(command_table, command) ;
   if (!command_table[i]) dieusage() ;
   return i ;
 }
@@ -265,7 +264,7 @@ int main (int argc, char const **argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "fl:c:", &l) ;
+      int opt = subgetopt_r(argc, argv, "fl:c:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -289,16 +288,16 @@ int main (int argc, char const **argv)
   if (what != 2 && argc < 2) dieusage() ;
 
   {
-    size_t livelen = str_len(live) ;
+    size_t livelen = strlen(live) ;
     int fdcompiled = -1 ;
     int compiledlock ;
     s6rc_db_t dbblob ;
-    char compiledblob[compiled ? str_len(compiled) : livelen + 10] ;
+    char compiledblob[compiled ? strlen(compiled) : livelen + 10] ;
 
     if (!compiled)
     {
-      byte_copy(compiledblob, livelen, live) ;
-      byte_copy(compiledblob + livelen, 10, "/compiled") ;
+      memcpy(compiledblob, live, livelen) ;
+      memcpy(compiledblob + livelen, "/compiled", 10) ;
       compiled = compiledblob ;
     }
 
@@ -324,7 +323,7 @@ int main (int argc, char const **argv)
       char const *argvblob[dbblob.nargvs] ;
       uint32_t depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
-      register int r ;
+      int r ;
 
       dbblob.services = serviceblob ;
       dbblob.argvs = argvblob ;

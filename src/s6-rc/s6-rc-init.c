@@ -1,10 +1,10 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <skalibs/uint.h>
-#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/stralloc.h>
@@ -43,7 +43,7 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "c:l:t:", &l) ;
+      int opt = subgetopt_r(argc, argv, "c:l:t:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -92,16 +92,16 @@ int main (int argc, char const *const *argv)
     if (!s6rc_lock(satmp.s, 2, &fdlock, 0, 0, 0))
     {
       char tmp[satmp.len] ;
-      byte_copy(tmp, satmp.len, satmp.s) ;
+      memcpy(tmp, satmp.s, satmp.len) ;
       cleanup() ;
       strerr_diefu2sys(111, "take lock on ", tmp) ;
     }
-    byte_copy(lfn, llen, satmp.s) ;
+    memcpy(lfn, satmp.s, llen) ;
     lfn[llen] = 0 ;
     if (symlink(satmp.s + dirlen, lfn) < 0)
     {
       char tmp[satmp.len - dirlen] ;
-      byte_copy(tmp, satmp.len - dirlen, satmp.s + dirlen) ;
+      memcpy(tmp, satmp.s + dirlen, satmp.len - dirlen) ;
       cleanup() ;
       strerr_diefu4sys(111, "symlink ", tmp, " to ", lfn) ;
     }
@@ -115,7 +115,7 @@ int main (int argc, char const *const *argv)
       cleanup() ;
       strerr_diefu2sys(111, "open ", compiled) ;
     }
-    byte_copy(lfn + llen, 10, "/compiled") ;
+    memcpy(lfn + llen, "/compiled", 10) ;
     if (symlink(compiled, lfn) < 0)
     {
       cleanup() ;
@@ -125,7 +125,7 @@ int main (int argc, char const *const *argv)
 
    /* scandir */
 
-    byte_copy(lfn + llen + 1, 8, "scandir") ;
+    memcpy(lfn + llen + 1, "scandir", 8) ;
     if (symlink(argv[0], lfn) < 0)
     {
       cleanup() ;
@@ -135,9 +135,9 @@ int main (int argc, char const *const *argv)
 
    /* state */
 
-    byte_copy(lfn + llen + 1, 6, "state") ;
+    memcpy(lfn + llen + 1, "state", 6) ;
     {
-      register int r = s6rc_db_read_sizes(fdcompiled, &db) ;
+      int r = s6rc_db_read_sizes(fdcompiled, &db) ;
       if (r <= 0)
       {
         cleanup() ;
@@ -148,7 +148,7 @@ int main (int argc, char const *const *argv)
       n = db.nshort + db.nlong ;
       {
         char zero[n] ;
-        byte_zero(zero, n) ;
+        memset(zero, 0, n) ;
         if (!openwritenclose_unsafe(lfn, zero, n))
         {
           cleanup() ;
@@ -160,9 +160,9 @@ int main (int argc, char const *const *argv)
 
    /* servicedirs */
 
-    byte_copy(lfn + llen + 1, 12, "servicedirs") ;
-    byte_copy(cfn, llen + 1, lfn) ;
-    byte_copy(cfn + llen + 1, 21, "compiled/servicedirs") ;
+    memcpy(lfn + llen + 1, "servicedirs", 12) ;
+    memcpy(cfn, lfn, llen + 1) ;
+    memcpy(cfn + llen + 1, "compiled/servicedirs", 21) ;
     if (!hiercopy(cfn, lfn))
     {
       cleanup() ;

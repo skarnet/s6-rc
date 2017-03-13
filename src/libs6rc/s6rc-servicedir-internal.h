@@ -3,6 +3,8 @@
 #ifndef S6RC_SERVICEDIR_INTERNAL_H
 #define S6RC_SERVICEDIR_INTERNAL_H
 
+#include <sys/types.h>
+
 typedef enum s6rc_filetype_e s6rc_filetype_t, *s6rc_filetype_t_ref ;
 enum s6rc_filetype_e
 {
@@ -25,7 +27,7 @@ struct s6rc_servicedir_desc_s
 } ;
 
 extern s6rc_servicedir_desc_t const *s6rc_servicedir_file_list ;
-extern unsigned int const s6rc_servicedir_file_maxlen ;
+extern size_t const s6rc_servicedir_file_maxlen ;
 
 extern int s6rc_servicedir_copy_one (char const *, char const *, s6rc_servicedir_desc_t const *) ;
 

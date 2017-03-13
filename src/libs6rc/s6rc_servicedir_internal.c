@@ -1,10 +1,9 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <skalibs/uint.h>
-#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 #include <s6-rc/s6rc-utils.h>
 #include "s6rc-servicedir-internal.h"
@@ -24,21 +23,21 @@ static s6rc_servicedir_desc_t const svdir_file_list[] =
 } ;
 
 s6rc_servicedir_desc_t const *s6rc_servicedir_file_list = svdir_file_list ;
-unsigned int const s6rc_servicedir_file_maxlen = 15 ;
+size_t const s6rc_servicedir_file_maxlen = 15 ;
 
 int s6rc_servicedir_copy_one (char const *src, char const *dst, s6rc_servicedir_desc_t const *p)
 {
-  size_t srclen = str_len(src) ;
-  size_t dstlen = str_len(dst) ;
-  size_t plen = str_len(p->name) ;
+  size_t srclen = strlen(src) ;
+  size_t dstlen = strlen(dst) ;
+  size_t plen = strlen(p->name) ;
   char srcfn[srclen + plen + 2] ;
   char dstfn[dstlen + plen + 2] ;
-  byte_copy(srcfn, srclen, src) ;
+  memcpy(srcfn, src, srclen) ;
   srcfn[srclen] = '/' ;
-  byte_copy(srcfn + srclen + 1, plen + 1, p->name) ;
-  byte_copy(dstfn, dstlen, dst) ;
+  memcpy(srcfn + srclen + 1, p->name, plen + 1) ;
+  memcpy(dstfn, dst, dstlen) ;
   dstfn[dstlen] = '/' ;
-  byte_copy(dstfn + dstlen + 1, plen + 1, p->name) ;
+  memcpy(dstfn + dstlen + 1, p->name, plen + 1) ;
 
   switch (p->type)
   {
@@ -61,7 +60,7 @@ int s6rc_servicedir_copy_one (char const *src, char const *dst, s6rc_servicedir_
     case FILETYPE_UINT :
     {
       unsigned int u ;
-      register int r = s6rc_read_uint(srcfn, &u) ;
+      int r = s6rc_read_uint(srcfn, &u) ;
       if (r < 0 || (!r && p->options & SVFILE_MANDATORY)) return 0 ;
       if (r)
       {

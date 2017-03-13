@@ -1,7 +1,6 @@
 /* ISC license. */
 
-#include <sys/types.h>
-#include <skalibs/bytestr.h>
+#include <string.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <s6-rc/s6rc-utils.h>
@@ -9,7 +8,7 @@
 int s6rc_sanitize_dir (stralloc *sa, char const *fn, size_t *dirlen)
 {
   size_t base = sa->len ;
-  size_t fnlen = str_len(fn) ;
+  size_t fnlen = strlen(fn) ;
   size_t ddirlen ;
   int wasnull = !sa->s ;
   if (!sadirname(sa, fn, fnlen)) return 0 ;

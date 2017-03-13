@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <string.h>
 #include <skalibs/bitarray.h>
 #include <s6-rc/s6rc-db.h>
 #include <s6-rc/s6rc-utils.h>
@@ -32,8 +33,8 @@ void s6rc_graph_closure (s6rc_db_t const *db, unsigned char *bits, unsigned int 
   unsigned int m = bitarray_div8(n) ;
   unsigned char mark[m] ;
   recinfo_t info = { .db = db, .n = n, .bits = bits, .mark = mark, .mask = 1 << (bitno & 7), .h = !!h } ;
-  register unsigned int i = n ;
-  byte_zero(mark, m) ;
+  unsigned int i = n ;
+  memset(mark, 0, m) ;
   while (i--)
     if (bits[i] & info.mask) s6rc_graph_closure_rec(&info, i) ;
 }

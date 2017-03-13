@@ -1,6 +1,6 @@
 /* ISC license. */
 
-#include <skalibs/uint.h>
+#include <skalibs/types.h>
 #include <skalibs/buffer.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
@@ -20,7 +20,7 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "v:t:", &l) ;
+      int opt = subgetopt_r(argc, argv, "v:t:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {

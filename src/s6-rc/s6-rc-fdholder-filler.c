@@ -1,10 +1,9 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <skalibs/uint.h>
-#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
@@ -24,7 +23,7 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "1t:", &l) ;
+      int opt = subgetopt_r(argc, argv, "1t:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -50,7 +49,7 @@ int main (int argc, char const *const *argv)
     s6_fdholder_fd_t dump[n<<1] ;
     for (; i < n ; i++)
     {
-      size_t len = str_len(argv[i]) ;
+      size_t len = strlen(argv[i]) ;
       if (len + 12 > S6_FDHOLDER_ID_SIZE)
       {
         errno = ENAMETOOLONG ;
@@ -62,12 +61,12 @@ int main (int argc, char const *const *argv)
       tain_add_g(&dump[i<<1].limit, &tain_infinite_relative) ;
       offset.nano = i << 1 ;
       tain_add(&dump[i<<1].limit, &dump[i<<1].limit, &offset) ;
-      byte_copy(dump[i<<1].id, 12, "pipe:s6rc-r-") ;
-      byte_copy(dump[i<<1].id + 12, len + 1, argv[i]) ;
+      memcpy(dump[i<<1].id, "pipe:s6rc-r-", 12) ;
+      memcpy(dump[i<<1].id + 12, argv[i], len + 1) ;
       dump[(i<<1)+1].fd = p[1] ;
       offset.nano = 1 ;
       tain_add(&dump[(i<<1)+1].limit, &dump[i<<1].limit, &offset) ;
-      byte_copy(dump[(i<<1)+1].id, 13 + len, dump[i<<1].id) ;
+      memcpy(dump[(i<<1)+1].id, dump[i<<1].id, 13 + len) ;
       dump[(i<<1)+1].id[10] = 'w' ;
     }
     if (!s6_fdholder_setdump_g(&a, dump, n << 1, &deadline))

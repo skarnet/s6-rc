@@ -1,9 +1,9 @@
 /* ISC license. */
 
-#include <sys/types.h>
+#include <string.h>
+#include <strings.h>
 #include <stdint.h>
-#include <skalibs/uint.h>
-#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/djbunix.h>
@@ -23,7 +23,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      register int opt = subgetopt_r(argc, argv, "l:", &l) ;
+      int opt = subgetopt_r(argc, argv, "l:", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -35,18 +35,18 @@ int main (int argc, char const *const *argv, char const *const *envp)
   }
 
   if (argc < 2) dieusage() ;
-  if (!case_diffs(argv[0], "up")) up = 1 ;
-  else if (!case_diffs(argv[0], "down")) up = 0 ;
+  if (!strcasecmp(argv[0], "up")) up = 1 ;
+  else if (!strcasecmp(argv[0], "down")) up = 0 ;
   else dieusage() ;
   if (!uint0_scan(argv[1], &number)) dieusage() ;
 
   {
-    size_t livelen = str_len(live) ;
+    size_t livelen = strlen(live) ;
     int fdcompiled, compiledlock ;
     s6rc_db_t db ;
     char compiled[livelen + 10] ;
-    byte_copy(compiled, livelen, live) ;
-    byte_copy(compiled + livelen, 10, "/compiled") ;
+    memcpy(compiled, live, livelen) ;
+    memcpy(compiled + livelen, "/compiled", 10) ;
 
     if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock))
       strerr_diefu2sys(111, "take lock on ", compiled) ;
@@ -72,7 +72,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       char const *argvblob[db.nargvs] ;
       uint32_t depsblob[db.ndeps << 1] ;
       char stringblob[db.stringlen] ;
-      register int r ;
+      int r ;
 
       db.services = serviceblob ;
       db.argvs = argvblob ;
@@ -90,10 +90,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Run the script */
 
       {
-        register unsigned int sargc = db.services[number].x.oneshot.argc[up] ;
+        unsigned int sargc = db.services[number].x.oneshot.argc[up] ;
         char const *const *sargv = db.argvs + db.services[number].x.oneshot.argv[up] ;
         char const *newargv[sargc + 1] ;
-        register char const **p = newargv ;
+        char const **p = newargv ;
         while (sargc--) *p++ = *sargv++ ;
         *p = 0 ;
         pathexec0_run(newargv, envp) ;
