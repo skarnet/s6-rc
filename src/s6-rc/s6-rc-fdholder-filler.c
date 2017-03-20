@@ -6,17 +6,52 @@
 #include <skalibs/types.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/sgetopt.h>
+#include <skalibs/allreadwrite.h>
 #include <skalibs/tai.h>
 #include <s6/s6-fdholder.h>
 
-#define USAGE "s6-rc-fdholder-filler [ -1 ] [ -t timeout ] longrunnames..."
+#define USAGE "s6-rc-fdholder-filler [ -1 ] [ -t timeout ] < autofilled-filename"
 #define dieusage() strerr_dieusage(100, USAGE)
+
+#define N 4096
+
+static unsigned int parse_servicenames (char *s, unsigned int *indices)
+{
+  static unsigned char const table[3][5] =
+  {
+    { 3, 0, 1, 0, 6 },
+    { 3, 0, 1, 1, 1 },
+    { 3, 8, 2, 2, 2 }
+  } ;
+  unsigned int pos = 0 ;
+  unsigned int n = 0 ;
+  unsigned int state = 0 ;
+
+  unsigned char class[256] ;
+  memset(class, 4, 256) ;
+  class[0] = 0 ;
+  class['\n'] = 1 ;
+  class['#'] = 2 ;
+  class[' '] = class['\r'] = class['\t'] = 3 ;
+
+  for (; state < 3 ; pos++)
+  {
+    unsigned char c = table[state][class[(unsigned char)s[pos]]] ;
+    state = c & 3 ;
+    if (c & 4) indices[n++] = pos ;
+    if (c & 8) s[pos] = 0 ;
+  }
+  return n ;
+}
 
 int main (int argc, char const *const *argv)
 {
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
   tain_t deadline ;
   int notif = 0 ;
+  unsigned int n ;
+  unsigned int indices[N] ;
+  char buf[N<<1] ;
   PROG = "s6-rc-fdholder-filler" ;
   {
     unsigned int t = 0 ;
@@ -29,7 +64,7 @@ int main (int argc, char const *const *argv)
       {
         case '1': notif = 1 ; break ;
         case 't': if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
-        default : strerr_dieusage(100, USAGE) ;
+        default : dieusage() ;
       }
     }
     argc -= l.ind ; argv += l.ind ;
@@ -37,23 +72,29 @@ int main (int argc, char const *const *argv)
     else deadline = tain_infinite_relative ;
   }
 
-  s6_fdholder_init(&a, 6) ;
-  tain_now_g() ;
-  tain_add_g(&deadline, &deadline) ;
-  if (argc)
+  {
+    size_t r = allread(0, buf, N<<1) ;
+    if (r >= N<<1) strerr_dief3x(100, "file ", argv[0], " is too big") ;
+    buf[r] = 0 ;
+  }
+  n = parse_servicenames(buf, indices) ;
+  if (n)
   {
     tain_t offset = { .sec = TAI_ZERO } ;
     int p[2] ;
-    unsigned int n = argc ;
     unsigned int i = 0 ;
     s6_fdholder_fd_t dump[n<<1] ;
+    close(0) ;
+    s6_fdholder_init(&a, 6) ;
+    tain_now_g() ;
+    tain_add_g(&deadline, &deadline) ;
     for (; i < n ; i++)
     {
-      size_t len = strlen(argv[i]) ;
+      size_t len = strlen(buf + indices[i]) ;
       if (len + 12 > S6_FDHOLDER_ID_SIZE)
       {
         errno = ENAMETOOLONG ;
-        strerr_diefu2sys(111, "create identifier for ", argv[i]) ;
+        strerr_diefu2sys(111, "create identifier for ", buf + indices[i]) ;
       }
       if (pipe(p) < 0)
         strerr_diefu1sys(111, "create pipe") ;
@@ -62,7 +103,7 @@ int main (int argc, char const *const *argv)
       offset.nano = i << 1 ;
       tain_add(&dump[i<<1].limit, &dump[i<<1].limit, &offset) ;
       memcpy(dump[i<<1].id, "pipe:s6rc-r-", 12) ;
-      memcpy(dump[i<<1].id + 12, argv[i], len + 1) ;
+      memcpy(dump[i<<1].id + 12, buf + indices[i], len + 1) ;
       dump[(i<<1)+1].fd = p[1] ;
       offset.nano = 1 ;
       tain_add(&dump[(i<<1)+1].limit, &dump[i<<1].limit, &offset) ;

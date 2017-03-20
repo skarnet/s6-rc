@@ -976,8 +976,8 @@ static inline int write_pipelines (stralloc *sa, s6rc_db_t const *db)
       uint32_t k = db->services[j].x.longrun.pipeline[1] ;
       bitarray_set(black, j) ;
       if (k >= db->nlong) break ;
-      if (!string_quote(sa, db->string + db->services[k].name, strlen(db->string + db->services[k].name))
-       || !stralloc_catb(sa, " ", 1)) return 0 ;
+      if (!stralloc_cats(sa, db->string + db->services[k].name)
+       || !stralloc_catb(sa, "\n", 1)) return 0 ;
       j = k ;
     }
   }
@@ -1026,6 +1026,10 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     }
   }
 
+  if (!write_pipelines(&satmp, db)) dienomem() ;
+  auto_file(compiled, "servicedirs/" S6RC_FDHOLDER "/data/autofilled", satmp.s + base, satmp.len - base) ;
+  satmp.len = base ;
+
   if (!stralloc_cats(&satmp,
     "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n"
     EXECLINE_EXTBINPREFIX "pipeline -dw --\n{\n  "
@@ -1033,10 +1037,9 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     EXECLINE_EXTBINPREFIX "forstdin -x 1 -- i\n    "
     EXECLINE_EXTBINPREFIX "exit 1\n  }\n  "
     EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    "
+    EXECLINE_EXTBINPREFIX "redirfd -r 0 ./data/autofilled\n    "
     S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
-    S6RC_EXTLIBEXECPREFIX "s6-rc-fdholder-filler -1 -- ")
-   || !write_pipelines(&satmp, db)
-   || !stralloc_cats(&satmp, "\n  }\n  "
+    S6RC_EXTLIBEXECPREFIX "s6-rc-fdholder-filler -1 --\n  }\n  "
     S6_EXTBINPREFIX "s6-svc -t .\n}\n")) dienomem() ;
   if (fdhuser)
   {
