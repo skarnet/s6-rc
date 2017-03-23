@@ -38,7 +38,7 @@ situations it cannot solve.
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-update [ -n ] [ -v <em>verbosity</em> ] [ -t <em>timeout</em> ] [ -l <em>live</em> ] [ -f <em>convfile</em> ] <em>newdb</em>
+     s6-rc-update [ -n ] [ -v <em>verbosity</em> ] [ -t <em>timeout</em> ] [ -l <em>live</em> ] [ -f <em>convfile</em> ] [ -b ] <em>newdb</em>
 </pre>
 
 <ul>
@@ -95,6 +95,11 @@ The default can be changed at compile-time by giving the
  <li> <tt>-f&nbsp;<em>convfile</em></tt>&nbsp;: use the conversion
 file located at <em>convfile</em>. Default is <tt>/dev/null</tt>,
 meaning no special instructions. </li>
+ <li> <tt>-b</tt>&nbsp;: blocking lock. If the database is currently
+being used by another program, s6-rc-update will wait until that
+other program has released its lock on the database, then proceed.
+By default, s6-rc-update fails with an error message if the database
+is currently in use. </li>
 </ul>
 
 <h2> Transition details </h2>

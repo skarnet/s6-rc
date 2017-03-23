@@ -21,7 +21,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -u | -d ] [ -p ] [ -a ] help|list|listall|change [ servicenames... ]"
+#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -b ] [ -u | -d ] [ -p ] [ -a ] help|list|listall|change [ servicenames... ]"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 typedef struct pidindex_s pidindex_t ;
@@ -374,7 +374,7 @@ static inline void print_help (void)
 
 int main (int argc, char const *const *argv)
 {
-  int up = 1, prune = 0, selectlive = 0, takelocks = 1 ;
+  int up = 1, prune = 0, selectlive = 0, takelocks = 1, blocking = 0 ;
   unsigned int what ;
   PROG = "s6-rc" ;
   {
@@ -382,7 +382,7 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "v:n:t:l:udpaX", &l) ;
+      int opt = subgetopt_r(argc, argv, "v:n:t:l:udpaXb", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -401,6 +401,7 @@ int main (int argc, char const *const *argv)
         case 'p' : prune = 1 ; break ;
         case 'a' : selectlive = 1 ; break ;
         case 'X' : takelocks = 0 ; break ;
+        case 'b' : blocking = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -432,7 +433,7 @@ int main (int argc, char const *const *argv)
     if (takelocks)
     {
       int livelock, compiledlock ;
-      if (!s6rc_lock(live, 1 + (what >= 3), &livelock, dbfn, 1, &compiledlock))
+      if (!s6rc_lock(live, 1 + (what >= 3), &livelock, dbfn, 1, &compiledlock, blocking))
         strerr_diefu1sys(111, "take locks") ;
       if (coe(livelock) < 0)
         strerr_diefu3sys(111, "coe ", live, "/lock") ;

@@ -10,7 +10,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-oneshot-run [ -l live ] up|down servicenumber"
+#define USAGE "s6-rc-oneshot-run [ -l live ] [ -b ] up|down servicenumber"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 int main (int argc, char const *const *argv, char const *const *envp)
@@ -18,16 +18,18 @@ int main (int argc, char const *const *argv, char const *const *envp)
   char const *live = S6RC_LIVE_BASE ;
   unsigned int number ;
   int up ;
+  int blocking = 0 ;
   PROG = "s6-rc-oneshot-run" ;
   {
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "l:", &l) ;
+      int opt = subgetopt_r(argc, argv, "l:b", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
         case 'l' : live = l.arg ; break ;
+        case 'b' : blocking = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -48,7 +50,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     memcpy(compiled, live, livelen) ;
     memcpy(compiled + livelen, "/compiled", 10) ;
 
-    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock))
+    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock, blocking))
       strerr_diefu2sys(111, "take lock on ", compiled) ;
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)

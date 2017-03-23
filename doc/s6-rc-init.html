@@ -28,7 +28,7 @@ invocation of the
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-init [ -c <em>compiled</em> ] [ -l <em>live</em> ] [ -t <em>timeout</em> ] <em>scandir</em>
+     s6-rc-init [ -c <em>compiled</em> ] [ -l <em>live</em> ] [ -t <em>timeout</em> ] [ -b ] <em>scandir</em>
 </pre>
 
 <ul>
@@ -74,6 +74,11 @@ filesystem. Default is
 <tt>/run/s6-rc</tt>. The default can be changed at compile time by
 giving the <tt>--livedir=<em>live</em></tt> option to
 <tt>./configure</tt>. </li>
+ <li> <tt>-b</tt>&nbsp;: blocking lock. If the database is currently
+being used by another program, s6-rc-init will wait until that
+other program has released its lock on the database, then proceed.
+By default, s6-rc-init fails with an error message if the database
+is currently in use. </li>
 </ul>
 
 <h2> Typical usage </h2>

@@ -37,17 +37,17 @@ operation.
 
 <pre>
      s6-rc-db help
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] check
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] list all|services|oneshots|longruns|bundles
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] type <em>servicename</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] timeout <em>atomicname</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] contents <em>bundlename</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] dependencies <em>servicename</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] pipeline <em>longrunname</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] script <em>oneshotname</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] flags <em>atomicname</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] atomics <em>servicename...</em>
-     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -u | -d ] all-dependencies <em>servicename...</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] check
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] list all|services|oneshots|longruns|bundles
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] type <em>servicename</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] [ -u | -d ] timeout <em>atomicname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] contents <em>bundlename</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] [ -u | -d ] dependencies <em>servicename</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] pipeline <em>longrunname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] [ -u | -d ] script <em>oneshotname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] flags <em>atomicname</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] atomics <em>servicename...</em>
+     s6-rc-db [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] [ -u | -d ] all-dependencies <em>servicename...</em>
 </pre>
 
 <ul>
@@ -78,6 +78,11 @@ ignored when it is irrelevant. </li>
  <li> <tt>-d</tt>&nbsp;: for commands that use different data
 depending on whether it's about bringing the service up or down,
 select the "down" data. This option is ignored when it is irrelevant. </li>
+ <li> <tt>-b</tt>&nbsp;: blocking lock. If the database is currently
+being used by another program, s6-rc-db will wait until that
+other program has released its lock on the database, then proceed.
+By default, s6-rc-db fails with an error message if the database
+is currently in use. </li>
 </ul>
 
 <h2> Exit codes </h2>

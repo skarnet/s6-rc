@@ -34,7 +34,7 @@ in internal scripts created by
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-fdholder-filler [ -1 ] [ -t <em>timeout</em> ] <em>longrunnames...</em>
+     s6-rc-fdholder-filler [ -1 ] [ -t <em>timeout</em> ] &lt; <em>longrunnamesfile</em>
 </pre>
 
 <ul>
@@ -42,7 +42,10 @@ in internal scripts created by
 connected to the
 <a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
 daemon instance managed by s6-rc as the internal <em>s6rc-fdholder</em> service. </li>
- <li> For every argument <em>longrun</em> in <em>longrunnames...</em>, it
+ <li> It reads a list of longrun names from its stdin, one per line.
+Empty lines are ignored; comments starting with <tt>#</tt> are ignored;
+leading whitespace is ignored, but trailing whitespace is not. </li>
+ <li> For every name <em>longrun</em> that it finds, it
 creates an anonymous pipe, and stores both ends of that pipe into the
 <a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
 instance, with the <tt>pipe:s6-rc-r-<em>longrun</em></tt> (for the reading

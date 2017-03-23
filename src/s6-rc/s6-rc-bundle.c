@@ -18,7 +18,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-bundle [ -l live ] [ -c compiled ] command... (use s6-rc-bundle help for more information)"
+#define USAGE "s6-rc-bundle [ -l live ] [ -c compiled ] [ -b ] command... (use s6-rc-bundle help for more information)"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static void cleanup (char const *compiled)
@@ -259,18 +259,20 @@ int main (int argc, char const **argv)
   char const *compiled = 0 ;
   unsigned int what ;
   int force = 0 ;
+  int blocking = 0 ;
   PROG = "s6-rc-bundle" ;
   {
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "fl:c:", &l) ;
+      int opt = subgetopt_r(argc, argv, "fl:c:b", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
         case 'f' : force = 1 ; break ;
         case 'l' : live = l.arg ; break ;
         case 'c' : compiled = l.arg ; break ;
+        case 'b' : blocking = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -301,7 +303,7 @@ int main (int argc, char const **argv)
       compiled = compiledblob ;
     }
 
-    if (!s6rc_lock(0, 0, 0, compiled, 2, &compiledlock))
+    if (!s6rc_lock(0, 0, 0, compiled, 2, &compiledlock, blocking))
       strerr_diefu2sys(111, "take lock on ", compiled) ;
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)

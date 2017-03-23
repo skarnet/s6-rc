@@ -33,7 +33,7 @@ in internal scripts created by
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-oneshot-run [ -l <em>live</em> ] up|down <em>n</em>
+     s6-rc-oneshot-run [ -l <em>live</em> ] [ -b ] up|down <em>n</em>
 </pre>
 
 <ul>
@@ -49,6 +49,11 @@ live directory). </li>
  <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: use the live directory in
 <em>live</em>. Default is <tt>/run/s6-rc</tt>, or what was given to the
 <tt>--livedir</tt> configure option at compile time. </li>
+ <li> <tt>-b</tt>&nbsp;: blocking lock. If the service database is currently
+being used by another program, s6-rc-oneshot-run will wait until that
+other program has released its lock on the database, then proceed.
+By default, s6-rc-oneshot-run fails with an error message if the database
+is currently in use. </li>
 </ul>
 
 <h2> Exit codes </h2>

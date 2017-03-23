@@ -5,7 +5,17 @@
 #include <skalibs/djbunix.h>
 #include <s6-rc/s6rc-utils.h>
 
-int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int cwhat, int *ccfd)
+static inline int lockex (int fd, int blocking)
+{
+  return blocking ? lock_ex(fd) : lock_exnb(fd) ;
+}
+
+static inline int locksh (int fd, int blocking)
+{
+  return blocking ? lock_sh(fd) : lock_shnb(fd) ;
+}
+
+int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int cwhat, int *ccfd, int blocking)
 {
   int e = 0 ;
   int lfd = -1, cfd = -1 ;
@@ -18,7 +28,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     memcpy(lfn + llen, "/lock", 6) ;
     lfd = open_create(lfn) ;
     if (lfd < 0) return 0 ;
-    if ((lwhat > 1 ? lock_ex(lfd) : lock_sh(lfd)) < 0) { e = errno ; goto lerr ; }
+    if ((lwhat > 1 ? lockex(lfd, blocking) : locksh(lfd, blocking)) < 0) { e = errno ; goto lerr ; }
   }
 
   if (cwhat)
@@ -31,7 +41,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     if (cfd < 0)
       if (cwhat > 1 || errno != EROFS) { e = errno ; goto lerr ; }
       else cfd = -errno ;
-    else if ((cwhat > 1 ? lock_ex(cfd) : lock_sh(cfd)) < 0) { e = errno ; goto cerr ; }
+    else if ((cwhat > 1 ? lockex(cfd, blocking) : locksh(cfd, blocking)) < 0) { e = errno ; goto cerr ; }
   }
 
   if (lwhat) *llfd = lfd ;

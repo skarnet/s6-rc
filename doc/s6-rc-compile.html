@@ -36,7 +36,7 @@ the current service database via
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-compile [ -v <em>verbosity</em> ] [ -u <em>uids</em> ] [ -g <em>gids</em> ] [ -h <em>fdhuser</em> ] <em>compiled</em> <em>source...</em>
+     s6-rc-compile [ -v <em>verbosity</em> ] [ -u <em>uids</em> ] [ -g <em>gids</em> ] [ -h <em>fdhuser</em> ]  [ -b ] <em>compiled</em> <em>source...</em>
 </pre>
 
 <ul>
@@ -77,6 +77,11 @@ numerical GIDs. </li>
 program, which maintains the pipes for the longrun pipelines, to run
 as user <em>fdhuser</em>. By default, it runs as the user owning
 the supervision tree, i.e. most likely <tt>root</tt>. </li>
+ <li> <tt>-b</tt>&nbsp;: make
+<a href="s6-rc-oneshot-runner.html">s6-rc-oneshot-runner</a>
+invocations wait instead of fail on lock contention. This
+should not change anything in practice, and you can ignore
+that option. </li>
 </ul>
 
 <p>

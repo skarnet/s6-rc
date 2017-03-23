@@ -36,9 +36,9 @@ operation.
 
 <pre>
      s6-rc-bundle help
-     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] add <em>bundlename</em> <em>contents...</em>
-     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] delete <em>bundlenames...</em>
-     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] multiple <em>args...</em>
+     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] add <em>bundlename</em> <em>contents...</em>
+     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] delete <em>bundlenames...</em>
+     s6-rc-bundle [ -f ] [ -l <em>live</em> ] [ -c <em>compiled</em> ] [ -b ] multiple <em>args...</em>
 </pre>
 
 <ul>
@@ -66,6 +66,11 @@ when given a nonexisting name to delete (it will do nothing), or
 when given an existing name to add (it will replace the definition).
 By default, s6-rc-bundle will complain and exit when asked to delete a
 nonexistent name or to add an existing name. </li>
+ <li> <tt>-b</tt>&nbsp;: blocking lock. If the database is currently
+being used by another program, s6-rc-bundle will wait until that
+other program has released its lock on the database, then proceed.
+By default, s6-rc-bundle fails with an error message if the database
+is currently in use. </li>
 </ul>
 
 <h2> Exit codes </h2>

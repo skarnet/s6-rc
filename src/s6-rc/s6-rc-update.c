@@ -27,7 +27,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] newdb"
+#define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] [ -b ] newdb"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "build string") ;
 
@@ -611,13 +611,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
   char const *convfile = "/dev/null" ;
   tain_t deadline ;
   int dryrun = 0 ;
+  int blocking = 0 ;
   PROG = "s6-rc-update" ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "v:t:nl:f:", &l) ;
+      int opt = subgetopt_r(argc, argv, "v:t:nl:f:b", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -626,6 +627,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         case 'n' : dryrun = 1 ; break ;
         case 'l' : live = l.arg ; break ;
         case 'f' : convfile = l.arg ; break ;
+        case 'b' : blocking = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -658,9 +660,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     memcpy(dbfn, live, livelen) ;
     memcpy(dbfn + livelen, "/compiled", 10) ;
-    if (!s6rc_lock(live, 2, &livelock, dbfn, 1, &oldlock))
+    if (!s6rc_lock(live, 2, &livelock, dbfn, 1, &oldlock, blocking))
       strerr_diefu4sys(111, "take lock on ", live, " and ", dbfn) ;
-    if (!s6rc_lock(0, 0, 0, argv[0], 1, &newlock))
+    if (!s6rc_lock(0, 0, 0, argv[0], 1, &newlock, blocking))
       strerr_diefu2sys(111, "take lock on ", argv[0]) ;
 
 

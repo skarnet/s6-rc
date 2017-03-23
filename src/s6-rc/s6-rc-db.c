@@ -13,7 +13,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-db [ -u | -d ] [ -l live ] [ -c compiled ] command... (use s6-rc-db help for more information)"
+#define USAGE "s6-rc-db [ -u | -d ] [ -l live ] [ -c compiled ] [ -b ] command... (use s6-rc-db help for more information)"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static char const *compiled = 0 ;
@@ -344,12 +344,13 @@ int main (int argc, char const *const *argv)
   char const *live = S6RC_LIVE_BASE ;
   unsigned int what, subwhat = 0 ;
   int up = 1 ;
+  int blocking = 0 ;
   PROG = "s6-rc-db" ;
   {
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "udl:c:", &l) ;
+      int opt = subgetopt_r(argc, argv, "udl:c:b", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -357,6 +358,7 @@ int main (int argc, char const *const *argv)
         case 'c' : compiled = l.arg ; break ;
         case 'u' : up = 1 ; break ;
         case 'd' : up = 0 ; break ;
+        case 'b' : blocking = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -387,7 +389,7 @@ int main (int argc, char const *const *argv)
       compiled = compiledblob ;
     }
 
-    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock))
+    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock, blocking))
       strerr_diefu2sys(111, "take lock on ", compiled) ;
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)

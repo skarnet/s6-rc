@@ -14,7 +14,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] scandir"
+#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] [ -b ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
@@ -37,19 +37,21 @@ int main (int argc, char const *const *argv)
   size_t dirlen ;
   char const *live = S6RC_LIVE_BASE ;
   char const *compiled = S6RC_COMPILED_BASE ;
+  int blocking = 0 ;
   PROG = "s6-rc-init" ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "c:l:t:", &l) ;
+      int opt = subgetopt_r(argc, argv, "c:l:t:b", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
         case 'c' : compiled = l.arg ; break ;
         case 'l' : live = l.arg ; break ;
         case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
+        case 'b' : blocking = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -89,7 +91,7 @@ int main (int argc, char const *const *argv)
     unlink(live) ;
     rm_rf(satmp.s) ;
     if (mkdir(satmp.s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", satmp.s) ;
-    if (!s6rc_lock(satmp.s, 2, &fdlock, 0, 0, 0))
+    if (!s6rc_lock(satmp.s, 2, &fdlock, 0, 0, 0, blocking))
     {
       char tmp[satmp.len] ;
       memcpy(tmp, satmp.s, satmp.len) ;
