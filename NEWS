@@ -1,0 +1,19 @@
+Changelog for s6-rc.
+
+In 0.2.0.0
+----------
+
+ - Added this NEWS file. :)
+ - Major types overhaul to make them more POSIXly correct:
+compatibility with skalibs-2.5.0.0.
+ - s6-2.5.0.0 now allows longruns to report permanent failures
+(when ./finish exits 125). s6-rc should pick that up automatically
+and fail a longrun transition when it's the case.
+ - s6-rc commands taking a lock on the live directory or the service
+database now fail instantly if they're already locked. A -b option
+has been added to give them the "block and wait for the lock to be
+released" behaviour back.
+ - Easier external interaction with the hidden s6rc-fdholder
+service: the list of pipes to autofill a new fdholder with is now
+taken from the data/autofilled file (previously: was a hardcoded
+command line in the s6rc-fdholder run script).
