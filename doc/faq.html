@@ -215,20 +215,21 @@ To ensure that the
 new database will be used on the next boot, atomically update the link:
 <pre>
  olddb=`s6-linkname -f /etc/s6-rc/compiled`
- s6-ln -sf compiled-$stamp /etc/s6-rc/compiled
+ s6-ln -nsf compiled-$stamp /etc/s6-rc/compiled
 </pre>
  The use of the
 <a href="http://skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>
-utility is recommended, because not all implementations of the
+utility is recommended, because the
 <a href="http://pubs.opengroup.org/onlinepubs/9699919799/utilities/ln.html">ln</a>
-standard actually perform an atomic replacement. (For instance, <tt>ln -sf</tt>
-from GNU coreutils first removes the old link, then creates the new one:
-this is not atomic and may break your system if you're unlucky and get a
-power failure at the wrong time.) s6-ln is guaranteed to do the right thing.
-Alternatively, you could run something like <tt>ln -sf compiled-$stamp
-/etc/s6-rc/compiled.new ; mv -f /etc/s6-rc/compiled.new
-/etc/s6-rc/compiled</tt>, but that's more complex and may also fail with
-bad <tt>mv</tt> implementations. </li>
+standard actually <em>forbids</em> an atomic replacement, so utilities that
+follow it to the letter, for instance, <tt>ln</tt> from GNU coreutils, cannot
+be atomic: they first remove the old link, then create the new one. If you
+do not have
+<a href="http://skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>,
+you need to perform an unintuitive workaround to get POSIX-compliant tools to
+do the right thing:
+ <tt>ln -sf compiled-$stamp /etc/s6-rc/compiled/compiled &amp;&amp;
+mv -f /etc/s6-rc/compiled/compiled /etc/s6-rc</tt> </li>
  <li> Your current compiled database, stored in
 <tt>/etc/s6-rc/compiled-$stamp</tt>, is now accessible via the
 <tt>/etc/s6-rc/compiled</tt> symlink and will be used at boot time. You do
