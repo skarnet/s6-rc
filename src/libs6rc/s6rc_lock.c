@@ -28,6 +28,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     memcpy(lfn + llen, "/lock", 6) ;
     lfd = open_create(lfn) ;
     if (lfd < 0) return 0 ;
+    if (coe(lfd) < 0) { e = errno ; goto lerr ; }
     if ((lwhat > 1 ? lockex(lfd, blocking) : locksh(lfd, blocking)) < 0) { e = errno ; goto lerr ; }
   }
 
@@ -41,7 +42,11 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     if (cfd < 0)
       if (cwhat > 1 || errno != EROFS) { e = errno ; goto lerr ; }
       else cfd = -errno ;
-    else if ((cwhat > 1 ? lockex(cfd, blocking) : locksh(cfd, blocking)) < 0) { e = errno ; goto cerr ; }
+    else
+    {
+      if (coe(cfd) < 0) { e = errno ; goto cerr ; }
+      if ((cwhat > 1 ? lockex(cfd, blocking) : locksh(cfd, blocking)) < 0) { e = errno ; goto cerr ; }
+    }
   }
 
   if (lwhat) *llfd = lfd ;

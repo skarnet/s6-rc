@@ -3,6 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <skalibs/types.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
@@ -86,7 +87,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       r = s6rc_db_read(fdcompiled, &db) ;
       if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/db") ;
       if (!r) strerr_dief3x(4, "invalid service database in ", compiled, "/db") ;
-
+      close(fdcompiled) ;
 
      /* Run the script */
 
