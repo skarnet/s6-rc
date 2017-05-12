@@ -59,7 +59,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
    /* Read the sizes of the compiled db */
 
-    fdcompiled = open_readb(compiled) ;
     if (!s6rc_db_read_sizes(fdcompiled, &db))
       strerr_diefu3sys(111, "read ", compiled, "/n") ;
 
