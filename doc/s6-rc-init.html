@@ -32,8 +32,8 @@ invocation of the
 </pre>
 
 <ul>
- <li> <em>compiled</em>, <em>live</em> and <em>scandir</em> must be
-absolute paths. </li>
+ <li> <em>compiled</em> (if the <tt>-d</tt> option hasn't been given),
+<em>live</em> and <em>scandir</em> must be absolute paths. </li>
  <li> s6-rc-init expects to find a <em>compiled service database</em>
 in <em>compiled</em>. It expects to be able to create a directory
 named <em>live</em>. It also expects that an instance of
@@ -79,6 +79,15 @@ being used by another program, s6-rc-init will wait until that
 other program has released its lock on the database, then proceed.
 By default, s6-rc-init fails with an error message if the database
 is currently in use. </li>
+ <li><tt>-d</tt>&nbsp;: dereference <em>compiled</em>. Fully resolve
+the <em>compiled</em> path before declaring it as the current
+compiled service database for the upcoming live state. This allows
+<em>compiled</em> to be a symlink that can be updated later without
+impacting the current live state. Using this flag in your init scripts'
+<tt>s6-rc-init</tt> invocation means that it's possible to boot on a
+compiled service database whose validity has not previously been
+guaranteed by a successful <a href="s6-rc-update.html">s6-rc-update</a>
+invocation: you should know what you are doing. </li>
 </ul>
 
 <h2> Typical usage </h2>

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <skalibs/types.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
@@ -14,7 +15,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] [ -b ] scandir"
+#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -t timeout ] [ -b ] [ -d ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
@@ -37,14 +38,14 @@ int main (int argc, char const *const *argv)
   size_t dirlen ;
   char const *live = S6RC_LIVE_BASE ;
   char const *compiled = S6RC_COMPILED_BASE ;
-  int blocking = 0 ;
+  int blocking = 0, deref = 0 ;
   PROG = "s6-rc-init" ;
   {
     unsigned int t = 0 ;
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "c:l:t:b", &l) ;
+      int opt = subgetopt_r(argc, argv, "c:l:t:bd", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
@@ -52,6 +53,7 @@ int main (int argc, char const *const *argv)
         case 'l' : live = l.arg ; break ;
         case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
         case 'b' : blocking = 1 ; break ;
+        case 'd' : deref = 1 ; break ;
         default : dieusage() ;
       }
     }
@@ -61,7 +63,7 @@ int main (int argc, char const *const *argv)
   }
   if (!argc) dieusage() ;
 
-  if (compiled[0] != '/')
+  if (!deref && compiled[0] != '/')
     strerr_dief2x(100, compiled, " is not an absolute path") ;
   if (live[0] != '/')
     strerr_dief2x(100, live, " is not an absolute path") ;
@@ -111,6 +113,12 @@ int main (int argc, char const *const *argv)
 
    /* compiled */
 
+    if (deref)
+    {
+      char *x = realpath(compiled, 0) ;
+      if (!x) strerr_diefu2sys(111, "realpath ", compiled) ;
+      compiled = x ;
+    }
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)
     {
