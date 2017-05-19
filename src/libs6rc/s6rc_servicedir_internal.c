@@ -16,6 +16,7 @@ static s6rc_servicedir_desc_t const svdir_file_list[] =
   { .name = "run.user", .type = FILETYPE_NORMAL, .options = SVFILE_EXECUTABLE },
   { .name = "nosetsid", .type = FILETYPE_EMPTY, .options = 0 },
   { .name = "notification-fd", .type = FILETYPE_UINT, .options = 0 },
+  { .name = "timeout-kill", .type = FILETYPE_UINT, .options = 0 },
   { .name = "timeout-finish", .type = FILETYPE_UINT, .options = 0 },
   { .name = "data", .type = FILETYPE_DIR, .options = 0 },
   { .name = "env", .type = FILETYPE_DIR, .options = 0 },

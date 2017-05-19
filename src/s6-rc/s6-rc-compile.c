@@ -1247,6 +1247,10 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       }
     }
 
+    memcpy(srcfn + srcdirlen + len + 2, "timeout-kill", 13) ;
+    memcpy(dstfn + clen + 14 + len, "timeout-kill", 13) ;
+    filecopy_unsafe(srcfn, dstfn, 0644) ;
+
     memcpy(srcfn + srcdirlen + len + 2, "timeout-finish", 15) ;
     memcpy(dstfn + clen + 14 + len, "timeout-finish", 15) ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;

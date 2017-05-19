@@ -4,6 +4,7 @@ In 0.2.0.1
 ----------
 
  - Bugfix release.
+ - Support for timeout-kill (in s6-2.5.1.0) included.
 
 
 In 0.2.0.0
