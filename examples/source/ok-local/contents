@@ -1,4 +1,4 @@
-devd
+mdevd-pipeline
 syslogd
 klogd
 fdholder

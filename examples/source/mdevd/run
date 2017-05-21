@@ -1,5 +1,5 @@
 #!/command/execlineb -P
 fdmove -c 2 1
 exec -c
-s6-devd
-mdev
+s6-uevent-spawner
+/bin/mdev
