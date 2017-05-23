@@ -6,14 +6,14 @@
     <title>s6-rc: the s6-rc program</title>
     <meta name="Description" content="s6-rc: the s6-rc program" />
     <meta name="Keywords" content="s6-rc command rc init dependency state management services" />
-    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
 
 <p>
 <a href="index.html">s6-rc</a><br />
-<a href="http://skarnet.org/software/">Software</a><br />
-<a href="http://skarnet.org/">skarnet.org</a>
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
 </p>
 
 <h1> The s6-rc program </h1>
@@ -234,14 +234,14 @@ is considered down by s6-rc will have a <tt>./down</tt> file in its live service
 directory; a service that is considered up by s6-rc will not.) The
 transition is considered successful as soon as the daemon dies (for
 down transitions), or becomes up and
-<a href="http://skarnet.org/software/s6/notifywhenup.html">ready</a>
+<a href="//skarnet.org/software/s6/notifywhenup.html">ready</a>
 (for up transitions). If a longrun service does not support
 readiness notification, the
-<a href="http://skarnet.org/software/s6/s6-svc.html">s6-svc</a>
+<a href="//skarnet.org/software/s6/s6-svc.html">s6-svc</a>
 command that is invoked by s6-rc will print a warning message, and
 the transition will be considered successful as soon as the daemon
 is up, i.e. as soon as the <tt>./run</tt> script is executed by
-<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>.
+<a href="//skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>.
 </p>
 
 <p>

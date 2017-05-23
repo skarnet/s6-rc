@@ -6,14 +6,14 @@
     <title>s6-rc: the s6-rc-compile program</title>
     <meta name="Description" content="s6-rc: the s6-rc-compile program" />
     <meta name="Keywords" content="s6-rc offline database compilation command rc init dependency state management services" />
-    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
 
 <p>
 <a href="index.html">s6-rc</a><br />
-<a href="http://skarnet.org/software/">Software</a><br />
-<a href="http://skarnet.org/">skarnet.org</a>
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
 </p>
 
 <h1> The s6-rc-compile program </h1>
@@ -73,7 +73,7 @@ use this database with <a href="s6-rc.html">s6-rc</a> to start and
 stop services. <em>gids</em> must be a comma-separated list of
 numerical GIDs. </li>
  <li> <tt>-h&nbsp;<em>fdhuser</em></tt>&nbsp;: arrange for the
-<a href="http://skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
+<a href="//skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
 program, which maintains the pipes for the longrun pipelines, to run
 as user <em>fdhuser</em>. By default, it runs as the user owning
 the supervision tree, i.e. most likely <tt>root</tt>. </li>
@@ -201,7 +201,7 @@ complain and exit 1.
 <ul>
  <li> Two regular files named <tt>up</tt> and <tt>down</tt>, which
 must each contain a single Unix command line. The files will be interpreted by the
-<a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>
+<a href="//skarnet.org/software/execline/execlineb.html">execlineb</a>
 lexer at compile time and the results will be stored into the
 compiled database in an internal form. <tt>up</tt> will be run when
 the service is started, and <tt>down</tt> will be executed when the service
@@ -215,10 +215,10 @@ does nothing and always succeeds. </li>
 
 <p>
  <tt>up</tt> and <tt>down</tt> are interpreted by
-<a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>, but
+<a href="//skarnet.org/software/execline/execlineb.html">execlineb</a>, but
 that does not mean they have to be entirely written in the 
-<a href="http://skarnet.org/software/execline/">execline</a> language. The
-<a href="http://skarnet.org/software/execline/execlineb.html">execlineb</a>
+<a href="//skarnet.org/software/execline/">execline</a> language. The
+<a href="//skarnet.org/software/execline/execlineb.html">execlineb</a>
 lexer is only used because it can compile a Unix command line from a text file
 and store the compiled result, whereas a shell would have to be invoked
 everytime the script is run. There are many ways to write <tt>up</tt> and
@@ -248,7 +248,7 @@ You don't.
 
 <p>
  The s6-rc service definition directory for a longrun service is similar to
-a <a href="http://skarnet.org/software/s6/servicedir.html">s6 service
+a <a href="//skarnet.org/software/s6/servicedir.html">s6 service
 directory</a>, but there are a few differences:
 </p>
 
@@ -277,9 +277,9 @@ about pipelines. </li>
 named <tt>finish</tt>, <tt>notification-fd</tt>, <tt>timeout-kill</tt>,
 <tt>timeout-finish</tt> and <tt>nosetsid</tt>. These
 files will be copied, or recreated, in the generated
-<a href="http://skarnet.org/software/s6/servicedir.html">service directory</a>:
+<a href="//skarnet.org/software/s6/servicedir.html">service directory</a>:
 they are meant to be used by the
-<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+<a href="//skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
 process that will manage the longrun service. </li>
  <li> Optional directories named <tt>data</tt> and <tt>env</tt>. These will
 be copied verbatim into the generated service directory. </li>
@@ -311,7 +311,7 @@ use relative paths, not absolute ones.
 
 <p>
  Note that you cannot create a <tt>./down</tt> file for
-<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+<a href="//skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
 in a generated service
 directory. Even if such a file exists in the definition directory, it will
 be ignored - it will not be replicated in the service directory.
@@ -369,7 +369,7 @@ detect and reject cycles as well as collisions.
 <p>
  The pipe linking a producer with a consumer is created and stored at
 run-time in a
-<a href="http://skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
+<a href="//skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
 instance managed by an automatically generated longrun service named
 <tt>s6rc-fdholder</tt>.
 </p>
@@ -381,7 +381,7 @@ instance managed by an automatically generated longrun service named
 of service definition directories, which is actually a working, valid set for a
 Linux system running
 <a href="http://busybox.net/">busybox</a> and the
-<a href="http://skarnet.org/software/">skarnet.org</a> packages; of course, only
+<a href="//skarnet.org/software/">skarnet.org</a> packages; of course, only
 the service definition set has been kept, and private information has been
 removed, so it won't work out-of-the-box without the proper specific files,
 notably configuration in <tt>/etc</tt> - but nevertheless, you can browse the

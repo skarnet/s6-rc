@@ -6,21 +6,21 @@
     <title>s6-rc: the s6-rc-fdholder-filler program</title>
     <meta name="Description" content="s6-rc: the s6-rc-fdholder-filler program" />
     <meta name="Keywords" content="s6-rc dry run s6-rc-fdholder-filler internal s6-rc fdholder s6rc-fdholder pipe" />
-    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
 
 <p>
 <a href="index.html">s6-rc</a><br />
-<a href="http://skarnet.org/software/">Software</a><br />
-<a href="http://skarnet.org/">skarnet.org</a>
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
 </p>
 
 <h1> The s6-rc-fdholder-filler internal program </h1>
 
 <p>
  s6-rc-fdholder-filler creates anonymous pipes and stores them into a
-<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+<a href="//skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
 "fd-holding" daemon.
 </p>
 
@@ -40,14 +40,14 @@ in internal scripts created by
 <ul>
  <li> s6-rc-fdholder-filler expects file descriptor 6 to be open and
 connected to the
-<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+<a href="//skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
 daemon instance managed by s6-rc as the internal <em>s6rc-fdholder</em> service. </li>
  <li> It reads a list of longrun names from its stdin, one per line.
 Empty lines are ignored; comments starting with <tt>#</tt> are ignored;
 leading whitespace is ignored, but trailing whitespace is not. </li>
  <li> For every name <em>longrun</em> that it finds, it
 creates an anonymous pipe, and stores both ends of that pipe into the
-<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+<a href="//skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
 instance, with the <tt>pipe:s6-rc-r-<em>longrun</em></tt> (for the reading
 end) and <tt>pipe:s6-rc-w-<em>longrun</em></tt> (for the writing end)
 identifiers, and an infinite timeout. </li>
@@ -79,7 +79,7 @@ default, <em>timeout</em> is 0, meaning infinite. </li>
 should only be used to understand s6-rc internals. </li>
  <li> s6-rc-fdholder-filler is used in the <tt>s6rc-fdholder</tt> internal
 service's run script, right after the
-<a href="http://skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
+<a href="//skarnet.org/software/s6/s6-fdholderd.html">s6-fdholderd</a>
 daemon is started; its arguments are the names of all the consumer longrun
 services declared in the service database. </li>
  <li> The point is to create all the pipes for the longrun pipelines in

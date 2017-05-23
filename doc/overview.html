@@ -6,14 +6,14 @@
     <title>s6-rc: an overview</title>
     <meta name="Description" content="s6-rc: an overview" />
     <meta name="Keywords" content="s6-rc overview" />
-    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
 
 <p>
 <a href="index.html">s6-rc</a><br />
-<a href="http://skarnet.org/software/">Software</a><br />
-<a href="http://skarnet.org/">skarnet.org</a>
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
 </p>
 
 <h1> An overview of s6-rc </h1>
@@ -59,11 +59,11 @@ around while the filesystem is mounted.
 <ul>
  <li> A <em>longrun</em> is the exact equivalent of a <em>service</em>
 in the supervision sense. It is defined by a
-<a href="http://skarnet.org/software/s6/servicedir.html">service
+<a href="//skarnet.org/software/s6/servicedir.html">service
 directory</a>, with a run script and optional other data. The
 service is considered <em>up</em> as long as the long-lived
 process is alive and, for daemons that support it, has
-<a href="http://skarnet.org/software/s6/notifywhenup.html">notified
+<a href="//skarnet.org/software/s6/notifywhenup.html">notified
 its readiness</a>. It is considered <em>down</em> otherwise. </li>
  <li> A <em>oneshot</em>, on the other hand, is totally unknown
 from supervision suites, because there is no daemon to manage.
@@ -143,15 +143,15 @@ them in a human-friendly format. </li>
 
 <ul>
  <li> First, the chosen init should make sure that a
-<a href="http://skarnet.org/software/s6/">s6</a>
+<a href="//skarnet.org/software/s6/">s6</a>
 supervision tree is up and running. s6-rc will only work
 if there is an active
-<a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
+<a href="//skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
 process monitoring a
-<a href="http://skarnet.org/software/s6/scandir.html">scan
+<a href="//skarnet.org/software/s6/scandir.html">scan
 directory</a>. On Linux, for instance, it is possible to achieve such a state
 by using an init created by the
-<a href="http://skarnet.org/software/s6-linux-init/s6-linux-init-maker.html">s6-linux-init-maker</a>
+<a href="//skarnet.org/software/s6-linux-init/s6-linux-init-maker.html">s6-linux-init-maker</a>
 tool: when control reaches stage 2, s6-svscan is guaranteed to run,
 so using s6-rc in the stage 2 script is the way to go. </li>
  <li> The boot process, let's name it <em>stage2</em>, should then call the
@@ -194,7 +194,7 @@ managed by s6-rc should be brought down in the proper order (via the
 <tt>s6-rc -da change</tt> command). Once all those services have been
 brought down successfully, the final shutdown procedure can take place;
 for instance, if s6-svscan is running as process 1 with the
-<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>
+<a href="//skarnet.org/software/s6-linux-init/">s6-linux-init</a>
 defaults, <tt>s6-svscanctl -6 /run/service</tt> will kill the
 supervision tree and call <tt>/etc/rc.shutdown reboot</tt>, which should
 reboot the machine.

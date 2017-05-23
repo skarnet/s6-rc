@@ -6,14 +6,14 @@
     <title>s6-rc: why?</title>
     <meta name="Description" content="s6-rc: why?" />
     <meta name="Keywords" content="s6-rc why reason rationale" />
-    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
 
 <p>
 <a href="index.html">s6-rc</a><br />
-<a href="http://skarnet.org/software/">Software</a><br />
-<a href="http://skarnet.org/">skarnet.org</a>
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
 </p>
 
 <h1> Why s6-rc&nbsp;? </h1>
@@ -22,7 +22,7 @@
 
 <p>
  Supervision suites such as
-<a href="http://skarnet.org/software/s6/">s6</a>,
+<a href="//skarnet.org/software/s6/">s6</a>,
 <a href="http://smarden.org/runit/">runit</a>,
 <a href="http://b0llix.net/perp/">perp</a> or
 <a href="http://cr.yp.to/daemontools.html">daemontools</a>
@@ -32,7 +32,7 @@ way in a controlled environment and keep it alive if it dies;
 they also provide daemon management tools to, among others,
 send signals to the daemon without knowing its PID. They can
 control individual long-lived processes perfectly well, and
-<a href="http://skarnet.org/software/s6/">s6</a> also provides
+<a href="//skarnet.org/software/s6/">s6</a> also provides
 tools to manage a whole supervision tree. To any system administrator
 concerned about reliability, supervision suites are a good thing.
 </p>
@@ -132,7 +132,7 @@ oneshots or longruns, one by one, even when the dependency graph says
 that some services could be started in parallel. Also, the daemons
 they start are always unsupervised, even when the underlying init
 system provides supervision features. There usually is no
-<a href="http://skarnet.org/software/s6/notifywhenup.html">readiness
+<a href="//skarnet.org/software/s6/notifywhenup.html">readiness
 notification</a> support on daemons either, daemons are fire-and-forget
 (but that's more on the
 scripts themselves than on the frameworks). Another common criticism
@@ -195,7 +195,7 @@ guys. </li>
  <li> <a href="http://www.freedesktop.org/wiki/Software/systemd/">systemd</a>,
 the main protagonist (or antagonist) in the "init wars". It has the same
 problems as launchd, up by an order of magnitude;
-<a href="http://skarnet.org/software/s6/systemd.html">here is why</a>.
+<a href="//skarnet.org/software/s6/systemd.html">here is why</a>.
 systemd avowedly aims to replace the whole low-level user-space of
 Linux systems, but its design is horrendous. It doesn't even
 <a href="http://ewontfix.com/15/">get readiness notification right</a>. </li>
@@ -246,16 +246,16 @@ readiness notification support, reproducible script execution, and
 <tt>sysv-rc</tt> or OpenRC. It is <em>not</em> an init system.
 <strong>You can run s6-rc with any init system of your choosing.</strong>
 Of course, s6-rc requires a
-<a href="http://skarnet.org/software/s6/">s6</a> supervision tree to be running on
+<a href="//skarnet.org/software/s6/">s6</a> supervision tree to be running on
 the system, since it delegates the management of longrun services
 to that supervision tree, but it does not require that s6 be the
 init system itself. s6-rc will work
-<a href="http://skarnet.org/software/s6/s6-svscan-1.html">when s6-svscan
+<a href="//skarnet.org/software/s6/s6-svscan-1.html">when s6-svscan
 runs as process 1</a> (on Linux, such a setup can be easily achieved
 via the help of the
-<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>
+<a href="//skarnet.org/software/s6-linux-init/">s6-linux-init</a>
 package), and it will also work
-<a href="http://skarnet.org/software/s6/s6-svscan-not-1.html">when
+<a href="//skarnet.org/software/s6/s6-svscan-not-1.html">when
 s6-svscan runs under another init process</a>. </li>
  <li> The service manager runs <em>on top of</em> a supervision
 suite. It does not try to make it perform boot/shutdown operations or
@@ -277,7 +277,7 @@ simple, in order to allow external tools to automatically write
 service definitions for s6-rc - for instance for conversions between
 service manager formats. </li>
  <li> Like every
-<a href="http://skarnet.org/software/">skarnet.org tool</a>, s6-rc
+<a href="//skarnet.org/software/">skarnet.org tool</a>, s6-rc
 is made of very little code, that does its job and nothing else.
 The binaries are small, it is very light in memory usage, and the
 code paths are extremely short. </li>

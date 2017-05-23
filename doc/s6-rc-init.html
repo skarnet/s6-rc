@@ -6,14 +6,14 @@
     <title>s6-rc: the s6-rc-init program</title>
     <meta name="Description" content="s6-rc: the s6-rc-init program" />
     <meta name="Keywords" content="s6-rc command s6-rc-init rc init dependency state management services" />
-    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
 
 <p>
 <a href="index.html">s6-rc</a><br />
-<a href="http://skarnet.org/software/">Software</a><br />
-<a href="http://skarnet.org/">skarnet.org</a>
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
 </p>
 
 <h1> The s6-rc-init program </h1>
@@ -37,7 +37,7 @@ invocation of the
  <li> s6-rc-init expects to find a <em>compiled service database</em>
 in <em>compiled</em>. It expects to be able to create a directory
 named <em>live</em>. It also expects that an instance of
-<a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
+<a href="//skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
 is running on <em>scandir</em>. </li>
  <li> s6-rc-init initializes the live state in <em>live</em>. It
 declares <em>compiled</em> as the current service database and
@@ -46,9 +46,9 @@ sets the state as "all services down". </li>
 the service directories declared by <em>compiled</em> into a
 subdirectory of <em>live</em>, adds <tt>./down</tt> files to the live copies
 and links those live copies into <em>scandir</em>. It then triggers
-<a href="http://skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>,
+<a href="//skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>,
 which will pick up the new service directories and start
-<a href="http://skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
+<a href="//skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
 processes on them - but the service themselves will not be started
 right away, because of the <tt>./down</tt> files. </li>
  <li> s6-rc-init waits for all s6-supervise processes to be
@@ -104,7 +104,7 @@ invocation of the <a href="s6-rc.html">s6-rc change</a> command.)
 
 <p>
  For instance, when using an init created by
-<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>,
+<a href="//skarnet.org/software/s6-linux-init/">s6-linux-init</a>,
 <tt>s6-rc-init</tt> should be the first command in the
 <em>stage2</em> (by default <tt>/etc/rc.init</tt>) script.
 </p>

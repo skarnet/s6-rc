@@ -6,14 +6,14 @@
     <title>s6-rc: FAQ</title>
     <meta name="Description" content="s6-rc: FAQ" />
     <meta name="Keywords" content="s6-rc faq frequently asked questions" />
-    <!-- <link rel="stylesheet" type="text/css" href="http://skarnet.org/default.css" /> -->
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
 
 <p>
 <a href="index.html">s6-rc</a><br />
-<a href="http://skarnet.org/software/">Software</a><br />
-<a href="http://skarnet.org/">skarnet.org</a>
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
 </p>
 
 <h1> s6-rc: Frequently Asked Questions </h1>
@@ -93,7 +93,7 @@ file.
 Using the filesystem as a key-value store is
 a good technique to avoid parsing, and skarnet.org packages do it
 everywhere: for instance,
-<a href="http://skarnet.org/software/s6/s6-envdir.html">s6-envdir</a>
+<a href="//skarnet.org/software/s6/s6-envdir.html">s6-envdir</a>
 uses the file name as a key and the file contents as a value.
 The s6-rc-compile source format is just another instance of this
 technique.
@@ -196,7 +196,7 @@ time you compile a service database, you could run:
  <li> When you compile a new service database, always compile it to a
 unique name, preferrably in the same directory as your current compiled
 database. You can for instance use a TAI64N timestamp, obtained by
-<a href="http://skarnet.org/software/s6-portable-utils/s6-clock.html">s6-clock</a>,
+<a href="//skarnet.org/software/s6-portable-utils/s6-clock.html">s6-clock</a>,
 to create such a name:
 <pre>
  stamp=`s6-clock`
@@ -218,14 +218,14 @@ new database will be used on the next boot, atomically update the link:
  s6-ln -nsf compiled-$stamp /etc/s6-rc/compiled
 </pre>
  The use of the
-<a href="http://skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>
+<a href="//skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>
 utility is recommended, because the
 <a href="http://pubs.opengroup.org/onlinepubs/9699919799/utilities/ln.html">ln</a>
 standard actually <em>forbids</em> an atomic replacement, so utilities that
 follow it to the letter, for instance, <tt>ln</tt> from GNU coreutils, cannot
 be atomic: they first remove the old link, then create the new one. If you
 do not have
-<a href="http://skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>,
+<a href="//skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>,
 you need to perform an unintuitive workaround to get POSIX-compliant tools to
 do the right thing:
  <tt>ln -sf compiled-$stamp /etc/s6-rc/compiled/compiled &amp;&amp;
@@ -284,7 +284,7 @@ using OpenRC </li>
  You can now run compile your s6-rc service database, and use the
 <a href="s6-rc.html">s6-rc</a> engine as your service manager.
 Transitions will use your original init scripts, and the supervision
-features of <a href="http://skarnet.org/software/s6/">s6</a> will
+features of <a href="//skarnet.org/software/s6/">s6</a> will
 not be used, but you will get proper dependency tracking and
 easy state changes.
 </p>
@@ -321,7 +321,7 @@ bundle that contains nothing at all!
 <p>
  In your boot script (<tt>/etc/rc.init</tt>, for instance, if
 you're using
-<a href="http://skarnet.org/software/s6-linux-init/">s6-linux-init</a>),
+<a href="//skarnet.org/software/s6-linux-init/">s6-linux-init</a>),
 after invoking
 <a href="s6-rc-init.html">s6-rc-init</a>, just ask
 <a href="s6-rc.html">s6-rc</a> to start the set of services you want up
@@ -416,7 +416,7 @@ addressed by <em>Unix distributions</em>.
 </p>
 
 <p>
- Like the rest of <a href="http://skarnet.org/software/">skarnet.org
+ Like the rest of <a href="//skarnet.org/software/">skarnet.org
 software</a>, s6-rc aims to provide <em>mechanism, not policy</em>:
 it is OS-agnostic and distribution-agnostic. Providing boot scripts,
 or anything of this kind, would go against this principle; it is
