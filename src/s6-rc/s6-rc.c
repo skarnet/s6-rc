@@ -107,7 +107,7 @@ static pid_t start_oneshot (unsigned int i, int h)
   newargv[m++] = S6_EXTBINPREFIX "s6-sudo" ;
   newargv[m++] = verbosity >= 3 ? "-vel0" : "-el0" ;
   newargv[m++] = "-t" ;
-  newargv[m++] = "2000" ;
+  newargv[m++] = "30000" ;
   newargv[m++] = "-T" ;
   newargv[m++] = tfmt ;
   newargv[m++] = "--" ;

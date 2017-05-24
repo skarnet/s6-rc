@@ -945,7 +945,7 @@ static inline void write_oneshot_runner (char const *compiled, uid_t const *uids
     S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n"
     S6_EXTBINPREFIX "s6-ipcserverd -1 --\n"
     S6_EXTBINPREFIX "s6-ipcserver-access -v0 -E -l0 -i data/rules --\n"
-    S6_EXTBINPREFIX "s6-sudod -t 2000 --\n"
+    S6_EXTBINPREFIX "s6-sudod -t 30000 --\n"
     S6RC_EXTLIBEXECPREFIX "s6-rc-oneshot-run -l ../.. ")
    || (blocking && !stralloc_cats(&satmp, "-b "))
    || !stralloc_cats(&satmp, "--\n")) dienomem() ;
