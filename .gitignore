@@ -2,3 +2,5 @@
 *.a.xyzzy
 *.lo
 *.so.xyzzy
+config.mak
+src/include/s6-rc/config.h

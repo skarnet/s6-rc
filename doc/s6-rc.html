@@ -253,6 +253,31 @@ to arrive. The transition will fail if a timeout occurs.
 </p>
 
 <p>
+ If a <em>down</em> transition fails, s6-rc does nothing with it. The service
+has already received a SIGTERM, and may be stuck in the process of exiting;
+or it may already have died but is stuck in a bad <tt>finish</tt> script
+that is not timing out. In any case, it is not a situation that s6-rc
+can recover from; the service is most likely down, but the administrator
+should manually check their process list. And fix their scripts, or
+timeout values, because a <em>down</em> transition failure is always a
+programmer or sysadmin error.
+</p>
+
+<p>
+ If an <em>up</em> transition fails, s6-rc sends an explicit
+<a href="//skarnet.org/software/s6/s6-svc.html">s6-svc -d</a> command to
+the longrun. This ensures the service is in a known <em>down</em> state
+when failing to go up, instead of (for instance) being stuck in a not-ready
+limbo state.
+</p>
+
+<p>
+ Note that proper usage of the <tt>timeout-kill</tt> and <tt>timeout-finish</tt>
+values in the longrun's definition directory can considerably reduce the
+number of cases where the service is left in an unknown state.
+</p>
+
+<p>
  Transitions are supposed to be idempotent, but it is a general
 rule of supervision that <tt>run</tt> and <tt>finish</tt> scripts
 must be idempotent, so a properly designed service directory
@@ -309,6 +334,21 @@ instead, and
 each simulated transition will take <em>dryrunthrottle</em>
 milliseconds to complete successfully.
 </p>
+
+<h2> Signals </h2>
+
+<p>
+ <tt>s6-rc change</tt> reacts to the following signals:
+</p>
+
+<ul>
+ <li> SIGTERM: s6-rc immediately aborts all its longrun transitions with
+a failure, and the impacted longruns will most likely be in a <em>down</em>
+state. Oneshot transitions are untouched, because killing the
+oneshot subprocess would make it impossible to determine what state the
+oneshot service is in. </li>
+ <li> SIGINT: same as SIGTERM. </li>
+</ul>
 
 <h2> Usage examples </h2>
 

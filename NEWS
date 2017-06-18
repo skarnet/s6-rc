@@ -1,5 +1,16 @@
 Changelog for s6-rc.
 
+In 0.2.1.0
+----------
+ - Timeouts for oneshots have been increased to 30 seconds.
+ - s6-rc now sends an explicit "s6-svc -d" to a longrun when an
+up transition fails.
+ - s6-rc now kills subprocesses waiting on longrun transitions
+when it receives a SIGINT or a SIGTERM.
+   + Those two changes combined ensure that a user can interrupt
+a transition that is blocked in a "service is not-ready" limbo, and
+bring back the service to a known "down" state.
+
 In 0.2.0.1
 ----------
 

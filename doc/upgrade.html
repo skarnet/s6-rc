@@ -18,6 +18,21 @@
 
 <h1> What has changed in s6-rc </h1>
 
+<h2> in 0.2.1.0 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.5.1.1. </li>
+ <li> <a href="//skarnet.org/software/execline/">execline</a>
+dependency bumped to 2.3.0.1. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a>
+dependency bumped to 2.6.0.0. </li>
+ <li> <a href="s6-rc.html">s6-rc change</a> now ensures that a
+longrun is down when its up transition fails. </li>
+ <li> <a href="s6-rc.html">s6-rc change</a> now kills subprocesses
+waiting on a longrun transition when it receives a SIGINT or a SIGTERM. </li>
+</ul>
+
 <h2> in 0.2.0.1 </h2>
 
 <ul>

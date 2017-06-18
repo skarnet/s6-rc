@@ -13,6 +13,7 @@
 #include <skalibs/strerr2.h>
 #include <skalibs/tai.h>
 #include <skalibs/environ.h>
+#include <skalibs/sig.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/selfpipe.h>
 #include <skalibs/iopause.h>
@@ -194,6 +195,22 @@ static void success_longrun (unsigned int i, int h)
   }
 }
 
+static void failure_longrun (unsigned int i, int h)
+{
+  if (h && !dryrun[0])
+  {
+    size_t svdlen = strlen(db->string + db->services[i].name) ;
+    char fn[livelen + svdlen + 10] ;
+    char const *newargv[5] = { S6_EXTBINPREFIX "s6-svc", "-d", "--", fn, 0 } ;
+    memcpy(fn, live, livelen) ;
+    memcpy(fn + livelen, "/scandir/", 9) ;
+    memcpy(fn + livelen + 9, db->string + db->services[i].name, svdlen) ;
+    fn[livelen + 9 + svdlen] = 0 ;
+    if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
+      strerr_warnwu2sys("spawn ", newargv[0]) ;
+  }
+}
+
 static void broadcast_success (unsigned int, int) ;
 
 static void examine (unsigned int i, int h)
@@ -253,6 +270,7 @@ static void on_success (unsigned int i, int h)
 
 static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
 {
+  if (i < db->nlong) failure_longrun(i, h) ;
   if (verbosity)
   {
     char fmt[UINT_FMT] ;
@@ -261,17 +279,24 @@ static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
   }
 }
 
+static inline void kill_longruns (void)
+{
+  unsigned int j = npids ;
+  while (j--) if (pidindex[j].i < db->nlong)
+    kill(pidindex[j].pid, SIGTERM) ;
+}
+
 static int handle_signals (int h)
 {
   int ok = 1 ;
   for (;;)
   {
-    switch (selfpipe_read())
+    int sig = selfpipe_read() ;
+    switch (sig)
     {
       case -1 : strerr_diefu1sys(111, "selfpipe_read()") ;
       case 0 : return ok ;
       case SIGCHLD :
-      {
         for (;;)
         {
           unsigned int j = 0 ;
@@ -296,7 +321,12 @@ static int handle_signals (int h)
           }
         }
         break ;
-      }
+      case SIGTERM :
+      case SIGINT :
+        if (verbosity >= 2)
+          strerr_warnw3x("received ", sig_name(sig), ", aborting longrun transitions") ;
+        kill_longruns() ;
+        break ;
       default : strerr_dief1x(101, "inconsistent signal state") ;
     }
   }
@@ -567,8 +597,15 @@ int main (int argc, char const *const *argv)
 
       spfd = selfpipe_init() ;
       if (spfd < 0) strerr_diefu1sys(111, "init selfpipe") ;
-      if (selfpipe_trap(SIGCHLD) < 0)
-          strerr_diefu1sys(111, "trap SIGCHLD") ;
+      {
+        sigset_t set ;
+        sigemptyset(&set) ;
+        sigaddset(&set, SIGCHLD) ;
+        sigaddset(&set, SIGTERM) ;
+        sigaddset(&set, SIGINT) ;
+        if (selfpipe_trapset(&set) < 0)
+          strerr_diefu1sys(111, "trap signals") ;
+      }
 
       if (prune)
       {
