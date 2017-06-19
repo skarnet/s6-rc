@@ -204,8 +204,7 @@ static void failure_longrun (unsigned int i, int h)
     char const *newargv[5] = { S6_EXTBINPREFIX "s6-svc", "-d", "--", fn, 0 } ;
     memcpy(fn, live, livelen) ;
     memcpy(fn + livelen, "/scandir/", 9) ;
-    memcpy(fn + livelen + 9, db->string + db->services[i].name, svdlen) ;
-    fn[livelen + 9 + svdlen] = 0 ;
+    memcpy(fn + livelen + 9, db->string + db->services[i].name, svdlen+1) ;
     if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
       strerr_warnwu2sys("spawn ", newargv[0]) ;
   }
@@ -279,6 +278,19 @@ static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
   }
 }
 
+/*
+static inline void kill_oneshots (void)
+{
+  char fn[livelen + S6RC_ONESHOT_RUNNER_LEN + 10] ;
+  char const *newargv[5] = { S6_EXTBINPREFIX "s6-svc", "-h", "--", fn, 0 } ;
+  memcpy(fn, live, livelen) ;
+  memcpy(fn + livelen, "/scandir/", 9) ;
+  memcpy(fn + livelen + 9, S6RC_ONESHOT_RUNNER, S6RC_ONESHOT_RUNNER_LEN+1) ;
+  if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
+    strerr_warnwu2sys("spawn ", newargv[0]) ;
+}
+*/
+
 static inline void kill_longruns (void)
 {
   unsigned int j = npids ;
@@ -325,6 +337,7 @@ static int handle_signals (int h)
       case SIGINT :
         if (verbosity >= 2)
           strerr_warnw3x("received ", sig_name(sig), ", aborting longrun transitions") ;
+        /* kill_oneshots() ; */
         kill_longruns() ;
         break ;
       default : strerr_dief1x(101, "inconsistent signal state") ;
