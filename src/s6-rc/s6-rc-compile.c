@@ -234,7 +234,8 @@ static unsigned int add_internal_longrun (before_t *be, char const *name)
       .timeout = { 0, 0 }
     },
     .srcdir = 0,
-    .pipeline = { 0, 0 }
+    .pipeline = { 0, 0 },
+    .pipelinename = 0
   } ;
   add_name_nocheck(be, S6RC_INTERNALS, name, SVTYPE_LONGRUN, &pos, &service.common.kname) ;
   if (!genalloc_append(longrun_t, &be->longruns, &service)) dienomem() ;
@@ -914,7 +915,7 @@ static inline void write_oneshot_runner (char const *compiled, uid_t const *uids
 {
   size_t base = satmp.len ;
   size_t i ;
-  char fn[34 + sizeof(S6RC_ONESHOT_RUNNER)] = "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/gid/" ;
+  char fn[35 + sizeof(S6RC_ONESHOT_RUNNER)] = "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/gid/" ;
   make_skel(compiled, S6RC_ONESHOT_RUNNER, uids, uidn, gids, gidn, 3) ;
   if (gidn)
   {
