@@ -106,7 +106,7 @@ static pid_t start_oneshot (unsigned int i, int h)
     newargv[m++] = "--" ;
   }
   newargv[m++] = S6_EXTBINPREFIX "s6-sudo" ;
-  newargv[m++] = verbosity >= 3 ? "-vel0" : "-el0" ;
+  newargv[m++] = verbosity >= 4 ? "-vel0" : "-el0" ;
   newargv[m++] = "-t" ;
   newargv[m++] = "30000" ;
   newargv[m++] = "-T" ;
@@ -220,7 +220,7 @@ static void examine (unsigned int i, int h)
     state[i] |= 4 ;
     if ((state[i] & 1) == h)
     {
-      if (verbosity >= 2)
+      if (verbosity >= 3)
         strerr_warni4x("processing service ", name, ": already ", h ? "up" : "down") ;
       broadcast_success(i, h) ;
     }
