@@ -69,6 +69,8 @@ live compiled service database. </li>
  <li> 10: timed out, and the database was not switched </li>
  <li> 100: wrong usage </li>
  <li> 111: system call failed </li>
+ <li> 126: cannot exec into s6-rc for the final "up" transition (error other than ENOENT) </li>
+ <li> 127: cannot exec into s6-rc for the final "up" transition (executable not found) </li>
 </ul>
 
 <h2> Options </h2>
