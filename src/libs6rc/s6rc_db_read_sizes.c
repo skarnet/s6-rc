@@ -2,7 +2,6 @@
 
 #include <sys/types.h>
 #include <stdint.h>
-#include <errno.h>
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
@@ -39,15 +38,7 @@ int s6rc_db_read_sizes (int fdcompiled, s6rc_db_t *db)
   {
     char c ;
     ssize_t r = buffer_get(&b, &c, 1) ;
-    if (r < 0)
-    {
-      r = errno ;
-      fd_close(fd) ;
-      errno = r ;
-      return 0 ;
-    }
     fd_close(fd) ;
-    if (r) return 0 ;
+    return !r ;
   }
-  return 1 ;
 }

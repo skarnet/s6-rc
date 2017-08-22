@@ -17,7 +17,6 @@ static inline int locksh (int fd, int blocking)
 
 int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int cwhat, int *ccfd, int blocking)
 {
-  int e = 0 ;
   int lfd = -1, cfd = -1 ;
 
   if (lwhat)
@@ -28,8 +27,8 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     memcpy(lfn + llen, "/lock", 6) ;
     lfd = open_create(lfn) ;
     if (lfd < 0) return 0 ;
-    if (coe(lfd) < 0) { e = errno ; goto lerr ; }
-    if ((lwhat > 1 ? lockex(lfd, blocking) : locksh(lfd, blocking)) < 0) { e = errno ; goto lerr ; }
+    if (coe(lfd) < 0) goto lerr ;
+    if ((lwhat > 1 ? lockex(lfd, blocking) : locksh(lfd, blocking)) < 0) goto lerr ;
   }
 
   if (cwhat)
@@ -40,12 +39,12 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     memcpy(cfn + clen, "/lock", 6) ;
     cfd = open_create(cfn) ;
     if (cfd < 0)
-      if (cwhat > 1 || errno != EROFS) { e = errno ; goto lerr ; }
+      if (cwhat > 1 || errno != EROFS) goto lerr ;
       else cfd = -errno ;
     else
     {
-      if (coe(cfd) < 0) { e = errno ; goto cerr ; }
-      if ((cwhat > 1 ? lockex(cfd, blocking) : locksh(cfd, blocking)) < 0) { e = errno ; goto cerr ; }
+      if (coe(cfd) < 0) goto cerr ;
+      if ((cwhat > 1 ? lockex(cfd, blocking) : locksh(cfd, blocking)) < 0) goto cerr ;
     }
   }
 
@@ -57,6 +56,5 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
   fd_close(cfd) ;
  lerr:
   if (lwhat) fd_close(lfd) ;
-  errno = e ;
   return 0 ;
 }

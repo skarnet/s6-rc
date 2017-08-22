@@ -24,6 +24,12 @@ POSIX.1-2008, available at:
  It will install the binaries in /bin and the static libraries in
 /usr/lib/s6-rc.
 
+ Please note that static libraries in /usr/lib/s6-rc *will not*
+be found by a default linker invocation: you need -L/usr/lib/s6-rc.
+Other skarnet.org software automatically handles that case if the
+default configuration is used, but if you change the configuration,
+remember to use the appropriate --with-lib configure option.
+
  You can strip the binaries and libraries of their extra symbols via
 "make strip" before the "make install" phase. It will shave a few bytes
 off them.

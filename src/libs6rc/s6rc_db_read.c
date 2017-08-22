@@ -2,7 +2,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <errno.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/buffer.h>
 #include <skalibs/env.h>
@@ -158,15 +157,13 @@ static inline int s6rc_db_read_buffer (buffer *b, s6rc_db_t *db)
 
 int s6rc_db_read (int fdcompiled, s6rc_db_t *db)
 {
-  int r, e ;
+  int r ;
   buffer b ;
   char buf[BUFFER_INSIZE] ;
   int fd = open_readatb(fdcompiled, "db") ;
   if (fd < 0) return -1 ;
   buffer_init(&b, &buffer_read, fd, buf, BUFFER_INSIZE) ;
   r = s6rc_db_read_buffer(&b, db) ;
-  e = errno ;
   fd_close(fd) ;
-  errno = e ;
   return r ;
 }
