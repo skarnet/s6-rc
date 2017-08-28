@@ -4,6 +4,8 @@ In 0.2.1.2
 ----------
 
  - Bugfix release.
+ - s6-rc's verbosity has been adjusted. (-v2 is less verbose, -v3 is
+what the previous -v2 was, -v4 is still extremely verbose.)
 
 
 In 0.2.1.1
