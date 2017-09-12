@@ -11,7 +11,7 @@ if
       pipeline { s6-dnsip4 -t 16000 0.fr.pool.ntp.org }
       s6-head -n 1
     }
-    import -u NTPSERVERIP
+    importas -u NTPSERVERIP NTPSERVERIP
     s6-sntpclock -v 2 $NTPSERVERIP
   }
   s6-clockadd -e 120000

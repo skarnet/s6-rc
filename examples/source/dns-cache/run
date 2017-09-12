@@ -2,7 +2,7 @@
 fdmove -c 2 1
 s6-envuidgid dnscache
 s6-envdir env
-import ETH0_IP4
+importas ETH0_IP4 ETH0_IP4
 export IP ${ETH0_IP4}
 s6-softlimit -m 4000000
 pipeline -d

@@ -1,8 +1,8 @@
 multisubstitute
 {
-  import -i ETH0_IP4
-  import -i ETH1_IP4
-  import -i ETH2_IP4
+  importas -i ETH0_IP4 ETH0_IP4
+  importas -i ETH1_IP4 ETH1_IP4
+  importas -i ETH2_IP4 ETH2_IP4
 }
 
 if { ifconfig lo 127.0.0.1 netmask 255.0.0.0 }

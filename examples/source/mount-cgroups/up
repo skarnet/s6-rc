@@ -5,6 +5,6 @@ pipeline { s6-tail -n +2 }
 pipeline { s6-cut -d"\t" -f1 }
 pipeline { s6-grep -vF -- devices }
 forstdin -d"\n" -- i
-import -u i
+importas -u i i
 if { s6-mkdir /sys/fs/cgroup/${i} }
 s6-mount -t cgroup -o ${i} -- cgroup /sys/fs/cgroup/${i}

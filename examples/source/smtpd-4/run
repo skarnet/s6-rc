@@ -1,7 +1,7 @@
 #!/command/execlineb -P
 fdmove -c 2 1
 s6-envuidgid qmaild
-import -ui ETH0_IP4
+importas -ui ETH0_IP4 ETH0_IP4
 fdmove 1 3
 s6-tcpserver4 -v 2 -U -c 255 -1 -- ${ETH0_IP4} 25
 s6-tcpserver-access -v 2 -w -t 2000 -i data/rules --

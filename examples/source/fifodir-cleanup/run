@@ -3,7 +3,7 @@ fdmove -c 2 1
 if
 {
   forbacktickx -ep -0 i { s6-ls -0 /service }
-  import -u i
+  importas -u i i
   foreground
   {
     if { s6-test -d /service/${i}/log }
