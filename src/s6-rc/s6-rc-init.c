@@ -20,15 +20,16 @@
 #define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
 static size_t llen ;
+static stralloc stmp = STRALLOC_ZERO ;
 
 static void cleanup (void)
 {
   int e = errno ;
-  satmp.s[llen] = 0 ;
-  unlink(satmp.s) ;
-  satmp.s[llen] = ':' ;
-  rm_rf_in_tmp(&satmp, 0) ;
-  stralloc_free(&satmp) ;
+  stmp.s[llen] = 0 ;
+  unlink(stmp.s) ;
+  stmp.s[llen] = ':' ;
+  rm_rf_in_tmp(&stmp, 0) ;
+  stralloc_free(&stmp) ;
   errno = e ;
 }
 
@@ -73,9 +74,9 @@ int main (int argc, char const *const *argv)
   tain_now_g() ;
   tain_add_g(&deadline, &tto) ;
 
-  if (!s6rc_sanitize_dir(&satmp, live, &dirlen)) dienomem() ;
-  llen = satmp.len ;
-  if (!stralloc_cats(&satmp, ":initial") || !stralloc_0(&satmp))
+  if (!s6rc_sanitize_dir(&stmp, live, &dirlen)) dienomem() ;
+  llen = stmp.len ;
+  if (!stralloc_cats(&stmp, ":initial") || !stralloc_0(&stmp))
     strerr_diefu1sys(111, "stralloc_catb") ;
 
   {
@@ -91,21 +92,21 @@ int main (int argc, char const *const *argv)
    /* Create the real dir, lock it, symlink */
 
     unlink(live) ;
-    rm_rf(satmp.s) ;
-    if (mkdir(satmp.s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", satmp.s) ;
-    if (!s6rc_lock(satmp.s, 2, &fdlock, 0, 0, 0, blocking))
+    rm_rf(stmp.s) ;
+    if (mkdir(stmp.s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", stmp.s) ;
+    if (!s6rc_lock(stmp.s, 2, &fdlock, 0, 0, 0, blocking))
     {
-      char tmp[satmp.len] ;
-      memcpy(tmp, satmp.s, satmp.len) ;
+      char tmp[stmp.len] ;
+      memcpy(tmp, stmp.s, stmp.len) ;
       cleanup() ;
       strerr_diefu2sys(111, "take lock on ", tmp) ;
     }
-    memcpy(lfn, satmp.s, llen) ;
+    memcpy(lfn, stmp.s, llen) ;
     lfn[llen] = 0 ;
-    if (symlink(satmp.s + dirlen, lfn) < 0)
+    if (symlink(stmp.s + dirlen, lfn) < 0)
     {
-      char tmp[satmp.len - dirlen] ;
-      memcpy(tmp, satmp.s + dirlen, satmp.len - dirlen) ;
+      char tmp[stmp.len - dirlen] ;
+      memcpy(tmp, stmp.s + dirlen, stmp.len - dirlen) ;
       cleanup() ;
       strerr_diefu4sys(111, "symlink ", tmp, " to ", lfn) ;
     }
