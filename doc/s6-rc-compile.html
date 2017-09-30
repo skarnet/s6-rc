@@ -374,6 +374,23 @@ instance managed by an automatically generated longrun service named
 <tt>s6rc-fdholder</tt>.
 </p>
 
+<h2> Compiled database usage </h2>
+
+<ul>
+ <li> Once it has been built with s6-rc-compile, a compiled database cannot be
+modified. It (i.e. the directory containing the <em>n</em>, <em>db</em> and
+<em>resolve.cdb</em> files as well as the <em>servicedirs</em< subdirectory)
+can be moved around in the filesystem, provided the insides remain
+untouched. </li>
+ <li> Once a compiled database is live (i.e. it has services running on it,
+following an invocation of <a href="s6-rc-init.html">s6-rc-init</a> or
+<a href="s6-rc-update.html">s6-rc-update</a>, it <em>must not move anymore</em>,
+and it must not be deleted. The only way to "free" such a compiled database
+for displacement or deletion is to replace it as the live one via another
+call to <a href="s6-rc-update.html">s6-rc-update</a>. </li>
+</ul>
+
+
 <h2> A complete example </h2>
 
 <p>

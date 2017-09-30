@@ -272,6 +272,11 @@ old compiled unless more work is performed. It is recommended to keep a
 <a href="s6-rc-init.html">s6-rc-init</a> on <tt>current</tt>, and to
 make <tt>current</tt> a link to the new compiled right after a s6-rc-update
 invocation. </li>
+ <li> s6-rc-update is the only way to "free" the old compiled database
+for displacement or deletion. A live compiled database must not be
+tampered with. After a s6-rc-update invocation, the old database isn't
+live anymore and can be moved or deleted; instead, <em>newdb</em> is
+live. </li>
 </ul>
 
 </body>

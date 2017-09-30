@@ -129,6 +129,10 @@ compiled service databases into some versioned directory, and that
 use. This will make it easier to create new compiled databases and
 switch them with <a href="s6-rc-update.html">s6-rc-update</a>
 without having to change the s6-rc-init invocation in boot scripts. </li>
+ <li> After s6-rc-init runs, <em>compiled</em> has become the
+"live compiled database", and must not be tampered with or deleted.
+The only way to free it for deletion is to replace it with another
+database, via a call to <a href="s6-rc-update.html">s6-rc-update</a>. </li>
 </ul>
 
 </body>
