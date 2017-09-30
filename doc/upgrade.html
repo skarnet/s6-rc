@@ -16,6 +16,18 @@
 <a href="//skarnet.org/">skarnet.org</a>
 </p>
 
+
+<h1> Upgrade notes for s6-rc </h1>
+
+<p>
+ As a general rule, if you change <em>major versions</em>,
+for instance if you upgrade from 0.1.0.0 to 0.2.1.2, you need
+to <em>recompile your service databases</em>, because the
+binary format is not guaranteed stable across major version
+changes. You can keep your compiled service databases across
+minor and bugfix version changes.
+</p>
+
 <h1> What has changed in s6-rc </h1>
 
 <h2> in 0.2.1.2 </h2>
