@@ -2,10 +2,12 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <skalibs/types.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
@@ -19,7 +21,6 @@
 #include <skalibs/skamisc.h>
 #include <skalibs/webipc.h>
 #include <skalibs/unix-transactional.h>
-#include <skalibs/random.h>
 #include <execline/execline.h>
 #include <s6/config.h>
 #include <s6/s6-supervise.h>
@@ -30,6 +31,7 @@
 #define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] [ -b ] newdb"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "build string") ;
+#define SUFFIX ":update:XXXXXX"
 
 static char const *live = S6RC_LIVE_BASE ;
 static size_t livelen = sizeof(S6RC_LIVE_BASE) - 1 ;
@@ -333,9 +335,10 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   if (sareadlink(&satmp, live) < 0) strerr_diefu2sys(111, "readlink ", live) ;
   if (!s6rc_sanitize_dir(sa, live, &dirlen)) dienomem() ;
   llen = sa->len ;
-  if (!random_sauniquename(sa, 8) || !stralloc_0(sa)) dienomem() ;
+  if (!stralloc_catb(sa, SUFFIX, sizeof(SUFFIX))) dienomem() ;
   newlen = --sa->len ;
-  if (mkdir(sa->s + sabase, 0755) < 0) strerr_diefu2sys(111, "mkdir ", sa->s + sabase) ;
+  if (!mkdtemp(sa->s + sabase)) strerr_diefu2sys(111, "mkdtemp ", sa->s + sabase) ;
+  if (chmod(sa->s + sabase, 0755) < 0) { e = errno ; goto err ; }
   {
     size_t tmplen = satmp.len ;
     char fn[llen - sabase + 9] ;
@@ -641,9 +644,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
   if (live[0] != '/')
     strerr_dief2x(100, live, " is not an absolute path") ;
   livelen = strlen(live) ;
-
-  if (!random_init())
-    strerr_diefu1sys(111, "init random generator") ;
 
   {
     int livelock, oldlock, newlock ;
