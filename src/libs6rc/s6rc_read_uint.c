@@ -5,6 +5,7 @@
 #include <skalibs/types.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
+#include <s6-rc/s6rc-utils.h>
 
 int s6rc_read_uint (char const *file, unsigned int *u)
 {

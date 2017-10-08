@@ -1,8 +1,12 @@
 Changelog for s6-rc.
 
-In 0.2.2.0
+In 0.3.0.0
 ----------
 
+ - s6-rc-init now takes a -s option that adds a suffix to the symbolic links
+created in the scandir to manage longruns. This allows the user to use the
+same scandir for several s6-rc databases and live directories without risking
+conflicts, if the suffixes are unique enough.
  - Bugfixes.
 
 

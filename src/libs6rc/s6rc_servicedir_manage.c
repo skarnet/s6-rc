@@ -13,23 +13,24 @@
 #include <s6/ftrigw.h>
 #include <s6-rc/s6rc-servicedir.h>
 
-static void rollback (char const *live, char const *s, size_t len)
+static inline void rollback (char const *live, char const *suffix, char const *s, size_t len)
 {
   while (len)
   {
     size_t n = strlen(s) + 1 ;
-    s6rc_servicedir_unsupervise(live, s, 0) ;
+    s6rc_servicedir_unsupervise(live, suffix, s, 0) ;
     s += n ; len -= n ;
   }
 }
 
-int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *stamp)
+int s6rc_servicedir_manage (char const *live, char const *suffix, tain_t const *deadline, tain_t *stamp)
 {
   ftrigr_t a = FTRIGR_ZERO ;
   stralloc newnames = STRALLOC_ZERO ;
   genalloc ids = GENALLOC_ZERO ; /* uint16_t */
   gid_t gid = getgid() ;
   size_t livelen = strlen(live) ;
+  size_t suffixlen = strlen(suffix) ;
   int ok = 1 ;
   int e = 0 ;
   DIR *dir ;
@@ -52,7 +53,7 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
       int r ;
       uint16_t id ;
       char srcfn[livelen + 20 + len] ;
-      char dstfn[livelen + 10 + len] ;
+      char dstfn[livelen + 10 + len + suffixlen] ;
       memcpy(srcfn, dirfn, livelen + 12) ;
       srcfn[livelen + 12] = '/' ;
       memcpy(srcfn + livelen + 13, d->d_name, len + 1) ;
@@ -75,7 +76,8 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
       else s6_svc_lock_release(fdlock) ;
       memcpy(dstfn, live, livelen) ;
       memcpy(dstfn + livelen, "/scandir/", 9) ;
-      memcpy(dstfn + livelen + 9, d->d_name, len + 1) ;
+      memcpy(dstfn + livelen + 9, d->d_name, len) ;
+      memcpy(dstfn + livelen + 9 + len, suffix, suffixlen + 1) ;
       if (symlink(srcfn, dstfn) < 0)
       {
         if (!r || errno != EEXIST) goto err ;
@@ -85,7 +87,7 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
         if (!stralloc_catb(&newnames, d->d_name, len + 1))
         {
           e = errno ;
-          s6rc_servicedir_unsupervise(live, d->d_name, 0) ;
+          s6rc_servicedir_unsupervise(live, suffix, d->d_name, 0) ;
           goto errn ;
         }
       }
@@ -125,7 +127,7 @@ int s6rc_servicedir_manage (char const *live, tain_t const *deadline, tain_t *st
  closederrn:
   ftrigr_end(&a) ;
   genalloc_free(uint16_t, &ids) ;
-  rollback(live, newnames.s, newnames.len) ;
+  rollback(live, suffix, newnames.s, newnames.len) ;
   stralloc_free(&newnames) ;
   errno = e ;  
   return 0 ;

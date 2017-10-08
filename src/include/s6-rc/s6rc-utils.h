@@ -12,4 +12,7 @@ extern int s6rc_lock (char const *, int, int *, char const *, int, int *, int) ;
 extern int s6rc_read_uint (char const *, unsigned int *) ;
 extern int s6rc_sanitize_dir (stralloc *, char const *, size_t *) ;
 
+extern int s6rc_livedir_suffixsize (char const *, size_t *) ;
+extern ssize_t s6rc_livedir_suffix (char const *, char *, size_t) ;
+
 #endif

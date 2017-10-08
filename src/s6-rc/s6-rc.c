@@ -42,6 +42,8 @@ static unsigned int n ;
 static unsigned char *state ;
 static unsigned int *pendingdeps ;
 static tain_t deadline ;
+static size_t suffixlen ;
+static char *suffix ;
 static char dryrun[UINT_FMT] = "" ;
 
 static inline void announce (void)
@@ -130,14 +132,15 @@ static pid_t start_longrun (unsigned int i, int h)
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
-  char servicefn[livelen + svdlen + 26] ;
+  char servicefn[livelen + svdlen + suffixlen + 26] ;
   char const *newargv[7 + !!dryrun[0] * 6] ;
   memcpy(servicefn, live, livelen) ;
   memcpy(servicefn + livelen, "/scandir/", 9) ;
   memcpy(servicefn + livelen + 9, db->string + db->services[i].name, svdlen) ;
+  memcpy(servicefn + livelen + 9 + svdlen, suffix, suffixlen) ;
   if (h)
   {
-    memcpy(servicefn + livelen + 9 + svdlen, "/notification-fd", 17) ;
+    memcpy(servicefn + livelen + 9 + svdlen + suffixlen, "/notification-fd", 17) ;
     if (access(servicefn, F_OK) < 0)
     {
       h = 2 ;
@@ -145,7 +148,7 @@ static pid_t start_longrun (unsigned int i, int h)
         strerr_warnwu2sys("access ", servicefn) ;
     }
   }
-  servicefn[livelen + 9 + svdlen] = 0 ;
+  servicefn[livelen + 9 + svdlen + suffixlen] = 0 ;
   fmt[uint32_fmt(fmt, compute_timeout(i, !!h))] = 0 ;  
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
@@ -172,11 +175,12 @@ static void success_longrun (unsigned int i, int h)
   if (!dryrun[0])
   {
     size_t svdlen = strlen(db->string + db->services[i].name) ;
-    char fn[livelen + svdlen + 15] ;
+    char fn[livelen + svdlen + suffixlen + 15] ;
     memcpy(fn, live, livelen) ;
     memcpy(fn + livelen, "/scandir/", 9) ;
     memcpy(fn + livelen + 9, db->string + db->services[i].name, svdlen) ;
-    memcpy(fn + livelen + 9 + svdlen, "/down", 6) ;
+    memcpy(fn + livelen + 9 + svdlen, suffix, suffixlen) ;
+    memcpy(fn + livelen + 9 + svdlen + suffixlen, "/down", 6) ;
     if (h)
     {
       if (unlink(fn) < 0 && verbosity)
@@ -200,11 +204,12 @@ static void failure_longrun (unsigned int i, int h)
   if (h && !dryrun[0])
   {
     size_t svdlen = strlen(db->string + db->services[i].name) ;
-    char fn[livelen + svdlen + 10] ;
+    char fn[livelen + svdlen + suffixlen + 10] ;
     char const *newargv[5] = { S6_EXTBINPREFIX "s6-svc", "-d", "--", fn, 0 } ;
     memcpy(fn, live, livelen) ;
     memcpy(fn + livelen, "/scandir/", 9) ;
-    memcpy(fn + livelen + 9, db->string + db->services[i].name, svdlen+1) ;
+    memcpy(fn + livelen + 9, db->string + db->services[i].name, svdlen) ;
+    memcpy(fn + livelen + 9 + svdlen, suffix, suffixlen + 1) ;
     if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
       strerr_warnwu2sys("spawn ", newargv[0]) ;
   }
@@ -281,11 +286,12 @@ static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
 /*
 static inline void kill_oneshots (void)
 {
-  char fn[livelen + S6RC_ONESHOT_RUNNER_LEN + 10] ;
+  char fn[livelen + S6RC_ONESHOT_RUNNER_LEN + suffixlen + 10] ;
   char const *newargv[5] = { S6_EXTBINPREFIX "s6-svc", "-h", "--", fn, 0 } ;
   memcpy(fn, live, livelen) ;
   memcpy(fn + livelen, "/scandir/", 9) ;
-  memcpy(fn + livelen + 9, S6RC_ONESHOT_RUNNER, S6RC_ONESHOT_RUNNER_LEN+1) ;
+  memcpy(fn + livelen + 9, S6RC_ONESHOT_RUNNER, S6RC_ONESHOT_RUNNER_LEN) ;
+  memcpy(fn + livelen + 9 + S6RC_ONESHOT_RUNNER_LEN, suffix, suffixlen + 1) ;
   if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
     strerr_warnwu2sys("spawn ", newargv[0]) ;
 }
@@ -486,8 +492,10 @@ int main (int argc, char const *const *argv)
     }
 
 
-   /* Read the sizes of the compiled db */
+   /* Read the sizes of the suffix and compiled db */
 
+    if (!s6rc_livedir_suffixsize(live, &suffixlen))
+      strerr_diefu2sys(111, "read suffix size for ", live) ;
     fdcompiled = open_readb(dbfn) ;
     if (!s6rc_db_read_sizes(fdcompiled, &dbblob))
       strerr_diefu3sys(111, "read ", dbfn, "/n") ;
@@ -503,12 +511,23 @@ int main (int argc, char const *const *argv)
       uint32_t depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
       unsigned char stateblob[n] ;
+      char suffixblob[suffixlen + 1] ;
 
       dbblob.services = serviceblob ;
       dbblob.argvs = argvblob ;
       dbblob.deps = depsblob ;
       dbblob.string = stringblob ;
       state = stateblob ;
+      suffix = suffixblob ;
+
+
+     /* Read the suffix */
+
+      {
+        ssize_t r = s6rc_livedir_suffix(live, suffix, suffixlen) ;
+        if (r != suffixlen) strerr_diefu2sys(111, "read suffix for ", live) ;
+        suffix[suffixlen] = 0 ;
+      }
 
 
      /* Read live state in bit 0 of state */
