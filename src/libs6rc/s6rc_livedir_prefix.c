@@ -8,13 +8,12 @@
 ssize_t s6rc_livedir_prefix (char const *live, char *s, size_t n)
 {
   size_t llen = strlen(live) ;
-  size_t r ;
+  ssize_t r ;
   char sfn[llen + 8] ;
   memcpy(sfn, live, llen) ;
   memcpy(sfn + llen, "/prefix", 8) ;
   r = openreadnclose(sfn, s, n) ;
-  if (r < 0) return r ;
-  if (memchr(s, '/', r) || memchr(s, '\n', r))
-    return (errno = EINVAL, -1) ;
+  if (r < 0) return errno == ENOENT ? 0 : r ;
+  if (memchr(s, '/', r) || memchr(s, '\n', r)) return (errno = EINVAL, -1) ;
   return r ;
 }
