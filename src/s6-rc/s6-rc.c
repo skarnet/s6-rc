@@ -19,10 +19,11 @@
 #include <skalibs/iopause.h>
 #include <skalibs/unix-transactional.h>
 #include <s6/config.h>
+#include <s6/s6-supervise.h>
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -b ] [ -u | -d ] [ -p ] [ -a ] help|list|listall|change [ servicenames... ]"
+#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -b ] [ -u | -d ] [ -p ] [ -a ] help|list|listall|diff|change [ servicenames... ]"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 typedef struct pidindex_s pidindex_t ;
@@ -42,8 +43,6 @@ static unsigned int n ;
 static unsigned char *state ;
 static unsigned int *pendingdeps ;
 static tain_t deadline ;
-static size_t prefixlen ;
-static char *prefix ;
 static char dryrun[UINT_FMT] = "" ;
 
 static inline void announce (void)
@@ -59,17 +58,49 @@ static inline void announce (void)
     strerr_diefu2sys(111, "write ", fn) ;
 }
 
-static void print_services (void)
+static int print_services (void)
 {
   unsigned int i = 0 ;
   for (; i < n ; i++)
     if (state[i] & 2)
     {
-      buffer_puts(buffer_1, db->string + db->services[i].name) ;
-      buffer_put(buffer_1, "\n", 1) ;
+      if (buffer_puts(buffer_1, db->string + db->services[i].name) < 0
+       || buffer_put(buffer_1, "\n", 1) < 0) goto err ;
     }
-  if (!buffer_flush(buffer_1))
-    strerr_diefu1sys(111, "write to stdout") ;
+  if (!buffer_flush(buffer_1)) goto err ;
+  return 0 ;
+
+ err:
+  strerr_diefu1sys(111, "write to stdout") ;
+}
+
+static int print_diff (void)
+{
+  s6_svstatus_t status ;
+  int e = 0 ;
+  unsigned int i = 0 ;
+  for (; i < db->nlong ; i++)
+  {
+    size_t namelen = strlen(db->string + db->services[i].name) ;
+    char fn[livelen + namelen + 14] ;
+    memcpy(fn, live, livelen) ;
+    memcpy(fn + livelen, "/servicedirs/", 13) ;
+    memcpy(fn + livelen + 13, db->string + db->services[i].name, namelen + 1) ;
+    if (!s6_svstatus_read(fn, &status))
+      strerr_diefu2sys(111, "read longrun status for ", fn) ;
+    if ((state[i] & 1) != status.flagwantup)
+    {
+      e = 1 ;
+      if (buffer_put(buffer_1, status.flagwantup ? "+" : "-", 1) < 1
+       || buffer_put(buffer_1, db->string + db->services[i].name, namelen) < 0
+       || buffer_put(buffer_1, "\n", 1) < 1) goto err ;
+    }
+  }
+  if (!buffer_flush(buffer_1)) goto err ;
+  return e ;
+
+ err:
+  strerr_diefu1sys(111, "write to stdout") ;
 }
 
 static uint32_t compute_timeout (unsigned int i, int h)
@@ -92,9 +123,9 @@ static pid_t start_oneshot (unsigned int i, int h)
   char tfmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
   char ifmt[UINT_FMT] ;
-  char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 12] ;
+  char socketfn[livelen + S6RC_ONESHOT_RUNNER_LEN + 16] ;
   memcpy(socketfn, live, livelen) ;
-  memcpy(socketfn + livelen, "/scandir/" S6RC_ONESHOT_RUNNER "/s", 12 + S6RC_ONESHOT_RUNNER_LEN) ;
+  memcpy(socketfn + livelen, "/servicedirs/" S6RC_ONESHOT_RUNNER "/s", 16 + S6RC_ONESHOT_RUNNER_LEN) ;
   tfmt[uint32_fmt(tfmt, compute_timeout(i, h))] = 0 ;
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   ifmt[uint_fmt(ifmt, i)] = 0 ;
@@ -132,15 +163,14 @@ static pid_t start_longrun (unsigned int i, int h)
   unsigned int m = 0 ;
   char fmt[UINT32_FMT] ;
   char vfmt[UINT_FMT] ;
-  char servicefn[livelen + prefixlen + svdlen + 26] ;
+  char servicefn[livelen + svdlen + 30] ;
   char const *newargv[7 + !!dryrun[0] * 6] ;
   memcpy(servicefn, live, livelen) ;
-  memcpy(servicefn + livelen, "/scandir/", 9) ;
-  memcpy(servicefn + livelen + 9, prefix, prefixlen) ;
-  memcpy(servicefn + livelen + 9 + prefixlen, db->string + db->services[i].name, svdlen) ;
+  memcpy(servicefn + livelen, "/servicedirs/", 13) ;
+  memcpy(servicefn + livelen + 13, db->string + db->services[i].name, svdlen) ;
   if (h)
   {
-    memcpy(servicefn + livelen + 9 + prefixlen + svdlen, "/notification-fd", 17) ;
+    memcpy(servicefn + livelen + 13 + svdlen, "/notification-fd", 17) ;
     if (access(servicefn, F_OK) < 0)
     {
       h = 2 ;
@@ -148,7 +178,7 @@ static pid_t start_longrun (unsigned int i, int h)
         strerr_warnwu2sys("access ", servicefn) ;
     }
   }
-  servicefn[livelen + 9 + prefixlen + svdlen] = 0 ;
+  servicefn[livelen + 13 + svdlen] = 0 ;
   fmt[uint32_fmt(fmt, compute_timeout(i, !!h))] = 0 ;  
   vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
   if (dryrun[0])
@@ -175,12 +205,11 @@ static void success_longrun (unsigned int i, int h)
   if (!dryrun[0])
   {
     size_t svdlen = strlen(db->string + db->services[i].name) ;
-    char fn[livelen + prefixlen + svdlen + 15] ;
+    char fn[livelen + svdlen + 19] ;
     memcpy(fn, live, livelen) ;
-    memcpy(fn + livelen, "/scandir/", 9) ;
-    memcpy(fn + livelen + 9, prefix, prefixlen) ;
-    memcpy(fn + livelen + 9 + prefixlen, db->string + db->services[i].name, svdlen) ;
-    memcpy(fn + livelen + 9 + prefixlen + svdlen, "/down", 6) ;
+    memcpy(fn + livelen, "/servicedirs/", 13) ;
+    memcpy(fn + livelen + 13, db->string + db->services[i].name, svdlen) ;
+    memcpy(fn + livelen + 13 + svdlen, "/down", 6) ;
     if (h)
     {
       if (unlink(fn) < 0 && verbosity)
@@ -204,12 +233,11 @@ static void failure_longrun (unsigned int i, int h)
   if (h && !dryrun[0])
   {
     size_t svdlen = strlen(db->string + db->services[i].name) ;
-    char fn[livelen + prefixlen + svdlen + 10] ;
+    char fn[livelen + svdlen + 14] ;
     char const *newargv[5] = { S6_EXTBINPREFIX "s6-svc", "-d", "--", fn, 0 } ;
     memcpy(fn, live, livelen) ;
-    memcpy(fn + livelen, "/scandir/", 9) ;
-    memcpy(fn + livelen + 9, prefix, prefixlen) ;
-    memcpy(fn + livelen + 9 + prefixlen, db->string + db->services[i].name, svdlen + 1) ;
+    memcpy(fn + livelen, "/servicedirs/", 13) ;
+    memcpy(fn + livelen + 13, db->string + db->services[i].name, svdlen + 1) ;
     if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
       strerr_warnwu2sys("spawn ", newargv[0]) ;
   }
@@ -286,12 +314,11 @@ static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
 /*
 static inline void kill_oneshots (void)
 {
-  char fn[livelen + prefixlen + S6RC_ONESHOT_RUNNER_LEN + 10] ;
+  char fn[livelen + S6RC_ONESHOT_RUNNER_LEN + 14] ;
   char const *newargv[5] = { S6_EXTBINPREFIX "s6-svc", "-h", "--", fn, 0 } ;
   memcpy(fn, live, livelen) ;
-  memcpy(fn + livelen, "/scandir/", 9) ;
-  memcpy(fn + livelen + 9, prefix, prefixlen) ;
-  memcpy(fn + livelen + 9 + prefixlen, S6RC_ONESHOT_RUNNER, S6RC_ONESHOT_RUNNER_LEN + 1) ;
+  memcpy(fn + livelen, "/servicedirs/", 13) ;
+  memcpy(fn + livelen + 13, S6RC_ONESHOT_RUNNER, S6RC_ONESHOT_RUNNER_LEN + 1) ;
   if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
     strerr_warnwu2sys("spawn ", newargv[0]) ;
 }
@@ -397,11 +424,12 @@ static inline unsigned int lookup (char const *const *table, char const *command
 
 static inline unsigned int parse_command (char const *command)
 {
-  static char const *const command_table[5] =
+  static char const *const command_table[] =
   {
     "help",
     "list",
     "listall",
+    "diff",
     "change",
     0
   } ;
@@ -416,6 +444,7 @@ static inline void print_help (void)
 "s6-rc help\n"
 "s6-rc [ -l live ] [ -a ] list [ servicenames... ]\n"
 "s6-rc [ -l live ] [ -a ] [ -u | -d ] listall [ servicenames... ]\n"
+"s6-rc [ -l live ] diff\n"
 "s6-rc [ -l live ] [ -a ] [ -u | -d ] [ -p ] [ -v verbosity ] [ -t timeout ] [ -n dryrunthrottle ] change [ servicenames... ]\n" ;
   if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefu1sys(111, "write to stdout") ;
@@ -482,7 +511,7 @@ int main (int argc, char const *const *argv)
     if (takelocks)
     {
       int livelock, compiledlock ;
-      if (!s6rc_lock(live, 1 + (what >= 3), &livelock, dbfn, 1, &compiledlock, blocking))
+      if (!s6rc_lock(live, 1 + (what >= 4), &livelock, dbfn, 1, &compiledlock, blocking))
         strerr_diefu1sys(111, "take locks") ;
       if (coe(livelock) < 0)
         strerr_diefu3sys(111, "coe ", live, "/lock") ;
@@ -492,10 +521,8 @@ int main (int argc, char const *const *argv)
     }
 
 
-   /* Read the sizes of the suffix and compiled db */
+   /* Read the size of the compiled db */
 
-    if (!s6rc_livedir_prefixsize(live, &prefixlen))
-      strerr_diefu2sys(111, "read prefix size for ", live) ;
     fdcompiled = open_readb(dbfn) ;
     if (!s6rc_db_read_sizes(fdcompiled, &dbblob))
       strerr_diefu3sys(111, "read ", dbfn, "/n") ;
@@ -511,23 +538,12 @@ int main (int argc, char const *const *argv)
       uint32_t depsblob[dbblob.ndeps << 1] ;
       char stringblob[dbblob.stringlen] ;
       unsigned char stateblob[n] ;
-      char prefixblob[prefixlen + 1] ;
 
       dbblob.services = serviceblob ;
       dbblob.argvs = argvblob ;
       dbblob.deps = depsblob ;
       dbblob.string = stringblob ;
       state = stateblob ;
-      prefix = prefixblob ;
-
-
-     /* Read the prefix */
-
-      {
-        ssize_t r = s6rc_livedir_prefix(live, prefix, prefixlen) ;
-        if (r != prefixlen) strerr_diefu2sys(111, "read prefix for ", live) ;
-        prefix[prefixlen] = 0 ;
-      }
 
 
      /* Read live state in bit 0 of state */
@@ -549,6 +565,11 @@ int main (int argc, char const *const *argv)
         if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/db") ;
         if (!r) strerr_dief3x(4, "invalid service database in ", dbfn, "/db") ;
       }
+
+
+     /* s6-rc diff */
+
+      if (what == 3) return print_diff() ;
 
 
      /* Resolve the args and add them to the selection */
@@ -606,8 +627,7 @@ int main (int argc, char const *const *argv)
       if (what == 1)
       {
         if (!up) invert_selection() ;
-        print_services() ;
-        return 0 ;
+        return print_services() ;
       }
 
       s6rc_graph_closure(db, state, 1, up) ;
@@ -615,11 +635,7 @@ int main (int argc, char const *const *argv)
 
      /* Print the selection after closure */
 
-      if (what == 2)
-      {
-        print_services() ;
-        return 0 ;
-      }
+      if (what == 2) return print_services() ;
 
       tain_now_g() ;
       tain_add_g(&deadline, &deadline) ;

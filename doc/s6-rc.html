@@ -46,6 +46,7 @@ especially when asking for a state change.
      s6-rc help
      s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] list <em>servicenames...</em>
      s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] listall <em>servicenames...</em>
+     s6-rc [ -l live ] [ -b ] diff
      s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] [ -p ] [ -v <em>verbosity</em> ] [ -n <em>dryrunthrottle</em> ] [ -t timeout ] change [ <em>servicenames...</em> ]
 </pre>
 
@@ -63,7 +64,8 @@ state change. </li>
 
 <ul>
  <li> 0: success </li>
- <li> 1: some of the state transitions could not be performed </li>
+ <li> 1: some of the state transitions could not be performed by <tt>s6-rc change</tt>;
+or a mismatch was found by <tt>s6-rc diff</tt> </li>
  <li> 2: timed out during state change </li>
  <li> 3: unknown service name in the arguments </li>
  <li> 4: invalid service database </li>
@@ -183,6 +185,28 @@ called the <em>closed selection</em>. </li>
 Note that the closed selection may be a very long list of services,
 including the most basic ones. </li>
 </ul>
+
+<h3> s6-rc diff </h3>
+
+<p>
+ Checks the consistency between s6-rc's view of the state of the longruns
+it's managing, and <a href="//skarnet.org/software/s6/">s6</a>'s view.
+s6-rc will print one line per service
+whose s6 state fails to match what s6-rc believes:
+ a <tt>+</tt> character (if s6 is maintaining the service as up when s6-rc
+thinks it's down) or a <tt>-</tt> character (if s6 is not trying to maintain
+the service when s6-rc thinks it's up), followed by the service name.
+If s6-rc finds at least one mismatch, it exits 1; else it exits 0.
+</p>
+
+<p>
+ <tt>s6-rc diff</tt> normally reports nothing. Currently, the only case where
+s6-rc's view can diverge from s6's view is when a service has been brought
+up via a <tt>s6-rc change</tt> command, then has failed at some point with
+a permanent failure - which means its
+<a href="//skarnet.org/software/s6/s6-supervise.html">supervisor</a> has
+stopped trying to bring it back up.
+</p>
 
 <h3> s6-rc change </h3>
 

@@ -37,7 +37,7 @@ libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_check
 libs6rc.so.xyzzy: EXTRA_LIBS := -ls6 -lskarnet
 libs6rc.so.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
 s6-rc: EXTRA_LIBS := ${TAINNOW_LIB} ${SPAWN_LIB}
-s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -lskarnet
+s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-bundle: EXTRA_LIBS :=
 s6-rc-bundle: src/s6-rc/s6-rc-bundle.o ${LIBS6RC} -lexecline -lskarnet
 s6-rc-compile: EXTRA_LIBS :=

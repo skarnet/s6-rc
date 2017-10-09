@@ -1,4 +1,5 @@
 ${LIBS6RC}
+-ls6
 -lskarnet
 ${TAINNOW_LIB}
 ${SPAWN_LIB}
