@@ -31,7 +31,7 @@
 #define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] [ -b ] newdb"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "build string") ;
-#define NEWSUFFIX ":update:XXXXXX"
+#define NEWSUFFIX ":updated:XXXXXX"
 
 static char const *live = S6RC_LIVE_BASE ;
 static size_t livelen = sizeof(S6RC_LIVE_BASE) - 1 ;
@@ -323,7 +323,7 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
   }
 }
 
-static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *invimage, char const *suffix, size_t suffixlen, stralloc *sa)
+static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *invimage, char const *prefix, size_t prefixlen, stralloc *sa)
 {
   size_t tmpbase = satmp.len ;
   size_t newclen = strlen(newcompiled) ;
@@ -348,8 +348,8 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
     satmp.len = tmplen ;
   }
   sa->len = newlen ;
-  if (!stralloc_catb(sa, "/suffix", 8)) { e = errno ; goto err ; }
-  if (!openwritenclose_unsafe(sa->s, suffix, suffixlen)) { e = errno ; goto err ; }
+  if (!stralloc_catb(sa, "/prefix", 8)) { e = errno ; goto err ; }
+  if (!openwritenclose_unsafe(sa->s, prefix, prefixlen)) { e = errno ; goto err ; }
   sa->len = newlen ;
   if (!stralloc_catb(sa, "/state", 7)) { e = errno ; goto err ; }
   {
@@ -418,7 +418,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
     dienomem() ;
   i = olddb->nlong ;
   while (i--)
-    s6rc_servicedir_unsupervise(sa->s, suffix, olddb->string + olddb->services[i].name, (oldstate[i] & 33) == 1) ;
+    s6rc_servicedir_unsupervise(sa->s, prefix, olddb->string + olddb->services[i].name, (oldstate[i] & 33) == 1) ;
   rm_rf(sa->s) ;
 
   sa->len = 0 ;
@@ -651,7 +651,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     int fdoldc, fdnewc ;
     s6rc_db_t olddb, newdb ;
     unsigned int oldn, newn ;
-    size_t suffixlen = 0 ;
+    size_t prefixlen = 0 ;
     char dbfn[livelen + 10] ;
 
     tain_now_g() ;
@@ -668,10 +668,10 @@ int main (int argc, char const *const *argv, char const *const *envp)
       strerr_diefu2sys(111, "take lock on ", argv[0]) ;
 
 
-   /* Read the sizes of the suffix and compiled dbs */
+   /* Read the sizes of the prefix and compiled dbs */
 
-    if (!s6rc_livedir_suffixsize(live, &suffixlen))
-      strerr_diefu2sys(111, "read suffix size for ", live) ;
+    if (!s6rc_livedir_prefixsize(live, &prefixlen))
+      strerr_diefu2sys(111, "read prefix size for ", live) ;
     fdoldc = open_readb(dbfn) ;
     if (!s6rc_db_read_sizes(fdoldc, &olddb))
       strerr_diefu3sys(111, "read ", dbfn, "/n") ;
@@ -698,7 +698,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       char newstringblob[newdb.stringlen] ;
       unsigned char oldstate[oldn] ;
       unsigned char newstate[newn] ;
-      char suffix[suffixlen + 1] ;
+      char prefix[prefixlen + 1] ;
       int r ;
 
       olddb.services = oldserviceblob ;
@@ -711,12 +711,12 @@ int main (int argc, char const *const *argv, char const *const *envp)
       newdb.string = newstringblob ;
 
 
-     /* Read the suffix */
+     /* Read the prefix */
 
       {
-        ssize_t rr = s6rc_livedir_suffix(live, suffix, suffixlen) ;
-        if (rr != suffixlen) strerr_diefu2sys(111, "read suffix for ", live) ;
-        suffix[suffixlen] = 0 ;
+        ssize_t rr = s6rc_livedir_prefix(live, prefix, prefixlen) ;
+        if (rr != prefixlen) strerr_diefu2sys(111, "read prefix for ", live) ;
+        prefix[prefixlen] = 0 ;
       }
 
 
@@ -805,8 +805,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
         if (verbosity >= 2)
           strerr_warni1x("updating state and service directories") ;
 
-        make_new_livedir(oldstate, &olddb, newstate, &newdb, argv[0], invimage, suffix, suffixlen, &sa) ;
-        r = s6rc_servicedir_manage_g(live, suffix, &deadline) ;
+        make_new_livedir(oldstate, &olddb, newstate, &newdb, argv[0], invimage, prefix, prefixlen, &sa) ;
+        r = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
         if (!r) strerr_diefu2sys(111, "manage new service directories in ", live) ;
         if (r & 2) strerr_warnw3x("s6-svscan not running on ", live, "/scandir") ;
 

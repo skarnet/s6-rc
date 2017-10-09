@@ -15,7 +15,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -s suffix ] [ -t timeout ] [ -b ] [ -d ] scandir"
+#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -p prefix ] [ -t timeout ] [ -b ] [ -d ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
@@ -38,7 +38,7 @@ int main (int argc, char const *const *argv)
   size_t dirlen ;
   char const *live = S6RC_LIVE_BASE ;
   char const *compiled = S6RC_COMPILED_BASE ;
-  char const *suffix = "" ;
+  char const *prefix = "" ;
   int blocking = 0, deref = 0 ;
   PROG = "s6-rc-init" ;
   {
@@ -46,13 +46,13 @@ int main (int argc, char const *const *argv)
     subgetopt_t l = SUBGETOPT_ZERO ;
     for (;;)
     {
-      int opt = subgetopt_r(argc, argv, "c:l:s:t:bd", &l) ;
+      int opt = subgetopt_r(argc, argv, "c:l:p:t:bd", &l) ;
       if (opt == -1) break ;
       switch (opt)
       {
         case 'c' : compiled = l.arg ; break ;
         case 'l' : live = l.arg ; break ;
-        case 's' : suffix = l.arg ; break ;
+        case 'p' : prefix = l.arg ; break ;
         case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
         case 'b' : blocking = 1 ; break ;
         case 'd' : deref = 1 ; break ;
@@ -71,8 +71,8 @@ int main (int argc, char const *const *argv)
     strerr_dief2x(100, live, " is not an absolute path") ;
   if (argv[0][0] != '/')
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
-  if (strchr(suffix, '/'))
-    strerr_dief1x(100, "suffix cannot contain a / character") ;
+  if (strchr(prefix, '/') || strchr(prefix, '\n'))
+    strerr_dief1x(100, "prefix cannot contain a / or a newline") ;
 
   tain_now_g() ;
   tain_add_g(&deadline, &tto) ;
@@ -133,12 +133,12 @@ int main (int argc, char const *const *argv)
     }
 
 
-   /* suffix */
+   /* prefix */
 
-    if (suffix[0])
+    if (prefix[0])
     {
-      memcpy(lfn + llen + 1, "suffix", 7) ;
-      if (!openwritenclose_unsafe(lfn, suffix, strlen(suffix)))
+      memcpy(lfn + llen + 1, "prefix", 7) ;
+      if (!openwritenclose_unsafe(lfn, prefix, strlen(prefix)))
       {
         cleanup() ;
         strerr_diefu2sys(111, "write to ", lfn) ;
@@ -196,7 +196,7 @@ int main (int argc, char const *const *argv)
    /* start the supervisors */
 
     lfn[llen] = 0 ;
-    ok = s6rc_servicedir_manage_g(lfn, suffix, &deadline) ;
+    ok = s6rc_servicedir_manage_g(lfn, prefix, &deadline) ;
     if (!ok)
     {
       cleanup() ;

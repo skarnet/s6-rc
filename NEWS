@@ -3,11 +3,16 @@ Changelog for s6-rc.
 In 0.3.0.0
 ----------
 
- - s6-rc-init now takes a -s option that adds a suffix to the symbolic links
+ - s6-rc-init now takes a -p option that adds a prefix to the symbolic links
 created in the scandir to manage longruns. This allows the user to use the
 same scandir for several s6-rc databases and live directories without risking
-conflicts, if the suffixes are unique enough.
+conflicts, if the prefixes are unique enough.
+ - s6-rc-update does not use random number generation anymore, so it does
+not block at boot time.
  - Bugfixes.
+
+ Despite this being a major version release, the compiled service databases
+did not change formats; you do not need to recompile your service databases.
 
 
 In 0.2.1.2

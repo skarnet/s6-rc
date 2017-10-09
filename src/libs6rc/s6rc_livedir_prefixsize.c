@@ -5,13 +5,13 @@
 #include <errno.h>
 #include <s6-rc/s6rc-utils.h>
 
-int s6rc_livedir_suffixsize (char const *live, size_t *n)
+int s6rc_livedir_prefixsize (char const *live, size_t *n)
 {
   struct stat st ;
   size_t llen = strlen(live) ;
   char sfn[llen + 8] ;
   memcpy(sfn, live, llen) ;
-  memcpy(sfn + llen, "/suffix", 8) ;
+  memcpy(sfn + llen, "/prefix", 8) ;
   if (stat(sfn, &st) < 0)
   {
     if (errno != ENOENT) return 0 ;

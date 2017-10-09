@@ -28,7 +28,7 @@ invocation of the
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-init [ -c <em>compiled</em> ] [ -l <em>live</em> ] [ -s <em>suffix</em> ] [ -t <em>timeout</em> ] [ -b ] <em>scandir</em>
+     s6-rc-init [ -c <em>compiled</em> ] [ -l <em>live</em> ] [ -p <em>prefix</em> ] [ -t <em>timeout</em> ] [ -b ] <em>scandir</em>
 </pre>
 
 <ul>
@@ -74,15 +74,18 @@ filesystem. Default is
 <tt>/run/s6-rc</tt>. The default can be changed at compile time by
 giving the <tt>--livedir=<em>live</em></tt> option to
 <tt>./configure</tt>. </li>
- <li> <tt>-s&nbsp;<em>suffix</em></tt>&nbsp;: when linking all the
-service directory into <em>scandir</em>, add <em>suffix</em> to the
-names of the symbolic links. This allows several live directories
+ <li> <tt>-p&nbsp;<em>prefix</em></tt>&nbsp;: when linking all the
+service directory into <em>scandir</em>, prepend the symbolic link
+names with <em>prefix</em>, i.e. a longrun named <tt>A</tt> will
+have its service directory accessible via
+<tt><em>scandir</em>/<em>prefix</em>A</tt>.
+This allows several live directories
 to be used with a unique scandir without risking conflicts between
-longruns that would have the same name. This option is only useful
-if you intend to have several sets of services independently managed
-by s6-rc, with different live directories, all using the same scandir
-to supervise their longruns. The default is no suffix at all, which
-is best when you only have one live directory. </li>
+longruns with the same name from different service databases.
+This option is only useful if you intend to have several sets of services
+independently managed by s6-rc, with different live directories, all
+using the same scandir to supervise their longruns. The default is no
+prefix at all, which is good when you only have one live directory. </li>
  <li> <tt>-b</tt>&nbsp;: blocking lock. If the database is currently
 being used by another program, s6-rc-init will wait until that
 other program has released its lock on the database, then proceed.
