@@ -20,7 +20,7 @@ int s6rc_livedir_prefixsize (char const *live, size_t *n)
     return 1 ;
   }
   if (!S_ISREG(st.st_mode)) return (errno = EINVAL, 0) ;
-  if (st.st_size > NAME_MAX) return (errno = ENAMETOOLONG, 0) ;
+  if (st.st_size > PATH_MAX) return (errno = ENAMETOOLONG, 0) ;
   *n = st.st_size ;
   return 1 ;
 }
