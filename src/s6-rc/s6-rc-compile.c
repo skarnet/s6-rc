@@ -530,7 +530,7 @@ struct pipeline_recinfo_s
   unsigned int pipelinename ;
 } ;
 
-static void add_tree_to_bundle_rec (struct pipeline_recinfo_s *recinfo, char const *name)
+static servicetype_t add_tree_to_bundle_rec (struct pipeline_recinfo_s *recinfo, char const *name)
 {
   nameinfo_t const *info ;
   {
@@ -538,14 +538,20 @@ static void add_tree_to_bundle_rec (struct pipeline_recinfo_s *recinfo, char con
     avltree_search(&names_map, name, &id) ;
     info = genalloc_s(nameinfo_t, &nameinfo) + id ;
   }
-  if (info->type != SVTYPE_LONGRUN) return ; /* will error out later */
+  if (info->type != SVTYPE_LONGRUN) return info->type ;
   if (recinfo->bundle.n++ >= recinfo->nlong)
     strerr_dief4x(1, "pipeline ", data.s + recinfo->pipelinename, " is too long: possible loop involving ", name) ;
   if (verbosity >= 4)
     strerr_warni4x("adding ", name, " to pipeline ", data.s + recinfo->pipelinename) ;
   if (!genalloc_append(unsigned int, &recinfo->be->indices, &info->pos)) dienomem() ;
   for (unsigned int i = 0 ; i < recinfo->longruns[info->i].nproducers ; i++)
-    add_tree_to_bundle_rec(recinfo, data.s + genalloc_s(unsigned int, &recinfo->be->indices)[recinfo->longruns[info->i].prodindex + i]) ;
+  {
+    char *prodname = data.s + genalloc_s(unsigned int, &recinfo->be->indices)[recinfo->longruns[info->i].prodindex + i] ;
+    servicetype_t type = add_tree_to_bundle_rec(recinfo, prodname) ;
+    if (type != SVTYPE_LONGRUN)
+      strerr_dief6x(1, "longrun ", name, " declares a producer ", prodname, " of type ", typestr(type))  ;
+  }
+  return SVTYPE_LONGRUN ;
 }
 
 static inline void add_pipeline_bundles (before_t *be)
