@@ -709,15 +709,8 @@ static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *lon
     nameinfo_t const *p ;
     avltree_search(&names_map, data.s + longruns[n].consumer, &j) ;
     p = genalloc_s(nameinfo_t, &nameinfo) + j ;
-    switch (p->type)
-    {
-      case SVTYPE_LONGRUN : break ;
-      case SVTYPE_ONESHOT :
-      case SVTYPE_BUNDLE :
-        strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " of type ", p->type == SVTYPE_BUNDLE ? "bundle" : "oneshot") ;
-      default :
-        strerr_dief4x(1, "longrun service ", keep.s + longruns[i].common.kname, " declares being a producer for an undefined service: ", data.s + p->pos) ;
-    }
+    if (p->type != SVTYPE_LONGRUN)
+      strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " of type ", typestr(p->type)) ;
     for (; i < longruns[p->i].nproducers ; i++)
     {
       uint32_t k ;
@@ -725,7 +718,7 @@ static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *lon
       avltree_search(&names_map, data.s + indices[longruns[p->i].prodindex + i], &k) ;
       q = genalloc_s(nameinfo_t, &nameinfo) + k ;
       if (q->type != SVTYPE_LONGRUN)
-        strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " that is not a longrun") ;
+        strerr_dief6x(1, "longrun service ", data.s + p->pos, " declares a consumer ", data.s + q->pos, " of type ", typestr(q->type)) ;
       if (q->i == n) break ;
     }
     if (i == longruns[p->i].nproducers)
@@ -741,21 +734,14 @@ static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *lon
     nameinfo_t const *q ;
     avltree_search(&names_map, data.s + indices[longruns[n].prodindex + i], &j) ;
     p = genalloc_s(nameinfo_t, &nameinfo) + j ;
-    switch (p->type)
-    {
-      case SVTYPE_LONGRUN : break ;
-      case SVTYPE_ONESHOT :
-      case SVTYPE_BUNDLE :
-        strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a consumer for a service named ", data.s + p->pos, " of type ", p->type == SVTYPE_BUNDLE ? "bundle" : "oneshot") ;
-      default :
-        strerr_dief4x(1, "longrun service ", keep.s + longruns[i].common.kname, " declares being a consumer for an undefined service: ", data.s + p->pos) ;
-    }
+    if (p->type != SVTYPE_LONGRUN)
+        strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being the consumer for a service named ", data.s + p->pos, " of type ", typestr(p->type)) ;
     avltree_search(&names_map, data.s + longruns[p->i].consumer, &k) ;
     q = genalloc_s(nameinfo_t, &nameinfo) + k ;
     if (q->type != SVTYPE_LONGRUN)
-      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a consumer for a service named ", data.s + p->pos, " that is not a longrun") ;
+      strerr_dief6x(1, "longrun service ", data.s + p->pos, " declares a producer ", data.s + q->pos, " of type ", typestr(q->type)) ;
     if (q->i != n)
-      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a consumer for a service named ", data.s + p->pos, " that does not declare it back") ;
+      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being the consumer for a service named ", data.s + p->pos, " that does not declare it back") ;
     prodlist[prodindex + i] = p->i ;
   }
   l->producers = prodindex ;
