@@ -436,13 +436,23 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
       for (unsigned int i = 0 ; i < service.nproducers ; i++)
         strerr_warni3x(name, " is a consumer for ", data.s + genalloc_s(unsigned int, &be->indices)[service.prodindex + i]) ;
   }
-  if (fd == 2 && add_namelist(be, dirfd, srcdir, name, "pipeline-name", &relatedindex, &n))
+  if (fd == 2)
   {
-    if (n != 1)
-      strerr_dief5x(1, srcdir, "/", name, "/pipeline-name", " should only contain one name") ;
-    service.pipelinename = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
-    genalloc_setlen(unsigned int, &be->indices, relatedindex) ;
+    if (add_namelist(be, dirfd, srcdir, name, "pipeline-name", &relatedindex, &n))
+    {
+      if (n != 1)
+        strerr_dief5x(1, srcdir, "/", name, "/pipeline-name", " should only contain one name") ;
+      service.pipelinename = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
+      genalloc_setlen(unsigned int, &be->indices, relatedindex) ;
+    }
   }
+  else if (faccessat(dirfd, "pipeline-name", F_OK, 0) < 0)
+  {
+    if (errno != ENOENT)
+      strerr_diefu5sys(111, "access ", srcdir, "/", name, "/pipeline-name") ;
+  }
+  else if (verbosity)
+    strerr_warnw4x(srcdir, "/", name, " contains a pipeline-name file despite not being a last consumer; this file will be ignored") ;
   if (!genalloc_append(longrun_t, &be->longruns, &service)) dienomem() ;
 }
 
