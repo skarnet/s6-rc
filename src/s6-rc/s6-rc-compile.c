@@ -538,8 +538,7 @@ static void add_tree_to_bundle_rec (struct pipeline_recinfo_s *recinfo, char con
     avltree_search(&names_map, name, &id) ;
     info = genalloc_s(nameinfo_t, &nameinfo) + id ;
   }
-  if (info->type != SVTYPE_LONGRUN)
-    strerr_dief6x(1, "pipeline ", data.s + recinfo->pipelinename, " includes service ", name, " of type ", typestr(info->type)) ;
+  if (info->type != SVTYPE_LONGRUN) return ; /* will error out later */
   if (recinfo->bundle.n++ >= recinfo->nlong)
     strerr_dief4x(1, "pipeline ", data.s + recinfo->pipelinename, " is too long: possible loop involving ", name) ;
   if (verbosity >= 4)
