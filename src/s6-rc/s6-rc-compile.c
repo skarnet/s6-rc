@@ -539,7 +539,7 @@ static void add_tree_to_bundle_rec (struct pipeline_recinfo_s *recinfo, char con
     info = genalloc_s(nameinfo_t, &nameinfo) + id ;
   }
   if (info->type != SVTYPE_LONGRUN)
-    strerr_dief5x(1, "pipeline ", data.s + recinfo->pipelinename, " includes service ", name, " which is not a longrun") ;
+    strerr_dief6x(1, "pipeline ", data.s + recinfo->pipelinename, " includes service ", name, " of type ", typestr(info->type)) ;
   if (recinfo->bundle.n++ >= recinfo->nlong)
     strerr_dief4x(1, "pipeline ", data.s + recinfo->pipelinename, " is too long: possible loop involving ", name) ;
   if (verbosity >= 4)
