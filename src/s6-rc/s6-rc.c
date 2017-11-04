@@ -536,12 +536,14 @@ int main (int argc, char const *const *argv)
       s6rc_service_t serviceblob[n] ;
       char const *argvblob[dbblob.nargvs] ;
       uint32_t depsblob[dbblob.ndeps << 1] ;
+      uint32_t producersblob[dbblob.nproducers] ;
       char stringblob[dbblob.stringlen] ;
       unsigned char stateblob[n] ;
 
       dbblob.services = serviceblob ;
       dbblob.argvs = argvblob ;
       dbblob.deps = depsblob ;
+      dbblob.producers = producersblob ;
       dbblob.string = stringblob ;
       state = stateblob ;
 

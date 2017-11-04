@@ -11,7 +11,7 @@
 
 #ifdef DEBUG
 #include <skalibs/lolstdio.h>
-#define DBG(...) do { bprintf(buffer_2, "debug: ") ; bprintf(buffer_2, __VA_ARGS__) ; bprintf(buffer_2, "\n") ; buffer_flush(buffer_2) ; } while(0)
+#define DBG(...) LOLDEBUG(__VA_ARGS__)
 #else
 #define DBG(...)
 #endif
@@ -33,18 +33,18 @@ static inline int s6rc_db_check_valid_strings (char const *string, size_t string
   return 1 ;
 }
 
-static inline int s6rc_db_read_deps (buffer *b, unsigned int max, uint32_t *deps, unsigned int ndeps)
+static inline int s6rc_db_read_uints (buffer *b, unsigned int max, uint32_t *p, unsigned int n)
 {
   uint32_t x ;
-  ndeps <<= 1 ;
-  while (ndeps--)
+  while (n--)
   {
     if (!s6rc_db_read_uint32(b, &x)) return -1 ;
     if (x >= max) return 0 ;
-    *deps++ = x ;
+    *p++ = x ;
   }
   return 1 ;
 }
+
 
 static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
 {
@@ -89,8 +89,9 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
 #endif
     if (i < db->nlong)
     {
-      if (!s6rc_db_read_uint32(b, &sv->x.longrun.pipeline[0])) return -1 ;
-      if (!s6rc_db_read_uint32(b, &sv->x.longrun.pipeline[1])) return -1 ;
+      if (!s6rc_db_read_uint32(b, &sv->x.longrun.consumer)) return -1 ;
+      if (!s6rc_db_read_uint32(b, &sv->x.longrun.nproducers)) return -1 ;
+      if (!s6rc_db_read_uint32(b, &sv->x.longrun.producers)) return -1 ;
     }
     else
     {
@@ -141,7 +142,9 @@ static inline int s6rc_db_read_buffer (buffer *b, s6rc_db_t *db)
   {
     int r = s6rc_db_read_string(b, db->string, db->stringlen) ;
     if (r < 1) return r ;
-    r = s6rc_db_read_deps(b, db->nshort + db->nlong, db->deps, db->ndeps) ;
+    r = s6rc_db_read_uints(b, db->nshort + db->nlong, db->deps, db->ndeps << 1) ;
+    if (r < 1) return r ;
+    r = s6rc_db_read_uints(b, db->nlong, db->producers, db->nproducers) ;
     if (r < 1) return r ;
     r = s6rc_db_read_services(b, db) ;
     if (r < 1) return r ;

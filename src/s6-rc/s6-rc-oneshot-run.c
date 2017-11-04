@@ -73,12 +73,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
       s6rc_service_t serviceblob[db.nshort + db.nlong] ;
       char const *argvblob[db.nargvs] ;
       uint32_t depsblob[db.ndeps << 1] ;
+      uint32_t producersblob[db.nproducers] ;
       char stringblob[db.stringlen] ;
       int r ;
 
       db.services = serviceblob ;
       db.argvs = argvblob ;
       db.deps = depsblob ;
+      db.producers = producersblob ;
       db.string = stringblob ;
 
 

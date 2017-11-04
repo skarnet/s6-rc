@@ -191,6 +191,21 @@ static void print_script (char const *name, int h)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
+static void print_producers_rec (uint32_t n)
+{
+  uint32_t i = 0 ;
+  for (; i < db->services[n].x.longrun.nproducers ; i++)
+  {
+    uint32_t m = db->producers[db->services[n].x.longrun.producers + i] ;
+    print_producers_rec(m) ;
+    if (buffer_puts(buffer_1, db->string + db->services[m].name) < 0
+     || buffer_put(buffer_1, " | ", 3) < 0
+     || buffer_puts(buffer_1, db->string + db->services[n].name) < 0
+     || buffer_put(buffer_1, "\n", 1) < 0)
+      strerr_diefu1sys(111, "write to stdout") ;
+  }
+}
+
 static inline void print_pipeline (char const *name)
 {
   unsigned int n = resolve_service(name) ;
@@ -198,19 +213,11 @@ static inline void print_pipeline (char const *name)
     strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " does not represent a longrun") ;
   for (;;)
   {
-    unsigned int j = db->services[n].x.longrun.pipeline[0] ;
+    uint32_t j = db->services[n].x.longrun.consumer ;
     if (j >= db->nlong) break ;
     n = j ;
   }
-  for (;;)
-  {
-    unsigned int j = db->services[n].x.longrun.pipeline[1] ;
-    if (buffer_puts(buffer_1, db->string + db->services[n].name) < 0
-     || buffer_put(buffer_1, "\n", 1) < 0)
-      strerr_diefu1sys(111, "write to stdout") ;
-    if (j >= db->nlong) break ;
-    n = j ;
-  }
+  print_producers_rec(n) ;
   if (!buffer_flush(buffer_1))
     strerr_diefu1sys(111, "write to stdout") ;
 }
@@ -410,12 +417,14 @@ int main (int argc, char const *const *argv)
       s6rc_service_t serviceblob[n] ;
       char const *argvblob[dbblob.nargvs] ;
       uint32_t depsblob[dbblob.ndeps << 1] ;
+      uint32_t producersblob[dbblob.nproducers] ;
       char stringblob[dbblob.stringlen] ;
       int r ;
 
       dbblob.services = serviceblob ;
       dbblob.argvs = argvblob ;
       dbblob.deps = depsblob ;
+      dbblob.producers = producersblob ;
       dbblob.string = stringblob ;
 
 

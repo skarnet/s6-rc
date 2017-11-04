@@ -99,7 +99,9 @@ struct longrun_s
 {
   common_t common ;
   char const *srcdir ;
-  unsigned int pipeline[2] ; /* pos in data */
+  unsigned int nproducers ;
+  unsigned int prodindex ; /* pos in indices */
+  unsigned int consumer ; /* pos in data */
   unsigned int pipelinename ; /* pos in data */
 } ;
 
@@ -120,9 +122,10 @@ struct before_s
   genalloc bundles ; /* bundle_t */
   unsigned int nargvs ;
   uint32_t specialdeps[2] ;
+  uint32_t nproducers ;
 } ;
 
-#define BEFORE_ZERO { .indices = GENALLOC_ZERO, .oneshots = GENALLOC_ZERO, .longruns = GENALLOC_ZERO, .bundles = GENALLOC_ZERO, .nargvs = 0, .specialdeps = { 0, 0 } } ;
+#define BEFORE_ZERO { .indices = GENALLOC_ZERO, .oneshots = GENALLOC_ZERO, .longruns = GENALLOC_ZERO, .bundles = GENALLOC_ZERO, .nargvs = 0, .specialdeps = { 0, 0 }, .nproducers = 0 } ;
 
 
  /* Read all the sources, populate the name map */
@@ -234,7 +237,9 @@ static unsigned int add_internal_longrun (before_t *be, char const *name)
       .timeout = { 0, 0 }
     },
     .srcdir = 0,
-    .pipeline = { 0, 0 },
+    .nproducers = 0,
+    .prodindex = 0,
+    .consumer = 0,
     .pipelinename = 0
   } ;
   add_name_nocheck(be, S6RC_INTERNALS, name, SVTYPE_LONGRUN, &pos, &service.common.kname) ;
@@ -383,7 +388,7 @@ static inline void add_oneshot (before_t *be, int dirfd, char const *srcdir, cha
 
 static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, char const *name)
 {
-  longrun_t service = { .srcdir = srcdir, .pipeline = { 0, 0 }, .pipelinename = 0 } ;
+  longrun_t service = { .srcdir = srcdir, .nproducers = 0, .prodindex = 0, .consumer = 0, .pipelinename = 0 } ;
   unsigned int relatedindex, n ;
   int fd ;
   if (verbosity >= 3) strerr_warni3x(name, " has type ", "longrun") ;
@@ -409,29 +414,29 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
   {
     if (n != 1)
       strerr_dief5x(1, srcdir, "/", name, "/producer-for", " should only contain one service name") ;
-    service.pipeline[1] = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
+    service.consumer = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
     if (!genalloc_append(unsigned int, &be->indices, &be->specialdeps[1])) dienomem() ;
     service.common.ndeps += 2 ;
     if (verbosity >= 3)
-      strerr_warni3x(name, " is a producer for ", data.s + service.pipeline[1]) ;
+      strerr_warni3x(name, " is a producer for ", data.s + service.consumer) ;
     fd = 1 ;
   }
-  if (add_namelist(be, dirfd, srcdir, name, "consumer-for", &relatedindex, &n))
+  if (add_namelist(be, dirfd, srcdir, name, "consumer-for", &service.prodindex, &service.nproducers) && service.nproducers)
   {
-    if (n != 1)
-      strerr_dief5x(1, srcdir, "/", name, "/consumer-for", " should only contain one service name") ;
-    service.pipeline[0] = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
-    genalloc_setlen(unsigned int, &be->indices, relatedindex) ;
+    be->nproducers += service.nproducers ;
     if (!fd)
     {
-      genalloc_append(unsigned int, &be->indices, &be->specialdeps[1]) ;
+      unsigned int prod0 = genalloc_s(unsigned int, &be->indices)[service.prodindex] ;
+      if (!genalloc_append(unsigned int, &be->indices, &prod0)) dienomem() ;
+      genalloc_s(unsigned int, &be->indices)[service.prodindex++] = be->specialdeps[1] ;
       service.common.ndeps++ ;
+      fd = 2 ;
     }
-    else fd = 0 ;
     if (verbosity >= 3)
-      strerr_warni3x(name, " is a consumer for ", data.s + service.pipeline[0]) ;
+      for (unsigned int i = 0 ; i < service.nproducers ; i++)
+        strerr_warni3x(name, " is a consumer for ", data.s + genalloc_s(unsigned int, &be->indices)[service.prodindex + i]) ;
   }
-  if (fd && add_namelist(be, dirfd, srcdir, name, "pipeline-name", &relatedindex, &n))
+  if (fd == 2 && add_namelist(be, dirfd, srcdir, name, "pipeline-name", &relatedindex, &n))
   {
     if (n != 1)
       strerr_dief5x(1, srcdir, "/", name, "/pipeline-name", " should only contain one name") ;
@@ -506,37 +511,57 @@ static inline void add_sources (before_t *be, char const *srcdir)
   satmp.len = start ;
 }
 
+struct pipeline_recinfo_s
+{
+  before_t *be ;
+  longrun_t const *longruns ;
+  unsigned int nlong ;
+  bundle_t bundle ;
+  unsigned int pipelinename ;
+} ;
+
+static void add_tree_to_bundle_rec (struct pipeline_recinfo_s *recinfo, char const *name)
+{
+  nameinfo_t const *info ;
+  {
+    uint32_t id ;
+    avltree_search(&names_map, name, &id) ;
+    info = genalloc_s(nameinfo_t, &nameinfo) + id ;
+  }
+  if (info->type != SVTYPE_LONGRUN)
+    strerr_dief5x(1, "pipeline ", data.s + recinfo->pipelinename, " includes service ", name, " which is not a longrun") ;
+  if (recinfo->bundle.n++ >= recinfo->nlong)
+    strerr_dief4x(1, "pipeline ", data.s + recinfo->pipelinename, " is too long: possible loop involving ", name) ;
+  if (verbosity >= 4)
+    strerr_warni4x("adding ", name, " to pipeline ", data.s + recinfo->pipelinename) ;
+  if (!genalloc_append(unsigned int, &recinfo->be->indices, &info->pos)) dienomem() ;
+  for (unsigned int i = 0 ; i < recinfo->longruns[info->i].nproducers ; i++)
+    add_tree_to_bundle_rec(recinfo, data.s + genalloc_s(unsigned int, &recinfo->be->indices)[recinfo->longruns[info->i].prodindex + i]) ;
+}
+
 static inline void add_pipeline_bundles (before_t *be)
 {
   longrun_t const *longruns = genalloc_s(longrun_t, &be->longruns) ;
-  unsigned int n = genalloc_len(longrun_t, &be->longruns) ;
-  unsigned int i = n ;
+  unsigned int i = genalloc_len(longrun_t, &be->longruns) ;
   if (verbosity >= 2) strerr_warni1x("making bundles for pipelines") ;
   while (i--) if (longruns[i].pipelinename)
   {
-    bundle_t bundle = { .listindex = genalloc_len(unsigned int, &be->indices), .n = 1 } ;
-    uint32_t id ;
-    nameinfo_t const *info ;
-    unsigned int j = i ;
-    if (verbosity >= 3) strerr_warni2x("creating bundle for pipeline ", data.s + longruns[i].pipelinename) ;
-    add_name(be, S6RC_INTERNALS, data.s + longruns[i].pipelinename, SVTYPE_BUNDLE, &bundle.name, &id) ;
-    avltree_search(&names_map, keep.s + longruns[i].common.kname, &id) ;
-    info = genalloc_s(nameinfo_t, &nameinfo) + id ;
-    if (!genalloc_append(unsigned int, &be->indices, &info->pos)) dienomem() ;
-
-    while (longruns[j].pipeline[1])
+    struct pipeline_recinfo_s recinfo =
     {
-      if (bundle.n >= n)
-        strerr_dief4x(1, "pipeline ", data.s + longruns[i].pipelinename, " is too long: possible loop involving ", keep.s + longruns[j].common.kname) ;
-      avltree_search(&names_map, data.s + longruns[j].pipeline[1], &id) ;
-      info = genalloc_s(nameinfo_t, &nameinfo) + id ;
-      if (info->type != SVTYPE_LONGRUN)
-        strerr_dief5x(1, "longrun service ", keep.s + longruns[j].common.kname, " declares a consumer ", data.s + longruns[j].pipeline[1], " that is not a longrun service") ;
-      if (!genalloc_append(unsigned int, &be->indices, &info->pos)) dienomem() ;
-      j = info->i ;
-      bundle.n++ ;
+      .be = be,
+      .longruns = longruns,
+      .nlong = genalloc_len(longrun_t, &be->longruns),
+      .bundle = { .listindex = genalloc_len(unsigned int, &be->indices), .n = 0 },
+      .pipelinename = longruns[i].pipelinename
+    } ;
+    if (verbosity >= 3)
+      strerr_warni2x("creating bundle for pipeline ", data.s + recinfo.pipelinename) ;
+    {
+      uint32_t dummy ;
+      add_name(be, S6RC_INTERNALS, data.s + recinfo.pipelinename, SVTYPE_BUNDLE, &recinfo.bundle.name, &dummy) ;
     }
-    if (!genalloc_append(bundle_t, &be->bundles, &bundle)) dienomem() ;
+    add_tree_to_bundle_rec(&recinfo, keep.s + longruns[i].common.kname) ;
+    if (!genalloc_append(bundle_t, &be->bundles, &recinfo.bundle)) dienomem() ;
   }
 }
 
@@ -675,34 +700,67 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
   }
 }
 
-static uint32_t resolve_prodcons (longrun_t const *longruns, unsigned int i, int h, uint32_t nlong)
+static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *longruns, unsigned int const *indices, unsigned int n, uint32_t prodindex, uint32_t nlong, uint32_t *prodlist)
 {
-  uint32_t j ;
-  nameinfo_t const *p ;
-  if (!longruns[i].pipeline[h]) return nlong ;
-  avltree_search(&names_map, data.s + longruns[i].pipeline[h], &j) ;
-  p = genalloc_s(nameinfo_t, &nameinfo) + j ;
-  switch (p->type)
+  if (longruns[n].consumer)
   {
-    case SVTYPE_LONGRUN :
+    unsigned int i = 0 ;
+    uint32_t j ;
+    nameinfo_t const *p ;
+    avltree_search(&names_map, data.s + longruns[n].consumer, &j) ;
+    p = genalloc_s(nameinfo_t, &nameinfo) + j ;
+    switch (p->type)
+    {
+      case SVTYPE_LONGRUN : break ;
+      case SVTYPE_ONESHOT :
+      case SVTYPE_BUNDLE :
+        strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " of type ", p->type == SVTYPE_BUNDLE ? "bundle" : "oneshot") ;
+      default :
+        strerr_dief4x(1, "longrun service ", keep.s + longruns[i].common.kname, " declares being a producer for an undefined service: ", data.s + p->pos) ;
+    }
+    for (; i < longruns[p->i].nproducers ; i++)
     {
       uint32_t k ;
       nameinfo_t const *q ;
-      avltree_search(&names_map, data.s + longruns[p->i].pipeline[!h], &k) ;
+      avltree_search(&names_map, data.s + indices[longruns[p->i].prodindex + i], &k) ;
       q = genalloc_s(nameinfo_t, &nameinfo) + k ;
-      if (q->type != SVTYPE_LONGRUN) goto err ;
-      if (q->i != i) goto err ;
-      break ;
-     err:
-      strerr_dief7x(1, "longrun service ", keep.s + longruns[i].common.kname, " declares being a ", h ? "producer" : "consumer", " for a service named ", data.s + p->pos, " that does not declare it back ") ;
+      if (q->type != SVTYPE_LONGRUN)
+        strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " that is not a longrun") ;
+      if (q->i == n) break ;
     }
-    case SVTYPE_ONESHOT :
-    case SVTYPE_BUNDLE :
-      strerr_dief8x(1, "longrun service ", keep.s + longruns[i].common.kname, " declares being a ", h ? "producer" : "consumer", " for a service named ", data.s + p->pos, " of type ", p->type == SVTYPE_BUNDLE ? "bundle" : "oneshot") ;
-    default :
-      strerr_dief6x(1, "longrun service ", keep.s + longruns[i].common.kname, " declares being a ", h ? "producer" : "consumer", " for an undefined service: ", data.s + p->pos) ;
+    if (i == longruns[p->i].nproducers)
+      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " that does not declare it back") ;
+    l->consumer = p->i ; 
   }
-  return p->i ;
+  else l->consumer = nlong ;
+
+  for (unsigned int i = 0 ; i < longruns[n].nproducers ; i++)
+  {
+    uint32_t j, k ;
+    nameinfo_t const *p ;
+    nameinfo_t const *q ;
+    avltree_search(&names_map, data.s + indices[longruns[n].prodindex + i], &j) ;
+    p = genalloc_s(nameinfo_t, &nameinfo) + j ;
+    switch (p->type)
+    {
+      case SVTYPE_LONGRUN : break ;
+      case SVTYPE_ONESHOT :
+      case SVTYPE_BUNDLE :
+        strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a consumer for a service named ", data.s + p->pos, " of type ", p->type == SVTYPE_BUNDLE ? "bundle" : "oneshot") ;
+      default :
+        strerr_dief4x(1, "longrun service ", keep.s + longruns[i].common.kname, " declares being a consumer for an undefined service: ", data.s + p->pos) ;
+    }
+    avltree_search(&names_map, data.s + longruns[p->i].consumer, &k) ;
+    q = genalloc_s(nameinfo_t, &nameinfo) + k ;
+    if (q->type != SVTYPE_LONGRUN)
+      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a consumer for a service named ", data.s + p->pos, " that is not a longrun") ;
+    if (q->i != n)
+      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a consumer for a service named ", data.s + p->pos, " that does not declare it back") ;
+    prodlist[prodindex + i] = p->i ;
+  }
+  l->producers = prodindex ;
+  l->nproducers = longruns[n].nproducers ;
+  return longruns[n].nproducers ;
 }
 
 static inline unsigned int ugly_bitarray_vertical_countones (unsigned char const *sarray, unsigned int n, unsigned int i)
@@ -713,15 +771,16 @@ static inline unsigned int ugly_bitarray_vertical_countones (unsigned char const
   return m ;
 }
 
-static inline unsigned int resolve_services (s6rc_db_t *db, before_t const *be, char const **srcdirs, unsigned char *sarray, unsigned char const *barray)
+static inline void resolve_services (s6rc_db_t *db, before_t const *be, char const **srcdirs, unsigned char *sarray, unsigned char const *barray)
 {
   oneshot_t const *oneshots = genalloc_s(oneshot_t const, &be->oneshots) ;
   longrun_t const *longruns = genalloc_s(longrun_t const, &be->longruns) ;
   unsigned int const *indices = genalloc_s(unsigned int const, &be->indices) ;
   unsigned int n = db->nshort + db->nlong ;
   unsigned int nbits = bitarray_div8(n) ;
-  unsigned int total[2] = { 0, 0 } ;
-  unsigned int i = 0 ;
+  uint32_t prodindex = 0 ;
+  uint32_t i = 0 ;
+  uint32_t total[2] = { 0, 0 } ;
   if (verbosity >= 2) strerr_warni1x("resolving service names") ;
   memset(sarray, 0, nbits * n) ;
   for (; i < db->nlong ; i++)
@@ -731,8 +790,7 @@ static inline unsigned int resolve_services (s6rc_db_t *db, before_t const *be, 
     db->services[i].flags = longruns[i].common.annotation_flags ;
     db->services[i].timeout[0] = longruns[i].common.timeout[0] ;
     db->services[i].timeout[1] = longruns[i].common.timeout[1] ;
-    db->services[i].x.longrun.pipeline[0] = resolve_prodcons(longruns, i, 0, db->nlong) ;
-    db->services[i].x.longrun.pipeline[1] = resolve_prodcons(longruns, i, 1, db->nlong) ;
+    prodindex += resolve_prodcons(&db->services[i].x.longrun, longruns, indices, i, prodindex, db->nlong, db->producers) ;
     resolve_deps(&longruns[i].common, db->nlong, n, nbits, indices, sarray + i * nbits, barray) ;
   }
   for (i = 0 ; i < db->nshort ; i++)
@@ -757,7 +815,10 @@ static inline unsigned int resolve_services (s6rc_db_t *db, before_t const *be, 
     db->services[i].ndeps[1] = bitarray_countones(sarray + i * nbits, n) ;
     total[1] += db->services[i].ndeps[1] ;
   }
-  return total[1] ;
+
+  if (total[0] != total[1])
+    strerr_dief1x(101, "database inconsistency: dependencies and reverse dependencies do not match. Please submit a bug-report.") ;
+  db->ndeps = total[1] ;
 }
 
 static inline void flatlist_services (s6rc_db_t *db, unsigned char const *sarray)
@@ -876,14 +937,15 @@ static inline void init_compiled (char const *compiled)
 
 static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
 {
-  char pack[20] ;
+  char pack[24] ;
   if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/n") ;
   uint32_pack_big(pack, (uint32_t)db->nshort) ;
   uint32_pack_big(pack + 4, (uint32_t)db->nlong) ;
   uint32_pack_big(pack + 8, (uint32_t)db->stringlen) ;
   uint32_pack_big(pack + 12, (uint32_t)db->nargvs) ;
   uint32_pack_big(pack + 16, (uint32_t)db->ndeps) ;
-  auto_file(compiled, "n", pack, 20) ;
+  uint32_pack_big(pack + 20, (uint32_t)db->nproducers) ;
+  auto_file(compiled, "n", pack, 24) ;
 }
 
 static void make_skel (char const *compiled, char const *name, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, unsigned int notif)
@@ -955,33 +1017,6 @@ static inline void write_oneshot_runner (char const *compiled, uid_t const *uids
   auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
 }
 
-static inline int write_pipelines (stralloc *sa, s6rc_db_t const *db)
-{
-  uint32_t i = db->nlong ;
-  unsigned char black[bitarray_div8(db->nlong)] ;
-  memset(black, 0, bitarray_div8(db->nlong)) ;
-  while (i--) if (!bitarray_peek(black, i))
-  {
-    uint32_t j = i ;
-    for (;;)
-    {
-      uint32_t k = db->services[j].x.longrun.pipeline[0] ;
-      if (k >= db->nlong) break ;
-      j = k ;
-    }
-    for (;;)
-    {
-      uint32_t k = db->services[j].x.longrun.pipeline[1] ;
-      bitarray_set(black, j) ;
-      if (k >= db->nlong) break ;
-      if (!stralloc_cats(sa, db->string + db->services[k].name)
-       || !stralloc_catb(sa, "\n", 1)) return 0 ;
-      j = k ;
-    }
-  }
-  return 1 ;
-}
-
 static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, char const *fdhuser)
 {
   size_t base = satmp.len ;
@@ -1024,7 +1059,11 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
     }
   }
 
-  if (!write_pipelines(&satmp, db)) dienomem() ;
+  for (uint32_t j = 0 ; j < db->nlong ; j++)
+    if (db->services[j].x.longrun.nproducers)
+      if (!stralloc_cats(&satmp, db->string + db->services[j].name)
+       || !stralloc_catb(&satmp, "\n", 1)) dienomem() ;
+
   auto_file(compiled, "servicedirs/" S6RC_FDHOLDER "/data/autofilled", satmp.s + base, satmp.len - base) ;
   satmp.len = base ;
 
@@ -1140,30 +1179,25 @@ static void dircopy (char const *compiled, char const *srcfn, char const *dstfn)
   }
 }
 
-static inline void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, unsigned int fd, char const *exe, int needargs)
+static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, char const *exe, int needargs)
 {
   size_t base = satmp.len ;
   if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -")
    || !stralloc_cats(&satmp, needargs ? "S0\n" : "P\n")) dienomem() ;
-  if (db->services[i].x.longrun.pipeline[0] < db->nlong)
+  if (db->services[i].x.longrun.nproducers)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-r-")
      || !string_quote_nodelim(&satmp, db->string + db->services[i].name, strlen(db->string + db->services[i].name))
      || !stralloc_cats(&satmp, "\"\n")) dienomem() ;
   }
-  if (db->services[i].x.longrun.pipeline[1] < db->nlong)
+  if (db->services[i].x.longrun.consumer < db->nlong)
   {
-    char const *consumername = db->string + db->services[db->services[i].x.longrun.pipeline[1]].name ;
-    if (!stralloc_cats(&satmp, EXECLINE_EXTBINPREFIX "fdmove ")
-     || !stralloc_cats(&satmp, fd == 3 ? "4" : "3")
-     || !stralloc_cats(&satmp, " 0\n"
+    char const *consumername = db->string + db->services[db->services[i].x.longrun.consumer].name ;
+    if (!stralloc_cats(&satmp, EXECLINE_EXTBINPREFIX "fdmove 1 0\n"
       S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-w-")
      || !string_quote_nodelim(&satmp, consumername, strlen(consumername))
      || !stralloc_cats(&satmp, "\"\n"
-      EXECLINE_EXTBINPREFIX "fdmove 1 0\n"
-      EXECLINE_EXTBINPREFIX "fdmove 0 ")
-     || !stralloc_cats(&satmp, fd == 3 ? "4" : "3")
-     || !stralloc_cats(&satmp, "\n")) dienomem() ;
+      EXECLINE_EXTBINPREFIX "fdswap 0 1\n")) dienomem() ;
   }
   if (!stralloc_cats(&satmp, "./")
    || !stralloc_cats(&satmp, exe)
@@ -1184,7 +1218,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     size_t srcdirlen = strlen(srcdirs[i]) ;
     size_t len = strlen(db->string + db->services[i].name) ;
     unsigned int fd = 0 ;
-    int ispipelined = db->services[i].x.longrun.pipeline[0] < db->nlong || db->services[i].x.longrun.pipeline[1] < db->nlong ;
+    int ispipelined = db->services[i].x.longrun.nproducers || db->services[i].x.longrun.consumer < db->nlong ;
     int r ;
     char srcfn[srcdirlen + len + 18] ;
     char dstfn[clen + len + 30] ;
@@ -1217,13 +1251,18 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
         cleanup(compiled) ;
         strerr_diefu2sys(111, "write to ", dstfn) ;
       }
+      if (fd < 3 && verbosity)
+      {
+        fmt[fmtlen-1] = 0 ;
+        strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
+      }
     }
 
     memcpy(srcfn + srcdirlen + 1 + len, "/run", 5) ;
     memcpy(dstfn + clen + 13 + len, "/run", 5) ;
     if (ispipelined)
     {
-      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "run", 0) ;
+      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "run", 0) ;
       memcpy(dstfn + clen + 17 + len, ".user", 6) ;
     }
     if (!filecopy_unsafe(srcfn, dstfn, 0755))
@@ -1238,7 +1277,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       memcpy(dstfn + clen + 14 + len, "finish", 7) ;
       if (ispipelined)
       {
-        write_exe_wrapper(compiled, dstfn + clen + 1, db, i, fd, "finish", 1) ;
+        write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "finish", 1) ;
         memcpy(dstfn + clen + 20 + len, ".user", 6) ;
       }
       if (!filecopy_unsafe(srcfn, dstfn, 0755))
@@ -1284,9 +1323,10 @@ static inline int write_service (buffer *b, s6rc_service_t const *sv, int type)
   uint32_pack_big(pack + 28, sv->deps[1]) ;
   if (type)
   {
-    uint32_pack_big(pack + 32, sv->x.longrun.pipeline[0]) ;
-    uint32_pack_big(pack + 36, sv->x.longrun.pipeline[1]) ;
-    m = 40 ;
+    uint32_pack_big(pack + 32, sv->x.longrun.consumer) ;
+    uint32_pack_big(pack + 36, sv->x.longrun.nproducers) ;
+    uint32_pack_big(pack + 40, sv->x.longrun.producers) ;
+    m = 44 ;
   }
   else
   {
@@ -1330,11 +1370,18 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
 
   {
     unsigned int i = db->ndeps << 1 ;
-    uint32_t const *deps = db->deps ;
+    uint32_t const *p = db->deps ;
+    char pack[4] ;
     while (i--)
     {
-      char pack[4] ;
-      uint32_pack_big(pack, *deps++) ;
+      uint32_pack_big(pack, *p++) ;
+      if (buffer_put(&b, pack, 4) < 0) goto err ;
+    }
+    i = db->nproducers ;
+    p = db->producers ;
+    while (i--)
+    {
+      uint32_pack_big(pack, *p++) ;
       if (buffer_put(&b, pack, 4) < 0) goto err ;
     }
   }
@@ -1423,6 +1470,7 @@ int main (int argc, char const *const *argv)
     unsigned int nbits = bitarray_div8(n) ;
     unsigned int nbundles = genalloc_len(bundle_t, &before.bundles) ;
     s6rc_service_t servicesblob[n] ;
+    uint32_t producers[before.nproducers ? before.nproducers : 1] ;
     s6rc_db_t db =
     {
       .services = servicesblob,
@@ -1430,6 +1478,8 @@ int main (int argc, char const *const *argv)
       .nlong = genalloc_len(longrun_t, &before.longruns),
       .stringlen = keep.len,
       .nargvs = before.nargvs,
+      .nproducers = before.nproducers,
+      .producers = producers,
       .string = keep.s
     } ;
     char const *srcdirs[db.nlong] ;
@@ -1441,7 +1491,7 @@ int main (int argc, char const *const *argv)
 
     genalloc_free(bundle_t, &before.bundles) ;
     flatlist_bundles(bundles, nbundles, nbits, barray, bdeps) ;
-    db.ndeps = resolve_services(&db, &before, srcdirs, sarray, barray) ;
+    resolve_services(&db, &before, srcdirs, sarray, barray) ;
     genalloc_free(unsigned int, &before.indices) ;
     genalloc_free(oneshot_t, &before.oneshots) ;
     genalloc_free(longrun_t, &before.longruns) ;

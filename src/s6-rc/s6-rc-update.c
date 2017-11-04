@@ -445,8 +445,7 @@ static inline int delete_unused_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb,
 {
   unsigned int i = olddb->nlong ;
   while (i--)
-    if (!(oldstate[i] & 8)
-     && olddb->services[i].x.longrun.pipeline[0] < olddb->nlong)
+    if (!(oldstate[i] & 8) && olddb->services[i].x.longrun.nproducers)
     {
       size_t len = strlen(olddb->string + olddb->services[i].name) ;
       char pipename[len + 13] ;
@@ -467,7 +466,7 @@ static inline int rename_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, s6rc_d
   unsigned int i = newdb->nlong ;
   while (i--)
   {
-    if ((newstate[i] & 20) == 20 && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
+    if ((newstate[i] & 20) == 20 && newdb->services[i].x.longrun.nproducers)
     {
       int fd ;
       size_t oldlen = strlen(olddb->string + olddb->services[invimage[i]].name) ;
@@ -513,7 +512,7 @@ static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, un
   nano1.nano = 1 ;
   while (i--)
   {
-    if (!(newstate[i] & 4) && newdb->services[i].x.longrun.pipeline[0] < newdb->nlong)
+    if (!(newstate[i] & 4) && newdb->services[i].x.longrun.nproducers)
     {
       int p[2] ;
       size_t len = strlen(newdb->string + newdb->services[i].name) ;
@@ -691,9 +690,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
       s6rc_service_t oldserviceblob[oldn] ;
       char const *oldargvblob[olddb.nargvs] ;
       uint32_t olddepsblob[olddb.ndeps << 1] ;
+      uint32_t oldproducersblob[olddb.nproducers] ;
       s6rc_service_t newserviceblob[newn] ;
       char const *newargvblob[newdb.nargvs] ;
       uint32_t newdepsblob[newdb.ndeps << 1] ;
+      uint32_t newproducersblob[newdb.nproducers] ;
       unsigned int invimage[newn] ;
       char oldstringblob[olddb.stringlen] ;
       char newstringblob[newdb.stringlen] ;
@@ -705,10 +706,12 @@ int main (int argc, char const *const *argv, char const *const *envp)
       olddb.services = oldserviceblob ;
       olddb.argvs = oldargvblob ;
       olddb.deps = olddepsblob ;
+      olddb.producers = oldproducersblob ;
       olddb.string = oldstringblob ;
       newdb.services = newserviceblob ;
       newdb.argvs = newargvblob ;
       newdb.deps = newdepsblob ;
+      newdb.producers = newproducersblob ;
       newdb.string = newstringblob ;
 
 
@@ -812,7 +815,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         if (r & 2) strerr_warnw3x("s6-svscan not running on ", live, "/scandir") ;
 
 
-       /* Adjust stored pipelines */
+       /* Adjust stored pipes */
 
         if (verbosity >= 2)
           strerr_warni1x("updating s6rc-fdholder pipe storage") ;

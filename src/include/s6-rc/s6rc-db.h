@@ -23,7 +23,9 @@ struct s6rc_oneshot_s
 typedef struct s6rc_longrun_s s6rc_longrun_t, *s6rc_longrun_t_ref ;
 struct s6rc_longrun_s
 {
-  uint32_t pipeline[2] ;
+  uint32_t consumer ;
+  uint32_t nproducers ;
+  uint32_t producers ;
 } ;
 
 typedef union s6rc_longshot_u s6rc_longshot_t, *s6rc_longshot_t_ref ;
@@ -53,9 +55,11 @@ struct s6rc_db_s
   unsigned int stringlen ;
   unsigned int nargvs ;
   unsigned int ndeps ;
+  unsigned int nproducers ;
   char *string ;
   char const **argvs ;
   uint32_t *deps ;
+  uint32_t *producers ;
 } ;
 
 extern int s6rc_db_read_uint32 (buffer *, uint32_t *) ;
