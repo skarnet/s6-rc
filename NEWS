@@ -1,5 +1,19 @@
 Changelog for s6-rc.
 
+In 0.4.0.0
+----------
+
+ - s6-rc-compile now accepts several producers in a consumer-for file.
+All the producers for a service will write to the same pipe. In other
+words: pipelines are now funnels.
+ - The pipeline-name file, defining the name of a bundle containing
+all the services in a pipeline, must now be place in the definition
+directory of the last consumer in the pipeline, instead of the definition
+directory of the first producer (since the latter is not unique
+anymore).
+ - All service databases must be edited and recompiled.
+
+
 In 0.3.0.0
 ----------
 

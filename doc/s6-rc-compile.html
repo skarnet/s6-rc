@@ -287,19 +287,20 @@ be copied verbatim into the generated service directory. </li>
 it must contain the name of another longrun service <em>servicelog</em>;
 <em>service</em> is then declared as a producer for <em>servicelog</em>.
 <em>servicelog</em> must also, in its own definition directory,
-be declared as a consumer for <em>service</em>. </li>
+be declared as a consumer for at least <em>service</em>. </li>
  <li> An optional file named <tt>consumer-for</tt>. If this file exists, then
-it must contain the name of another longrun service <em>serviceprod</em>;
-<em>service</em> is then declared as a consumer for <em>serviceprod</em>.
-<em>serviceprod</em> must also, in its own definition directory,
+it must contain a list of longrun services <em>serviceprod...</em>:
+<em>service</em> is then declared as a consumer for all the services
+in <em>serviceprod</em>. Each of those services
+must also, in its own definition directory,
 be declared as a producer for <em>service</em>. </li>
  <li> An optional file named <tt>pipeline-name</tt>. If this file exists
-along with a <tt>producer-for</tt> file, and there is no
-<tt>consumer-for</tt> file, then a bundle will automatically be
+along with a <tt>consumer-for</tt> file, and there is no
+<tt>producer-for</tt> file, then a bundle will automatically be
 created, named with the content of the <tt>pipeline-name</tt> file, and
-containing all the services in the pipeline that starts at <em>service</em>.
+containing all the services in the pipeline that ends at <em>service</em>.
 See below for more about pipelining. The <tt>pipeline-name</tt> file
-is ignored if <em>service</em> is not a first producer. </li>
+is ignored if <em>service</em> is not a last consumer. </li>
 </ul>
 
 <p>
@@ -342,12 +343,12 @@ indefinite number of longrun services this way.
 </p>
 
 <ul>
- <li> The first producer declares its direct consumer in a <tt>producer-for</tt> file. </li>
- <li> Intermediate services declare both their direct producer in their
+ <li> A producer declares its direct consumer in a <tt>producer-for</tt> file. </li>
+ <li> Intermediate services declare both their direct producers in their
 <tt>consumer-for</tt> file, and their direct consumer in their
 <tt>producer-for</tt> file. </li>
- <li> The last consumer only declares its direct producer in a <tt>consumer-for</tt> file. </li>
- <li> The first producer may declare a name for the whole pipeline, in
+ <li> The last consumer only declares its direct producers in a <tt>consumer-for</tt> file. </li>
+ <li> The last consumer may also declare a name for the whole pipeline, in
 its <tt>pipeline-name</tt> file. If it does so, then a bundle is automatically
 created with
 the given name, and it contains all the services in the pipeline. </li>
@@ -360,14 +361,32 @@ that the pipes are not broken whenever one element in the chain dies.
 </p>
 
 <p>
+ A service can only be declared as a producer for <em>one</em> other
+services, but it can be declared as a consumer for several other
+services: the <em>consumer-for</em> can have several lines. This
+means that one service can only send its output to one consumer, but
+it can read its input from several producers. If there are several
+producers to a service, they will all write to the same Unix pipe
+that the service reads.
+</p>
+
+<p>
+ This means that what s6-rc calls <em>pipelines</em> are really
+<em>funnels</em>: you can collapse multiple data streams into
+a single data stream, at every step of your processing chain.
+The <em>pipeline</em> terminology remains for history reasons:
+previous versions of s6-rc could not handle multiple producers.
+</p>
+
+<p>
  s6-rc-compile checks for pipeline consistency. It must see a
-<tt>producer-for</tt> file in the producer's definition that is consistent
+<tt>producer-for</tt> file in the producers' definition that is consistent
 with the <tt>consumer-for</tt> file in the consumer's definition. It will
 detect and reject cycles as well as collisions.
 </p>
 
 <p>
- The pipe linking a producer with a consumer is created and stored at
+ The pipe linking a set of producers with a consumer is created and stored at
 run-time in a
 <a href="//skarnet.org/software/s6/s6-fdholder-daemon.html">s6-fdholder-daemon</a>
 instance managed by an automatically generated longrun service named
