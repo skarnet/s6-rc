@@ -487,6 +487,11 @@ static inline void add_source (before_t *be, int dirfd, char const *srcdir, char
   else strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
 }
 
+static int qsort_cannot_use_strcmp_directly (void const *a, void const *b)
+{
+  return strcmp(*(char const *const *)a, *(char const *const *)b) ;
+}
+
 static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
 {
   unsigned int n = 0 ;
@@ -521,7 +526,7 @@ static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
       names[i] = sa->s + pos ;
       pos += strlen(sa->s + pos) + 1 ;
     }
-    qsort(names, n, sizeof(char const *), (int (*)(const void *, const void *))&strcmp) ;
+    qsort(names, n, sizeof(char const *), &qsort_cannot_use_strcmp_directly) ;
     for (unsigned int i = 0 ; i < n ; i++)
     {
       int fd = open_readatb(fdsrc, names[i]) ;
