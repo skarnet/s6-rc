@@ -2,8 +2,8 @@
 *.lo
 /config.mak
 /src/include/s6-rc/config.h
-/libs6rc.a.xyzzy
-/libs6rc.so.xyzzy
+/*.a.xyzzy
+/*.so.xyzzy
 /s6-rc-compile
 /s6-rc-dryrun
 /s6-rc-db
