@@ -30,6 +30,25 @@ minor and bugfix version changes.
 
 <h1> What has changed in s6-rc </h1>
 
+<h2> in 0.3.0.1 </h2>
+
+<ul>
+ <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
+dependency bumped to 2.6.2.0. </li>
+ <li> <a href="//skarnet.org/software/execline/">execline</a>
+dependency bumped to 2.3.0.4. </li>
+ <li> <a href="//skarnet.org/software/s6/">s6</a>
+dependency bumped to 2.6.2.0. </li>
+ <li> New <tt>-p</tt> option to <a href="s6-rc-init.html">s6-rc-init</a>
+to allow using several live directories with the same scandir. </li>
+ <li> New command: <a href="s6-rc.html"><tt>s6-rc diff</tt></a>. </li>
+ <li> <a href="s6-rc-compile.html">s6-rc-compile</a> now guarantees that
+service numbers do not change if the source database does not change.
+This is useful for updates to the database format. You should recompile
+your service databases in preparation for the switch to s6-rc-0.4.0.0. </li>
+</ul>
+
+
 <h2> in 0.3.0.0 </h2>
 
 <ul>

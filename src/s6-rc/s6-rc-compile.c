@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>  /* qsort */
 #include <skalibs/types.h>
 #include <skalibs/bitarray.h>
 #include <skalibs/strerr2.h>
@@ -471,18 +472,21 @@ static inline void add_source (before_t *be, int dirfd, char const *srcdir, char
   else strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
 }
 
-static inline void add_sources (before_t *be, char const *srcdir)
+static int qsort_cannot_use_strcmp_directly (void const *a, void const *b)
 {
-  size_t start = satmp.len ;
-  size_t cur ;
+  return strcmp(*(char const *const *)a, *(char const *const *)b) ;
+}
+
+static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
+{
+  unsigned int n = 0 ;
+  int fdsrc ;
   DIR *dir = opendir(srcdir) ;
   if (!dir) strerr_diefu2sys(111, "opendir ", srcdir) ;
-  if (!stralloc_cats(&satmp, srcdir) || !stralloc_catb(&satmp, "/", 1)) dienomem() ;
-  cur = satmp.len ;
+  fdsrc = dirfd(dir) ;
   for (;;)
   {
     struct stat st ;
-    int fd ;
     direntry *d ;
     errno = 0 ;
     d = readdir(dir) ;
@@ -491,19 +495,34 @@ static inline void add_sources (before_t *be, char const *srcdir)
     if (strchr(d->d_name, '\n'))
       strerr_dief3x(1, "subdirectory of ", srcdir, " contains a newline character") ;
     check_identifier(srcdir, d->d_name) ;
-    satmp.len = cur ;
-    if (!stralloc_catb(&satmp, d->d_name, strlen(d->d_name) + 1)) dienomem() ;
-    if (stat(satmp.s + start, &st) < 0)
-      strerr_diefu2sys(111, "stat ", satmp.s + start) ;
+    if (stat_at(fdsrc, d->d_name, &st) < 0)
+      strerr_diefu4sys(111, "stat ", srcdir, "/", d->d_name) ;
     if (!S_ISDIR(st.st_mode)) continue ;
-    fd = open_readb(satmp.s + start) ;
-    if (fd < 0) strerr_diefu2sys(111, "open ", satmp.s + start) ;
-    add_source(be, fd, srcdir, d->d_name) ;
-    close(fd) ;
+    n++ ;
+    if (!stralloc_catb(sa, d->d_name, strlen(d->d_name)+1)) dienomem() ;
   }
   if (errno) strerr_diefu2sys(111, "readdir ", srcdir) ;
+  if (n)
+  {
+    size_t pos = 0 ;
+    char const *names[n] ;
+    for (unsigned int i = 0 ; i < n ; i++)
+    {
+      names[i] = sa->s + pos ;
+      pos += strlen(sa->s + pos) + 1 ;
+    }
+    qsort(names, n, sizeof(char const *), &qsort_cannot_use_strcmp_directly) ;
+    for (unsigned int i = 0 ; i < n ; i++)
+    {
+      int fd = open_readatb(fdsrc, names[i]) ;
+      if (fd < 0) strerr_diefu4sys(111, "open ", srcdir, "/", names[i]) ;
+      add_source(be, fd, srcdir, names[i]) ;
+      close(fd) ;
+    }
+    sa->len = 0 ;
+  }
+  else if (verbosity) strerr_warnw3x("source ", srcdir, " is empty") ;
   dir_close(dir) ;
-  satmp.len = start ;
 }
 
 static inline void add_pipeline_bundles (before_t *be)
@@ -1415,7 +1434,11 @@ int main (int argc, char const *const *argv)
   compiled = *argv++ ;
   before.specialdeps[0] = add_internal_longrun(&before, S6RC_ONESHOT_RUNNER) ;
   before.specialdeps[1] = add_internal_longrun(&before, S6RC_FDHOLDER) ;
-  for (; *argv ; argv++) add_sources(&before, *argv) ;
+  {
+    stralloc sa = STRALLOC_ZERO ;
+    for (; *argv ; argv++) add_sources(&before, *argv, &sa) ;
+    stralloc_free(&sa) ;
+  }
   add_pipeline_bundles(&before) ;
 
   {

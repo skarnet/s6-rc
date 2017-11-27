@@ -1,5 +1,14 @@
 Changelog for s6-rc.
 
+In 0.3.0.1
+----------
+
+ - s6-rc-compile now guarantees the numbering of the services.
+This is useful when the database format changes. You should
+recompile your databases in preparation for the switch to
+s6-rc-0.4.0.0.
+
+
 In 0.3.0.0
 ----------
 
