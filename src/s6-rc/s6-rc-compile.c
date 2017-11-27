@@ -446,7 +446,7 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
       genalloc_setlen(unsigned int, &be->indices, relatedindex) ;
     }
   }
-  else if (faccessat(dirfd, "pipeline-name", F_OK, 0) < 0)
+  else if (access_at(dirfd, "pipeline-name", F_OK, 0) < 0)
   {
     if (errno != ENOENT)
       strerr_diefu5sys(111, "access ", srcdir, "/", name, "/pipeline-name") ;
