@@ -3,6 +3,7 @@
 #include <skalibs/nonposix.h>  /* Solaris doesn't know mkdtemp() is POSIX */
 #include <string.h>
 #include <stdint.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -32,7 +33,6 @@
 #define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] [ -b ] newdb"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "build string") ;
-#define NEWSUFFIX ":updated:XXXXXX"
 
 static char const *live = S6RC_LIVE_BASE ;
 static size_t livelen = sizeof(S6RC_LIVE_BASE) - 1 ;
@@ -324,49 +324,32 @@ static inline void rollback_servicedirs (char const *newlive, unsigned char cons
   }
 }
 
-static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *invimage, char const *prefix, size_t prefixlen, stralloc *sa)
+static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t const *olddb, unsigned char const *newstate, s6rc_db_t const *newdb, char const *newcompiled, unsigned int *invimage, char const *prefix, stralloc *sa)
 {
-  size_t tmpbase = satmp.len ;
+  size_t dirlen, pos, newlen, sdlen ;
   size_t newclen = strlen(newcompiled) ;
-  size_t dirlen, llen, newlen, sdlen ;
-  int e = 0 ;
-  unsigned int i = 0 ;
-  if (sareadlink(&satmp, live) < 0) strerr_diefu2sys(111, "readlink ", live) ;
-  if (!s6rc_sanitize_dir(sa, live, &dirlen)) dienomem() ;
-  llen = sa->len ;
-  if (!stralloc_catb(sa, NEWSUFFIX, sizeof(NEWSUFFIX))) dienomem() ;
-  newlen = --sa->len ;
-  if (!mkdtemp(sa->s)) strerr_diefu2sys(111, "mkdtemp ", sa->s) ;
-  if (chmod(sa->s, 0755) < 0) { e = errno ; goto err ; }
+  unsigned int i = newdb->nlong + newdb->nshort ;
+  if (sareadlink(sa, live) < 0 || !stralloc_0(sa)) strerr_diefu2sys(111, "readlink ", live) ;
+  pos = sa->len ;
   {
-    size_t tmplen = satmp.len ;
-    char fn[llen + 9] ;
-    if (!stralloc_cats(sa, "/scandir") || !stralloc_0(sa)) { e = errno ; goto err ; }
-    memcpy(fn, sa->s, llen) ;
-    memcpy(fn + llen, "/scandir", 9) ;
-    if (sareadlink(&satmp, fn) < 0 || !stralloc_0(&satmp)) { e = errno ; goto err ; }
-    if (symlink(satmp.s + tmplen, sa->s) < 0) { e = errno ; goto err ; }
-    satmp.len = tmplen ;
-  }
-  sa->len = newlen ;
-  if (!stralloc_catb(sa, "/prefix", 8)) { e = errno ; goto err ; }
-  if (!openwritenclose_unsafe(sa->s, prefix, prefixlen)) { e = errno ; goto err ; }
-  sa->len = newlen ;
-  if (!stralloc_catb(sa, "/state", 7)) { e = errno ; goto err ; }
-  {
-    char tmpstate[newdb->nlong + newdb->nshort] ;
-    unsigned int i = newdb->nlong + newdb->nshort ;
+    ssize_t r ;
+    char sdtarget[PATH_MAX] ;
+    char sdlink[livelen + 9] ;
+    unsigned char tmpstate[newdb->nlong + newdb->nshort] ;
+    memcpy(sdlink, live, livelen) ;
+    memcpy(sdlink + livelen, "/scandir", 9) ;
+    r = readlink(sdlink, sdtarget, PATH_MAX) ;
+    if (r < 0) strerr_diefu2sys(111, "readlink ", sdlink) ;
+    if (r >= PATH_MAX - 1) strerr_dief3x(100, "target for ", sdlink, " is too long") ;
+    sdtarget[r] = 0 ;
     while (i--) tmpstate[i] = newstate[i] & 1 ;
-    if (!openwritenclose_unsafe(sa->s, tmpstate, newdb->nlong + newdb->nshort)) { e = errno ; goto err ; }
+    if (!s6rc_livedir_create(sa, live, PROG, sdtarget, prefix, newcompiled, tmpstate, newdb->nlong + newdb->nshort, &dirlen))
+      strerr_diefu1sys(111, "create new livedir") ;
   }
-  sa->len = newlen ;
-  if (!stralloc_catb(sa, "/compiled", 10)) { e = errno ; goto err ; }
-  if (symlink(newcompiled, sa->s) < 0) goto err ;
-  sa->len = newlen ;
-  if (!stralloc_catb(sa, "/servicedirs", 13)) { e = errno ; goto err ; }
-  if (mkdir(sa->s, 0755) < 0) { e = errno ; goto err ; }
+  newlen = sa->len ;
+  i = 0 ;
+  if (!stralloc_catb(sa, "/servicedirs/", 13)) goto rollback ;
   sdlen = sa->len ;
-  sa->s[sdlen - 1] = '/' ;
 
   for (; i < newdb->nlong ; i++)
   {
@@ -376,8 +359,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
     memcpy(newfn + newclen, "/servicedirs/", 13) ;
     memcpy(newfn + newclen + 13, newdb->string + newdb->services[i].name, newnamelen + 1) ;
     sa->len = sdlen ;
-    if (!stralloc_cats(sa, newdb->string + newdb->services[i].name)
-     || !stralloc_0(sa)) { e = errno ; goto rollback ; }
+    if (!stralloc_cats(sa, newdb->string + newdb->services[i].name) || !stralloc_0(sa)) goto rollback ;
     if (newstate[i] & 1)
     {
       char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
@@ -386,55 +368,35 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
       memcpy(oldfn, live, livelen) ;
       memcpy(oldfn + livelen, "/servicedirs/", 13) ;
       memcpy(oldfn + livelen + 13, oldname, oldnamelen + 1) ;
-      if (rename(oldfn, sa->s) < 0) goto rollback ;
-      if (!s6rc_servicedir_copy_online(newfn, sa->s)) { i++ ; e = errno ; goto rollback ; }
+      if (rename(oldfn, sa->s + pos) < 0) goto rollback ;
+      if (!s6rc_servicedir_copy_online(newfn, sa->s + pos)) { i++ ; goto rollback ; }
     }
-    else if (!s6rc_servicedir_copy_offline(newfn, sa->s)) { e = errno ; goto rollback ; }
+    else if (!s6rc_servicedir_copy_offline(newfn, sa->s + pos)) goto rollback ;
   }
-
   sa->len = newlen ;
-  sa->s[sa->len++] = 0 ;
-  {
-    char tmpfn[llen + 5] ;
-    memcpy(tmpfn, sa->s, llen) ;
-    memcpy(tmpfn + llen, ".new", 5) ;
-    if (unlink(tmpfn) < 0 && errno != ENOENT) { e = errno ; goto rollback ; }
-    if (symlink(sa->s + dirlen, tmpfn) < 0) { e = errno ; goto rollback ; }
+  sa->s[sa->len] = 0 ;
 
    /* The point of no return is here */
-    if (rename(tmpfn, live) < 0)
-    {
-      e = errno ;
-      unlink(tmpfn) ;
-      goto rollback ;
-    }
-  }
-
-  if (verbosity >= 2)
-    strerr_warni1x("successfully switched to new database") ;
+  if (!atomic_symlink(sa->s + dirlen, live, "s6-rc-update_atomic_symlink")) goto rollback ;
+  if (verbosity >= 2) strerr_warni1x("successfully switched to new database") ;
 
  /* scandir cleanup, then old livedir cleanup */
-  sa->len = dirlen ;
-  if (!stralloc_catb(sa, satmp.s + tmpbase, satmp.len - tmpbase) || !stralloc_0(sa))
-    dienomem() ;
   i = olddb->nlong ;
   while (i--)
     s6rc_servicedir_unsupervise(sa->s, prefix, olddb->string + olddb->services[i].name, (oldstate[i] & 33) == 1) ;
-  rm_rf(sa->s) ;
-
+  rm_rf_in_tmp(sa, 0) ;
   sa->len = 0 ;
-  satmp.len = tmpbase ;
   return ;
 
  rollback:
-  sa->len = newlen ;
-  sa->s[sa->len++] = 0 ;
-  rollback_servicedirs(sa->s, newstate, invimage, olddb, newdb, i) ;
- err:
-  sa->len = newlen ;
-  sa->s[sa->len++] = 0 ;
-  rm_rf(sa->s) ;
-  errno = e ;
+  {
+    int e = errno ;
+    sa->len = newlen ;
+    sa->s[sa->len++] = 0 ;
+    rollback_servicedirs(sa->s + pos, newstate, invimage, olddb, newdb, i) ;
+    rm_rf_in_tmp(sa, 0) ;
+    errno = e ;
+  }
   strerr_diefu2sys(111, "make new live directory in ", sa->s) ;
 }
 
@@ -642,8 +604,6 @@ int main (int argc, char const *const *argv, char const *const *envp)
   if (!argc) dieusage() ;
   if (argv[0][0] != '/')
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
-  if (live[0] != '/')
-    strerr_dief2x(100, live, " is not an absolute path") ;
   livelen = strlen(live) ;
 
   {
@@ -809,11 +769,11 @@ int main (int argc, char const *const *argv, char const *const *envp)
         if (verbosity >= 2)
           strerr_warni1x("updating state and service directories") ;
 
-        make_new_livedir(oldstate, &olddb, newstate, &newdb, argv[0], invimage, prefix, prefixlen, &sa) ;
+        make_new_livedir(oldstate, &olddb, newstate, &newdb, argv[0], invimage, prefix, &sa) ;
+        stralloc_free(&sa) ;
         r = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
         if (!r) strerr_diefu2sys(111, "manage new service directories in ", live) ;
         if (r & 2) strerr_warnw3x("s6-svscan not running on ", live, "/scandir") ;
-
 
        /* Adjust stored pipes */
 

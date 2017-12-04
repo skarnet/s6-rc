@@ -1,6 +1,5 @@
 /* ISC license. */
 
-#include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
@@ -11,35 +10,29 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/skamisc.h>
+#include <skalibs/unix-transactional.h>
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -p prefix ] [ -t timeout ] [ -b ] [ -d ] scandir"
+#define USAGE "s6-rc-init [ -c compiled ] [ -l live ] [ -p prefix ] [ -t timeout ] [ -d ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
-#define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
-static size_t llen ;
-static stralloc stmp = STRALLOC_ZERO ;
-
-static void cleanup (void)
+static void cleanup (stralloc *sa)
 {
   int e = errno ;
-  stmp.s[llen] = 0 ;
-  unlink(stmp.s) ;
-  stmp.s[llen] = ':' ;
-  rm_rf_in_tmp(&stmp, 0) ;
+  rm_rf_in_tmp(sa, 0) ;
   errno = e ;
 }
 
 int main (int argc, char const *const *argv)
 {
-  tain_t deadline, tto ;
+  tain_t deadline ;
+  stralloc sa = STRALLOC_ZERO ;
   size_t dirlen ;
   char const *live = S6RC_LIVE_BASE ;
   char const *compiled = S6RC_COMPILED_BASE ;
   char const *prefix = "" ;
-  int blocking = 0, deref = 0 ;
+  int deref = 0 ;
   PROG = "s6-rc-init" ;
   {
     unsigned int t = 0 ;
@@ -54,156 +47,79 @@ int main (int argc, char const *const *argv)
         case 'l' : live = l.arg ; break ;
         case 'p' : prefix = l.arg ; break ;
         case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
-        case 'b' : blocking = 1 ; break ;
+        case 'b' : break ;
         case 'd' : deref = 1 ; break ;
         default : dieusage() ;
       }
     }
     argc -= l.ind ; argv += l.ind ;
-    if (t) tain_from_millisecs(&tto, t) ;
-    else tto = tain_infinite_relative ;
+    if (t) tain_from_millisecs(&deadline, t) ;
+    else deadline = tain_infinite_relative ;
   }
   if (!argc) dieusage() ;
 
   if (!deref && compiled[0] != '/')
     strerr_dief2x(100, compiled, " is not an absolute path") ;
-  if (live[0] != '/')
-    strerr_dief2x(100, live, " is not an absolute path") ;
   if (argv[0][0] != '/')
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
   if (strchr(prefix, '/') || strchr(prefix, '\n'))
     strerr_dief1x(100, "prefix cannot contain a / or a newline") ;
 
   tain_now_g() ;
-  tain_add_g(&deadline, &tto) ;
+  tain_add_g(&deadline, &deadline) ;
 
-  if (!s6rc_sanitize_dir(&stmp, live, &dirlen)) dienomem() ;
-  llen = stmp.len ;
-  if (!stralloc_cats(&stmp, ":initial") || !stralloc_0(&stmp))
-    strerr_diefu1sys(111, "stralloc_catb") ;
-
+  if (deref)
   {
-    int fdlock ;
-    int fdcompiled ;
-    int ok ;
+    char *x = realpath(compiled, 0) ;
+    if (!x) strerr_diefu2sys(111, "realpath ", compiled) ;
+    compiled = x ;
+  }
+  {
     s6rc_db_t db ;
-    unsigned int n ;
-    char lfn[llen + 13] ;
-    char cfn[llen + 23] ;
-
-
-   /* Create the real dir, lock it, symlink */
-
-    unlink(live) ;
-    rm_rf(stmp.s) ;
-    if (mkdir(stmp.s, 0755) < 0) strerr_diefu2sys(111, "mkdir ", stmp.s) ;
-    if (!s6rc_lock(stmp.s, 2, &fdlock, 0, 0, 0, blocking))
-    {
-      cleanup() ;
-      strerr_diefu2sys(111, "take lock on ", stmp.s) ;
-    }
-    memcpy(lfn, stmp.s, llen) ;
-    lfn[llen] = 0 ;
-    if (symlink(stmp.s + dirlen, lfn) < 0)
-    {
-      cleanup() ;
-      strerr_diefu4sys(111, "symlink ", stmp.s + dirlen, " to ", lfn) ;
-    }
-
-
-   /* compiled */
-
-    if (deref)
-    {
-      char *x = realpath(compiled, 0) ;
-      if (!x) strerr_diefu2sys(111, "realpath ", compiled) ;
-      compiled = x ;
-    }
-    fdcompiled = open_readb(compiled) ;
+    int r ;
+    int fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)
-    {
-      cleanup() ;
       strerr_diefu2sys(111, "open ", compiled) ;
-    }
-    memcpy(lfn + llen, "/compiled", 10) ;
-    if (symlink(compiled, lfn) < 0)
+    r = s6rc_db_read_sizes(fdcompiled, &db) ;
+    if (r < 0)
+      strerr_diefu2sys(111, "read database size in ", compiled) ;
+    else if (!r)
+      strerr_dief2x(4, "invalid database size in ", compiled) ;
+    close(fdcompiled) ;
     {
-      cleanup() ;
-      strerr_diefu4sys(111, "symlink ", compiled, " to ", lfn) ;
+      unsigned char state[db.nshort + db.nlong] ;
+      memset(state, 0, db.nshort + db.nlong) ;
+      if (!s6rc_livedir_create(&sa, live, PROG, argv[0], prefix, compiled, state, db.nshort + db.nlong, &dirlen))
+        strerr_diefu1sys(111, "create live directory") ;
     }
-
-
-   /* prefix */
-
-    if (prefix[0])
-    {
-      memcpy(lfn + llen + 1, "prefix", 7) ;
-      if (!openwritenclose_unsafe(lfn, prefix, strlen(prefix)))
-      {
-        cleanup() ;
-        strerr_diefu2sys(111, "write to ", lfn) ;
-      }
-    }    
-
-
-   /* scandir */
-
-    memcpy(lfn + llen + 1, "scandir", 8) ;
-    if (symlink(argv[0], lfn) < 0)
-    {
-      cleanup() ;
-      strerr_diefu4sys(111, "symlink ", argv[0], " to ", lfn) ;
-    }
-
-
-   /* state */
-
-    memcpy(lfn + llen + 1, "state", 6) ;
-    {
-      int r = s6rc_db_read_sizes(fdcompiled, &db) ;
-      if (r <= 0)
-      {
-        cleanup() ;
-        if (r < 0) strerr_diefu2sys(111, "read database size in ", compiled) ;
-        else strerr_dief2x(4, "invalid database size in ", compiled) ;
-      }
-      close(fdcompiled) ;
-      n = db.nshort + db.nlong ;
-      {
-        char zero[n] ;
-        memset(zero, 0, n) ;
-        if (!openwritenclose_unsafe(lfn, zero, n))
-        {
-          cleanup() ;
-          strerr_diefu2sys(111, "write ", lfn) ;
-        }
-      }
-    }
-
-
-   /* servicedirs */
-
-    memcpy(lfn + llen + 1, "servicedirs", 12) ;
-    memcpy(cfn, lfn, llen + 1) ;
-    memcpy(cfn + llen + 1, "compiled/servicedirs", 21) ;
+  }
+  {
+    size_t clen = strlen(compiled) ;
+    char lfn[sa.len + 13] ;
+    char cfn[clen + 13] ;
+    memcpy(lfn, sa.s, sa.len) ;
+    memcpy(lfn + sa.len, "/servicedirs", 13) ;
+    memcpy(cfn, compiled, clen) ;
+    memcpy(cfn + clen, "/servicedirs", 13) ;
     if (!hiercopy(cfn, lfn))
     {
-      cleanup() ;
+      cleanup(&sa) ;
       strerr_diefu4sys(111, "recursively copy ", cfn, " to ", lfn) ;
     }
+  }
+  if (!atomic_symlink(sa.s + dirlen, live, PROG))
+  {
+    cleanup(&sa) ;
+    strerr_diefu4sys(111, "symlink ", sa.s + dirlen, " to ", live) ;
+  }
 
-
-   /* start the supervisors */
-
-    lfn[llen] = 0 ;
-    ok = s6rc_servicedir_manage_g(lfn, prefix, &deadline) ;
-    if (!ok)
-    {
-      cleanup() ;
-      strerr_diefu3sys(111, "supervise service directories in ", lfn, "/servicedirs") ;
-    }
-    if (ok & 2)
-      strerr_warnw3x("s6-svscan not running on ", lfn, "/scandir") ;
-  }  
+  deref = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
+  if (!deref)
+  {
+    cleanup(&sa) ;
+    strerr_diefu3sys(111, "supervise service directories in ", live, "/servicedirs") ;
+  }
+  if (deref & 2)
+    strerr_warnw2x("s6-svscan not running on ", argv[0]) ;
   return 0 ;
 }

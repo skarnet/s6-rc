@@ -14,5 +14,6 @@ extern int s6rc_sanitize_dir (stralloc *, char const *, size_t *) ;
 
 extern int s6rc_livedir_prefixsize (char const *, size_t *) ;
 extern ssize_t s6rc_livedir_prefix (char const *, char *, size_t) ;
+extern int s6rc_livedir_create (stralloc *, char const *, char const *, char const *, char const *, char const *, unsigned char const *, unsigned int, size_t *) ;
 
 #endif
