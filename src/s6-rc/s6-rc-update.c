@@ -1,6 +1,5 @@
 /* ISC license. */
 
-#include <skalibs/nonposix.h>  /* Solaris doesn't know mkdtemp() is POSIX */
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
@@ -21,7 +20,6 @@
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/skamisc.h>
-#include <skalibs/webipc.h>
 #include <skalibs/unix-transactional.h>
 #include <execline/execline.h>
 #include <s6/config.h>
@@ -516,31 +514,20 @@ static void fill_tfmt (char *tfmt, tain_t const *deadline)
 
 static inline void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldstate, s6rc_db_t const *newdb, unsigned char const *newstate, unsigned int const *invimage, char const *const *envp, tain_t const *deadline)
 {
-  int fdsocket ;
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
   char fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER "/s")] ;
   if (!(newstate[1] & 1)) return ;
   memcpy(fnsocket, live, livelen) ;
   memcpy(fnsocket + livelen, "/servicedirs/" S6RC_FDHOLDER "/s", sizeof("/servicedirs/" S6RC_FDHOLDER "/s")) ;
-  fdsocket = ipc_stream_nb() ;
-  if (fdsocket < 0) goto hammer ;
-  if (!ipc_timed_connect_g(fdsocket, fnsocket, deadline))
-  {
-    if (errno == ETIMEDOUT) strerr_dief1x(2, "timed out during s6rc-fdholder update") ;
-    else goto closehammer ;
-  }
-  s6_fdholder_init(&a, fdsocket) ;
+  if (!s6_fdholder_start_g(&a, fnsocket, deadline)) goto hammer ;
   if (!delete_unused_pipes(&a, olddb, oldstate, deadline)) goto freehammer ;
   if (!rename_pipes(&a, olddb, newdb, newstate, invimage, deadline)) goto freehammer ;
   if (!create_new_pipes(&a, newdb, newstate, deadline)) goto freehammer ;
-  s6_fdholder_free(&a) ;
-  close(fdsocket) ;
+  s6_fdholder_end(&a) ;
   return ;
 
  freehammer:
-  s6_fdholder_free(&a) ;
- closehammer:
-  close(fdsocket) ;
+  s6_fdholder_end(&a) ;
  hammer:
   if (verbosity) strerr_warnwu1x("live update s6rc-fdholder - restarting it") ;
   {

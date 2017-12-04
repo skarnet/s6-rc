@@ -13,3 +13,4 @@
 /s6-rc-update
 /s6-rc-fdholder-filler
 /s6-rc-oneshot-run
+/s6-rc-format-upgrade

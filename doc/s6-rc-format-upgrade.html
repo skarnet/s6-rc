@@ -1,0 +1,125 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-format-upgrade program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-format-upgrade program" />
+    <meta name="Keywords" content="s6-rc command s6-rc-format-upgrade database format upgrade rc dependency state management services" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-format-upgrade program </h1>
+
+<p>
+ s6-rc-format-upgrade is a program that is normally used
+very rarely: when the s6-rc package is upgraded, some
+services are currently managed with s6-rc, and the database
+format has changed. This program transitions a live directory
+using a database with the old s6-rc format (the one being
+replaced) so that it uses a database with the new s6-rc format.
+</p>
+
+<p>
+ The point is to ensure a smooth transition between different
+versions of s6-rc without needing a reboot.
+</p>
+
+<p>
+ s6-rc-format-upgrade is very different from
+<a href="s6-rc-update.html">s6-rc-update</a> and does not
+duplicate its functionality:
+</p>
+
+<ul>
+ <li> <a href="s6-rc-update.html">s6-rc-update</a> updates a
+live directory to use a <em>different compiled database</em>,
+compiled from a different source, where services may have
+changed, be renamed, etc. But it can only handle databases
+with the format that it knows - the format created by the
+<a href="s6-rc-compile.html">s6-rc-compile</a> binary that
+comes in the same package as s6-rc-update. </li>
+ <li> s6-rc-format-upgrade is the opposite: it cannot handle
+service changes, it can only update a live directory to use
+a compiled database corresponding to the <em>same source</em>
+as the compiled database the live directory is currently
+using. But it will replace an obsolete compiled database with
+a compiled database that uses the new format (provided both
+compiled databases come from the same source, and have just been
+produced by invocation of different versions of
+<a href="s6-rc-compile.html">s6-rc-compile</a>), ensuring the
+s6-rc installation can live through database format changes. </li>
+</ul>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-format-upgrade [ -v verbosity ] [ -l <em>live</em> ] [ -t <em>timeout</em> ] [ -b ] <em>newcompiled</em>
+</pre>
+
+<ul>
+ <li> <em>newcompiled</em> must be an absolute path. </li>
+ <li> s6-rc-format-upgrade expects to find a compiled service database
+with the <strong>new format</strong> in <em>compiled</em> </li>
+ <li> <em>newcompiled</em> <strong>must</strong> be compiled from
+the same source database as the current compiled database currently
+being used by <em>live</em>.
+ <li> s6-rc-format-upgrade then updates the live directory in <em>live</em>
+so it uses <em>newcompiled</em> as its compiled database. </li>
+ <li> On success, it exits 0. </li>
+</ul>
+
+<h2> Options </h2>
+
+<ul>
+ <li> <tt>-v&nbsp;<em>verbosity</em></tt>&nbsp;: be more or less
+verbose. Default is 1. </li>
+ <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: if all
+operations have not completed after <em>timeout</em>
+milliseconds, complain and exit 1. </li>
+ <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: Work with the live state in
+the <em>live</em> directory. Default is
+<tt>/run/s6-rc</tt>. The default can be changed at compile time by
+giving the <tt>--livedir=<em>live</em></tt> option to
+<tt>./configure</tt>. </li>
+ <li> <tt>-b</tt>&nbsp;: blocking lock. If <em>live</em> is currently
+being used by another program, s6-rc-format-upgrade will wait until that
+other program has released its lock on the directory, then proceed.
+By default, s6-rc-format-upgrade fails with an error message if the live
+directory is currently in use. </li>
+</ul>
+
+<h2> Typical usage </h2>
+
+<p>
+ s6-rc-format-upgrade is only necessary when the database format
+changes, which only happens when s6-rc's major version number
+(the third number from the right) changes. The correct order of
+operations is then the following:
+</p>
+
+<ul>
+ <li> Make sure your current compiled database is up-to-date
+with your source database. If it's not, update it, by invoking
+the <a href="s6-rc-compile.html">s6-rc-compile</a> and
+<a href="s6-rc-update.html">s6-rc-update</a> binaries from your
+<strong>old</strong> s6-rc installation, the ones that
+understand the old format. </li>
+ <li> From the same source, compile a new database with the new format,
+using the <a href="s6-rc-compile.html">s6-rc-compile</a> binary
+from the <strong>new</strong> s6-rc package. </li>
+ <li> Update your live directories with this new database, using
+s6-rc-format-upgrade. </li>
+ <li> You can now remove the old databases, and delete the old
+s6-rc package. </li>
+</ul>
+
+</body>
+</html>
