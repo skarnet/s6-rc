@@ -18,8 +18,9 @@ int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, cha
   if (!stralloc_cats(sa, ":")) goto err ;
   if (!stralloc_cats(sa, suffix)) goto err ;
   if (!stralloc_cats(sa, ":XXXXXX")) goto err ;
+  if (!stralloc_0(sa)) goto err ;
   if (!mkdtemp(sa->s + sabase)) goto err ;
-  newlen = sa->len ;
+  newlen = sa->len-- ;
   if (chmod(sa->s + sabase, 0755) < 0) goto delerr ;
   if (!stralloc_catb(sa, "/servicedirs", 13)) goto delerr ;  /* allocates enough for the next strcpys */
   if (mkdir(sa->s + sabase, 0755) < 0) goto delerr ;
