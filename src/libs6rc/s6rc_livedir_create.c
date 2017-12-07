@@ -32,8 +32,8 @@ int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, cha
   if (!openwritenclose_unsafe(sa->s + sabase, prefix, strlen(prefix))) goto delerr ;
   strcpy(sa->s + newlen, "state") ;
   if (!openwritenclose_unsafe(sa->s + sabase, (char const *)state, statelen)) goto delerr ;
-  sa->len = newlen ;
-  sa->s[newlen] = 0 ;
+  sa->len = newlen-1 ;
+  sa->s[newlen-1] = 0 ;
   *dirlen = ddirlen ;
   return 1 ;
 

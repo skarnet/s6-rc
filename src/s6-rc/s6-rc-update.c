@@ -327,7 +327,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   size_t dirlen, pos, newlen, sdlen ;
   size_t newclen = strlen(newcompiled) ;
   unsigned int i = newdb->nlong + newdb->nshort ;
-  if (sareadlink(sa, live) < 0 || !stralloc_0(sa)) strerr_diefu2sys(111, "readlink ", live) ;
+  if (sarealpath(sa, live) < 0 || !stralloc_0(sa)) strerr_diefu2sys(111, "sarealpath ", live) ;
   pos = sa->len ;
   {
     ssize_t r ;
