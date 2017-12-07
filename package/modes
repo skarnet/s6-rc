@@ -7,3 +7,4 @@ s6-rc			0755
 s6-rc-update		0755
 s6-rc-fdholder-filler	0755
 s6-rc-oneshot-run	0755
+s6-rc-format-upgrade	0755
