@@ -1,6 +1,5 @@
 /* ISC license. */
 
-#include <skalibs/nonposix.h>  /* NetBSD doesn't know dirfd() is POSIX */
 #include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
@@ -499,7 +498,7 @@ static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
   int fdsrc ;
   DIR *dir = opendir(srcdir) ;
   if (!dir) strerr_diefu2sys(111, "opendir ", srcdir) ;
-  fdsrc = dirfd(dir) ;
+  fdsrc = dir_fd(dir) ;
   for (;;)
   {
     struct stat st ;
