@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <skalibs/nonposix.h>  /* Solaris doesn't know mkdtemp() is POSIX */
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>

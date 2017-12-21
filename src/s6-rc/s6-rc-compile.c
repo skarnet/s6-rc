@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <skalibs/nonposix.h>  /* NetBSD doesn't know dirfd() is POSIX */
 #include <string.h>
 #include <stdint.h>
 #include <sys/stat.h>
@@ -254,13 +255,13 @@ static int uint_uniq (unsigned int const *list, unsigned int n, unsigned int pos
   return 1 ;
 }
 
-static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
 {
   buffer b ;
   size_t start = satmp.len ;
   int cont = 1 ;
   char buf[2048] ;
-  int fd = open_readatb(dirfd, list) ;
+  int fd = open_readatb(dfd, list) ;
   if (fd < 0) return 0 ;
   buffer_init(&b, &buffer_read, fd, buf, 2048) ;
   *listindex = genalloc_len(unsigned int, &be->indices) ;
@@ -299,10 +300,10 @@ static int add_namelist (before_t *be, int dirfd, char const *srcdir, char const
   return 1 ;
 }
 
-static void read_script (before_t *be, int dirfd, char const *srcdir, char const *name, char const *script, unsigned int *argvindex, unsigned int *argc, int mandatory)
+static void read_script (before_t *be, int dfd, char const *srcdir, char const *name, char const *script, unsigned int *argvindex, unsigned int *argc, int mandatory)
 {
   int r = 0 ;
-  int fd = open_readatb(dirfd, script) ;
+  int fd = open_readatb(dfd, script) ;
   *argvindex = keep.len ;
   if (fd < 0)
   {
@@ -327,11 +328,11 @@ static void read_script (before_t *be, int dirfd, char const *srcdir, char const
   be->nargvs += r+1 ;
 }
 
-static uint32_t read_timeout (int dirfd, char const *srcdir, char const *name, char const *tname)
+static uint32_t read_timeout (int dfd, char const *srcdir, char const *name, char const *tname)
 {
   char buf[64] ;
   uint32_t timeout = 0 ;
-  size_t r = openreadnclose_at(dirfd, tname, buf, 63) ;
+  size_t r = openreadnclose_at(dfd, tname, buf, 63) ;
   if (!r)
   {
     if (errno && errno != ENOENT)
@@ -347,29 +348,29 @@ static uint32_t read_timeout (int dirfd, char const *srcdir, char const *name, c
   return timeout ;
 }
 
-static void add_common (before_t *be, int dirfd, char const *srcdir, char const *name, common_t *common, servicetype_t svtype)
+static void add_common (before_t *be, int dfd, char const *srcdir, char const *name, common_t *common, servicetype_t svtype)
 {
   unsigned int dummy ;
   common->annotation_flags = 0 ;
   add_name(be, srcdir, name, svtype, &dummy, &common->kname) ;
-  if (!add_namelist(be, dirfd, srcdir, name, "dependencies", &common->depindex, &common->ndeps))
+  if (!add_namelist(be, dfd, srcdir, name, "dependencies", &common->depindex, &common->ndeps))
   {
     if (errno != ENOENT)
       strerr_diefu5sys(111, "open ", srcdir, "/", name, "/dependencies") ;
     common->depindex = genalloc_len(unsigned int, &be->indices) ;
     common->ndeps = 0 ;
   }
-  common->timeout[0] = read_timeout(dirfd, srcdir, name, "timeout-down") ;
-  common->timeout[1] = read_timeout(dirfd, srcdir, name, "timeout-up") ;
+  common->timeout[0] = read_timeout(dfd, srcdir, name, "timeout-down") ;
+  common->timeout[1] = read_timeout(dfd, srcdir, name, "timeout-up") ;
 }
 
-static inline void add_oneshot (before_t *be, int dirfd, char const *srcdir, char const *name)
+static inline void add_oneshot (before_t *be, int dfd, char const *srcdir, char const *name)
 {
   oneshot_t service ;
   if (verbosity >= 3) strerr_warni3x(name, " has type ", "oneshot") ;
-  add_common(be, dirfd, srcdir, name, &service.common, SVTYPE_ONESHOT) ;
-  read_script(be, dirfd, srcdir, name, "up", &service.argvindex[1], &service.argc[1], 1) ;
-  read_script(be, dirfd, srcdir, name, "down", &service.argvindex[0], &service.argc[0], 0) ;
+  add_common(be, dfd, srcdir, name, &service.common, SVTYPE_ONESHOT) ;
+  read_script(be, dfd, srcdir, name, "up", &service.argvindex[1], &service.argc[1], 1) ;
+  read_script(be, dfd, srcdir, name, "down", &service.argvindex[0], &service.argc[0], 0) ;
   if (!genalloc_append(unsigned int, &be->indices, &be->specialdeps[0])) dienomem() ;
   service.common.ndeps++ ;
   if (verbosity >= 4)
@@ -387,14 +388,14 @@ static inline void add_oneshot (before_t *be, int dirfd, char const *srcdir, cha
   if (!genalloc_append(oneshot_t, &be->oneshots, &service)) dienomem() ;
 }
 
-static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, char const *name)
+static inline void add_longrun (before_t *be, int dfd, char const *srcdir, char const *name)
 {
   longrun_t service = { .srcdir = srcdir, .nproducers = 0, .prodindex = 0, .consumer = 0, .pipelinename = 0 } ;
   unsigned int relatedindex, n ;
   int fd ;
   if (verbosity >= 3) strerr_warni3x(name, " has type ", "longrun") ;
-  add_common(be, dirfd, srcdir, name, &service.common, SVTYPE_LONGRUN) ;
-  fd = open_readat(dirfd, "run") ;
+  add_common(be, dfd, srcdir, name, &service.common, SVTYPE_LONGRUN) ;
+  fd = open_readat(dfd, "run") ;
   if (fd < 0)
   {
     if (errno == ENOENT)
@@ -411,7 +412,7 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
   }
   close(fd) ;
   fd = 0 ;
-  if (add_namelist(be, dirfd, srcdir, name, "producer-for", &relatedindex, &n))
+  if (add_namelist(be, dfd, srcdir, name, "producer-for", &relatedindex, &n))
   {
     if (n != 1)
       strerr_dief5x(1, srcdir, "/", name, "/producer-for", " should only contain one service name") ;
@@ -422,7 +423,7 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
       strerr_warni3x(name, " is a producer for ", data.s + service.consumer) ;
     fd = 1 ;
   }
-  if (add_namelist(be, dirfd, srcdir, name, "consumer-for", &service.prodindex, &service.nproducers) && service.nproducers)
+  if (add_namelist(be, dfd, srcdir, name, "consumer-for", &service.prodindex, &service.nproducers) && service.nproducers)
   {
     be->nproducers += service.nproducers ;
     if (!fd)
@@ -439,7 +440,7 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
   }
   if (fd == 2)
   {
-    if (add_namelist(be, dirfd, srcdir, name, "pipeline-name", &relatedindex, &n))
+    if (add_namelist(be, dfd, srcdir, name, "pipeline-name", &relatedindex, &n))
     {
       if (n != 1)
         strerr_dief5x(1, srcdir, "/", name, "/pipeline-name", " should only contain one name") ;
@@ -447,7 +448,7 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
       genalloc_setlen(unsigned int, &be->indices, relatedindex) ;
     }
   }
-  else if (access_at(dirfd, "pipeline-name", F_OK, 0) < 0)
+  else if (access_at(dfd, "pipeline-name", F_OK, 0) < 0)
   {
     if (errno != ENOENT)
       strerr_diefu5sys(111, "access ", srcdir, "/", name, "/pipeline-name") ;
@@ -457,23 +458,23 @@ static inline void add_longrun (before_t *be, int dirfd, char const *srcdir, cha
   if (!genalloc_append(longrun_t, &be->longruns, &service)) dienomem() ;
 }
 
-static inline void add_bundle (before_t *be, int dirfd, char const *srcdir, char const *name)
+static inline void add_bundle (before_t *be, int dfd, char const *srcdir, char const *name)
 {
   bundle_t bundle ;
   unsigned int dummy ;
   if (verbosity >= 3) strerr_warni3x(name, " has type ", "bundle") ;
   add_name(be, srcdir, name, SVTYPE_BUNDLE, &bundle.name, &dummy) ;
-  if (!add_namelist(be, dirfd, srcdir, name, "contents", &bundle.listindex, &bundle.n))
+  if (!add_namelist(be, dfd, srcdir, name, "contents", &bundle.listindex, &bundle.n))
     strerr_diefu5sys(111, "open ", srcdir, "/", name, "/contents") ;
   if (!genalloc_append(bundle_t, &be->bundles, &bundle)) dienomem() ;
 }
 
-static inline void add_source (before_t *be, int dirfd, char const *srcdir, char const *name)
+static inline void add_source (before_t *be, int dfd, char const *srcdir, char const *name)
 {
   char typestr[8] = "" ;
   size_t r ;
   if (verbosity >= 2) strerr_warni4x("parsing ", srcdir, "/", name) ;
-  r = openreadnclose_at(dirfd, "type", typestr, 8) ;
+  r = openreadnclose_at(dfd, "type", typestr, 8) ;
   if (!r)
   {
     if (!errno) errno = EINVAL ;
@@ -481,9 +482,9 @@ static inline void add_source (before_t *be, int dirfd, char const *srcdir, char
   }
   if (typestr[r-1] == '\n') r-- ;
   typestr[r++] = 0 ;
-  if (!strcmp(typestr, "oneshot")) add_oneshot(be, dirfd, srcdir, name) ;
-  else if (!strcmp(typestr, "longrun")) add_longrun(be, dirfd, srcdir, name) ;
-  else if (!strcmp(typestr, "bundle")) add_bundle(be, dirfd, srcdir, name) ;
+  if (!strcmp(typestr, "oneshot")) add_oneshot(be, dfd, srcdir, name) ;
+  else if (!strcmp(typestr, "longrun")) add_longrun(be, dfd, srcdir, name) ;
+  else if (!strcmp(typestr, "bundle")) add_bundle(be, dfd, srcdir, name) ;
   else strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
 }
 
