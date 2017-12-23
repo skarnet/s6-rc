@@ -589,6 +589,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
     else deadline = tain_infinite_relative ;
   }
   if (!argc) dieusage() ;
+  if (live[0] != '/')
+    strerr_dief2x(100, live, " is not an absolute path") ;
   if (argv[0][0] != '/')
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
   livelen = strlen(live) ;

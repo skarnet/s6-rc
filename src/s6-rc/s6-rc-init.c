@@ -60,6 +60,8 @@ int main (int argc, char const *const *argv)
 
   if (!deref && compiled[0] != '/')
     strerr_dief2x(100, compiled, " is not an absolute path") ;
+  if (live[0] != '/')
+    strerr_dief2x(100, live, " is not an absolute path") ;
   if (argv[0][0] != '/')
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
   if (strchr(prefix, '/') || strchr(prefix, '\n'))
@@ -101,6 +103,7 @@ int main (int argc, char const *const *argv)
     memcpy(lfn + sa.len, "/servicedirs", 13) ;
     memcpy(cfn, compiled, clen) ;
     memcpy(cfn + clen, "/servicedirs", 13) ;
+    sa.len++ ;
     if (!hiercopy(cfn, lfn))
     {
       cleanup(&sa) ;
