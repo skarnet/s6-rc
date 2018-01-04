@@ -12,6 +12,8 @@ directory of the last consumer in the pipeline, instead of the definition
 directory of the first producer (since the latter is not unique
 anymore).
  - All service databases must be edited and recompiled.
+ - New tool: s6-rc-format-upgrade, to handle the upgrade to the new
+compiled format.
 
 
 In 0.3.0.0
