@@ -115,7 +115,7 @@ static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigne
 
 static inline void parse_conversion_file (char const *convfile, stralloc *sa, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
 {
-  int fd = open_readb(convfile) ;
+  int fd = openb_read(convfile) ;
   char buf[4096] ;
   buffer b = BUFFER_INIT(&buffer_read, fd, buf, 4096) ;
   size_t base = satmp.len ;

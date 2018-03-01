@@ -1,5 +1,11 @@
 Changelog for s6-rc.
 
+In 0.4.0.1
+----------
+
+ - Improved portability to (guess what) OpenBSD
+
+
 In 0.4.0.0
 ----------
 
