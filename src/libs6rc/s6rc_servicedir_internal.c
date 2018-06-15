@@ -18,13 +18,15 @@ static s6rc_servicedir_desc_t const svdir_file_list[] =
   { .name = "notification-fd", .type = FILETYPE_UINT, .options = 0 },
   { .name = "timeout-kill", .type = FILETYPE_UINT, .options = 0 },
   { .name = "timeout-finish", .type = FILETYPE_UINT, .options = 0 },
+  { .name = "max-death-tally", .type = FILETYPE_UINT, .options = 0 },
+  { .name = "down-signal", .type = FILETYPE_NORMAL, .options = 0 },
   { .name = "data", .type = FILETYPE_DIR, .options = 0 },
   { .name = "env", .type = FILETYPE_DIR, .options = 0 },
   { .name = 0, .options = 0 }
 } ;
 
 s6rc_servicedir_desc_t const *s6rc_servicedir_file_list = svdir_file_list ;
-size_t const s6rc_servicedir_file_maxlen = 15 ;
+size_t const s6rc_servicedir_file_maxlen = 16 ;
 
 int s6rc_servicedir_copy_one (char const *src, char const *dst, s6rc_servicedir_desc_t const *p)
 {

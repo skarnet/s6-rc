@@ -1,5 +1,12 @@
 Changelog for s6-rc.
 
+In 0.4.1.0
+----------
+
+ - Support for max-death-tally and down-signal files in a
+longrun definition directory
+
+
 In 0.4.0.1
 ----------
 
