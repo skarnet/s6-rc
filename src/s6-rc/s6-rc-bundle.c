@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+#include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr2.h>
@@ -24,12 +25,10 @@
 static void cleanup (char const *compiled)
 {
   size_t len = strlen(compiled) ;
-  int e = errno ;
   char fn[len + sizeof("/resolve.cdb.new")] ;
   memcpy(fn, compiled, len) ;
   memcpy(fn + len, "/resolve.cdb.new", sizeof("/resolve.cdb.new")) ;
-  unlink(fn) ;
-  errno = e ;
+  unlink_void(fn) ;
 }
 
 

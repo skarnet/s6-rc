@@ -3,8 +3,9 @@ Changelog for s6-rc.
 In 0.4.1.0
 ----------
 
+ - Adaptation to skalibs-2.7.0.0 and s6-2.7.2.0.
  - Support for max-death-tally and down-signal files in a
-longrun definition directory
+longrun definition directory.
 
 
 In 0.4.0.1

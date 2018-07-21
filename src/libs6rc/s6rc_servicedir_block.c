@@ -1,8 +1,8 @@
 /* ISC license. */
 
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
+#include <skalibs/posixplz.h>
 #include <skalibs/djbunix.h>
 #include <s6/s6-supervise.h>
 #include <s6-rc/s6rc-servicedir.h>
@@ -18,9 +18,7 @@ int s6rc_servicedir_block (char const *dir)
   if (!touch(fn)) return -1 ;
   if (s6_svc_writectl(dir, S6_SUPERVISE_CTLDIR, "O", 1) < 0)
   {
-    int e = errno ;
-    unlink(fn) ;
-    errno = e ;
+    unlink_void(fn) ;
     return -1 ;
   }
   return status.flagwantup ;

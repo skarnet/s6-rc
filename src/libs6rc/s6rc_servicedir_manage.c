@@ -31,8 +31,8 @@ int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *
   gid_t gid = getgid() ;
   size_t livelen = strlen(live) ;
   size_t prefixlen = strlen(prefix) ;
+  int fdlock ;
   int ok = 1 ;
-  int e = 0 ;
   DIR *dir ;
   char dirfn[livelen + 13] ;
   if (!ftrigr_startf(&a, deadline, stamp)) return 0 ;
@@ -49,7 +49,6 @@ int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *
     if (d->d_name[0] == '.') continue ;
     {
       size_t len = strlen(d->d_name) ;
-      int fdlock ;
       int r ;
       uint16_t id ;
       char srcfn[livelen + 20 + len] ;
@@ -60,15 +59,15 @@ int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *
       fdlock = s6_svc_lock_take(srcfn) ;
       if (fdlock < 0) goto err ;
       r = s6_svc_ok(srcfn) ;
-      if (r < 0) goto errinloop ;
+      if (r < 0) goto erru ;
       if (!r)
       {
         memcpy(srcfn + livelen + 13 + len, "/down", 6) ;
-        if (!touch(srcfn)) goto errinloop ;
+        if (!touch(srcfn)) goto erru ;
         memcpy(srcfn + livelen + 14 + len, "event", 6) ;
-        if (!ftrigw_fifodir_make(srcfn, gid, 0)) goto errinloop ;
+        if (!ftrigw_fifodir_make(srcfn, gid, 0)) goto erru ;
         id = ftrigr_subscribe(&a, srcfn, "s", 0, deadline, stamp) ;
-        if (!id) goto errinloop ;
+        if (!id) goto erru ;
         s6_svc_lock_release(fdlock) ;
         if (!genalloc_append(uint16_t, &ids, &id)) goto err ;
         srcfn[livelen + 13 + len] = 0 ;
@@ -86,16 +85,10 @@ int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *
       {
         if (!stralloc_catb(&newnames, d->d_name, len + 1))
         {
-          e = errno ;
           s6rc_servicedir_unsupervise(live, prefix, d->d_name, 0) ;
-          goto errn ;
+          goto err ;
         }
       }
-      continue ;
-     errinloop:
-      e = errno ;
-      s6_svc_lock_release(fdlock) ;
-      goto errn ;
     }
   }
   if (errno) goto err ;
@@ -117,18 +110,14 @@ int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *
   stralloc_free(&newnames) ;
   return ok ;
 
+ erru:
+  s6_svc_lock_release(fdlock) ;
  err:
-  e = errno ;
- errn:
   dir_close(dir) ;
-  goto closederrn ;
  closederr:
-  e = errno ;
- closederrn:
   ftrigr_end(&a) ;
   genalloc_free(uint16_t, &ids) ;
   rollback(live, prefix, newnames.s, newnames.len) ;
   stralloc_free(&newnames) ;
-  errno = e ;  
   return 0 ;
 }
