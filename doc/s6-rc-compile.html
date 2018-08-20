@@ -275,8 +275,9 @@ about pipelines. </li>
 <ul>
  <li> A mandatory regular file named <tt>run</tt>, as well as optional files
 named <tt>finish</tt>, <tt>notification-fd</tt>, <tt>timeout-kill</tt>,
-<tt>timeout-finish</tt> and <tt>nosetsid</tt>. These
-files will be copied, or recreated, in the generated
+<tt>timeout-finish</tt>, <tt>nosetsid</tt>, <tt>max-death-tally</tt>,
+and <tt>down-signal</tt>. These files will be copied, or recreated, in
+the generated
 <a href="//skarnet.org/software/s6/servicedir.html">service directory</a>:
 they are meant to be used by the
 <a href="//skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
