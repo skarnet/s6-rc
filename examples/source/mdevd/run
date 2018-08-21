@@ -1,5 +1,4 @@
 #!/command/execlineb -P
-fdmove -c 2 1
 exec -c
-s6-uevent-spawner
-/bin/mdev
+export PATH /command:/bin
+mdevd -D 3
