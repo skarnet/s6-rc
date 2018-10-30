@@ -247,6 +247,24 @@ restart. </li>
  <li> It will rename <tt>sqld</tt> to <tt>mysqld</tt> and make it restart.
 </ul>
 
+<h2> Safely managing and updating compiled databases </h2>
+
+<p>
+ The sequence of operations needed to update a database from source to live
+can be a little tricky. It involves:
+</p>
+
+<ul>
+ <li> Compiling the new database without overwriting the live one </li>
+ <li> Calling s6-rc-update to safely replace the live database </li>
+ <li> Making sure the new database will be correctly used at boot time </li>
+</ul>
+
+<p>
+ <a href="https://skarnet.org/software/s6-rc/faq.html#compiledmanagement">This
+FAQ entry</a> gives a step-by-step explanation on how to proceed.
+</p>
+
 <h2> Notes </h2>
 
 <ul>
