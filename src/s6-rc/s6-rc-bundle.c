@@ -118,9 +118,9 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
         cleanup(compiled) ;
         strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
       }
-      for (i = 0 ; i < todeln ; i++) if (!strncmp(todel[i], ktmp, klen)) break ;
+      for (i = 0 ; i < todeln ; i++) if (klen == strlen(todel[i]) && !strncmp(todel[i], ktmp, klen)) break ;
       if (i < todeln) continue ;
-      for (i = 0 ; i < toaddn ; i++) if (!strncmp(toadd[i], ktmp, klen)) break ;
+      for (i = 0 ; i < toaddn ; i++) if (klen == strlen(toadd[i]) && !strncmp(toadd[i], ktmp, klen)) break ;
       if (i < toaddn) continue ;
       {
         uint32_t dlen = cdb_datalen(&cr) ;
