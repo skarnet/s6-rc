@@ -3,6 +3,7 @@ Changelog for s6-rc.
 In 0.4.1.1
 ----------
 
+ - Adaptation to skalibs-2.8.0.0 and s6-2.8.0.0
  - Bugfixes.
 
 

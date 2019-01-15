@@ -1,4 +1,4 @@
 #!/command/execlineb -P
 s6-setuidgid identlog
 exec -c
-s6-log t s1000000 n20 /var/log/identd-4
+s6-log -d3 -- t s1000000 n20 /var/log/identd-4

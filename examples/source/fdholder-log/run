@@ -1,4 +1,4 @@
 #!/command/execlineb -P
 s6-setuidgid fdhlog
 exec -c
-s6-log s1000000 n20 t /var/log/fdholder
+s6-log -d3 -- s1000000 n20 t /var/log/fdholder

@@ -2,7 +2,8 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <skalibs/bytestr.h>
+
+#include <skalibs/posixplz.h>
 #include <skalibs/buffer.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
@@ -19,7 +20,7 @@
 static int s6rc_db_check_valid_string (char const *string, size_t stringlen, size_t pos)
 {
   if (pos >= stringlen) return 0 ;
-  if (str_nlen(string + pos, stringlen - pos) == stringlen - pos) return 0 ;
+  if (strnlen(string + pos, stringlen - pos) == stringlen - pos) return 0 ;
   return 1 ;
 }
 
