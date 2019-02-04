@@ -30,7 +30,7 @@ minor and bugfix version changes.
 
 <h1> What has changed in s6-rc </h1>
 
-<h2> in 0.4.1.1 </h2>
+<h2> in 0.5.0.0 </h2>
 
 <ul>
  <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
@@ -39,6 +39,9 @@ dependency bumped to 2.8.0.0. </li>
 dependency bumped to 2.5.0.2. </li>
  <li> <a href="//skarnet.org/software/s6/">s6</a>
 dependency bumped to 2.8.0.0. </li>
+ <li> <a href="s6-rc-compile.html">s6-rc-compile</a> does not support the <tt>-u</tt>
+or <tt>-g</tt> options anymore; instead, at any time, the user who can operate
+a s6-rc database is the user who owns the supervision tree. </li>
 </ul>
 
 <h2> in 0.4.1.0 </h2>

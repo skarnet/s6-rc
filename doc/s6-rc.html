@@ -35,9 +35,12 @@ should be achieved by a single <tt>s6-rc change</tt> invocation.
 </p>
 
 <p>
- Except in test installations with specifically made compiled
-databases and live directories, s6-rc should only be run as root -
-especially when asking for a state change.
+ s6-rc should only be run by the user owning the underlying
+<a href="//skarnet.org/software/s6/">s6</a> supervision tree. It can
+also be run by root even if the supervision tree is not owned
+by root, but in this case the services will always be started and
+stopped by the user owning the supervision tree - they will not have
+root privileges.
 </p>
 
 <h2> Interface </h2>

@@ -27,7 +27,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-compile [ -v verbosity ] [ -u okuid,okuid... ] [ -g okgid,okgid... ] [ -h fdholder_user ] [ -b ] destdir sources..."
+#define USAGE "s6-rc-compile [ -v verbosity ] [ -h fdholder_user ] [ -b ] destdir sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_dief1x(111, "out of memory") ;
 
@@ -968,13 +968,13 @@ static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
   auto_file(compiled, "n", pack, 24) ;
 }
 
-static void make_skel (char const *compiled, char const *name, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, unsigned int notif)
+static void make_skel (char const *compiled, char const *name, unsigned int notif)
 {
   size_t namelen = strlen(name) ;
   char fmt[UINT_FMT] ;
   size_t i = uint_fmt(fmt, notif) ;
   fmt[i++] = '\n' ;
-  char fn[namelen + 29] ;
+  char fn[namelen + 36] ;
   memcpy(fn, "servicedirs/", 12) ;
   memcpy(fn + 12, name, namelen + 1) ;
   auto_dir(compiled, fn) ;
@@ -984,43 +984,26 @@ static void make_skel (char const *compiled, char const *name, uid_t const *uids
   auto_dir(compiled, fn) ;
   memcpy(fn + 17 + namelen, "/rules", 7) ;
   auto_dir(compiled, fn) ;
-  if (gidn)
-  {
-    memcpy(fn + 23 + namelen, "/gid", 5) ;
-    auto_dir(compiled, fn) ;
-  }
+  memcpy(fn + 23 + namelen, "/gid", 5) ;
+  auto_dir(compiled, fn) ;
+  memcpy(fn + 27 + namelen, "/0", 3) ;
+  auto_dir(compiled, fn) ;
+  memcpy(fn + 29 + namelen, "/allow", 7) ;
+  auto_file(compiled, fn, "", 0) ;
   memcpy(fn + 23 + namelen, "/uid", 5) ;
   auto_dir(compiled, fn) ;
+  memcpy(fn + 27 + namelen, "/0", 3) ;
+  auto_dir(compiled, fn) ;
+  memcpy(fn + 29 + namelen, "/allow", 7) ;
+  auto_file(compiled, fn, "", 0) ;
+  memcpy(fn + 27 + namelen, "/self", 6) ;
+  auto_symlink(compiled, fn, "0") ;
 }
 
-static inline void write_oneshot_runner (char const *compiled, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, int blocking)
+static inline void write_oneshot_runner (char const *compiled, int blocking)
 {
   size_t base = satmp.len ;
-  size_t i ;
-  char fn[35 + sizeof(S6RC_ONESHOT_RUNNER)] = "servicedirs/" S6RC_ONESHOT_RUNNER "/data/rules/gid/" ;
-  make_skel(compiled, S6RC_ONESHOT_RUNNER, uids, uidn, gids, gidn, 3) ;
-  if (gidn)
-  {
-    i = gidn ;
-    while (i--)
-    {
-      size_t len = gid_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, gids[i]) ;
-      fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
-      auto_dir(compiled, fn) ;
-      memcpy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, "/allow", 7) ;
-      auto_file(compiled, fn, "", 0) ;
-    }
-  }
-  fn[24 + S6RC_ONESHOT_RUNNER_LEN] = 'u' ;
-  i = uidn ;
-  while (i--)
-  {
-    size_t len = uid_fmt(fn + 28 + S6RC_ONESHOT_RUNNER_LEN, uids[i]) ;
-    fn[28 + S6RC_ONESHOT_RUNNER_LEN + len] = 0 ;
-    auto_dir(compiled, fn) ;
-    memcpy(fn + 28 + S6RC_ONESHOT_RUNNER_LEN + len, "/allow", 7) ;
-    auto_file(compiled, fn, "", 0) ;
-  }
+  make_skel(compiled, S6RC_ONESHOT_RUNNER, 3) ;
   if (!stralloc_cats(&satmp, "#!"
     EXECLINE_SHEBANGPREFIX "execlineb -P\n"
     EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n"
@@ -1037,47 +1020,24 @@ static inline void write_oneshot_runner (char const *compiled, uid_t const *uids
   auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
 }
 
-static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, char const *fdhuser)
+static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, char const *fdhuser)
 {
   size_t base = satmp.len ;
-  make_skel(compiled, S6RC_FDHOLDER, uids, uidn, gids, gidn, 1) ;
-  {
-    char fn[62 + S6RC_FDHOLDER_LEN + UID_FMT] = "servicedirs/" S6RC_FDHOLDER "/data/rules/uid/" ;
-    char fmt[7 + UID_FMT] = "../uid/" ;
-    size_t i = uid_fmt(fmt + 7, uids[0]) ;
-    fmt[7 + i] = 0 ;
-    memcpy(fn + 28 + S6RC_FDHOLDER_LEN, fmt + 7, i + 1) ;
-    auto_dir(compiled, fn) ;
-    memcpy(fn + 28 + S6RC_FDHOLDER_LEN + i, "/allow", 7) ;
-    auto_file(compiled, fn, "", 0) ;
-    memcpy(fn + 29 + S6RC_FDHOLDER_LEN + i, "env", 4) ;
-    auto_dir(compiled, fn) ;
-    memcpy(fn + 32 + S6RC_FDHOLDER_LEN + i, "/S6_FDHOLDER_LIST", 18) ;
-    auto_file(compiled, fn, "\n", 1) ;
-    memcpy(fn + 45 + S6RC_FDHOLDER_LEN + i, "STORE_REGEX", 12) ;
-    auto_file(compiled, fn, "^pipe:s6rc-\n", 12) ;
-    memcpy(fn + 45 + S6RC_FDHOLDER_LEN + i, "RETRIEVE_REGEX", 15) ;
-    auto_symlink(compiled, fn, "S6_FDHOLDER_STORE_REGEX") ;
-    memcpy(fn + 45 + S6RC_FDHOLDER_LEN + i, "SETDUMP", 8) ;
-    auto_file(compiled, fn, "\n", 1) ;
-    fn[45 + S6RC_FDHOLDER_LEN + i] = 'G' ;
-    auto_file(compiled, fn, "\n", 1) ;
-    
-    for (i = 1 ; i < uidn ; i++)
-    {
-      size_t len = uid_fmt(fn + 28 + S6RC_FDHOLDER_LEN, uids[i]) ;
-      fn[28 + S6RC_FDHOLDER_LEN + len] = 0 ;
-      auto_symlink(compiled, fn, fmt + 7) ;
-    }
-    fn[24 + S6RC_FDHOLDER_LEN] = 'g' ;
-    i = gidn ;
-    while (i--)
-    {
-      size_t len = gid_fmt(fn + 28 + S6RC_FDHOLDER_LEN, gids[i]) ;
-      fn[28 + S6RC_FDHOLDER_LEN + len] = 0 ;
-      auto_symlink(compiled, fn, fmt) ;
-    }
-  }
+  char fn[61 + S6RC_FDHOLDER_LEN] = "servicedirs/" S6RC_FDHOLDER "/data/rules/uid/0/env" ;
+  make_skel(compiled, S6RC_FDHOLDER, 1) ;
+  auto_dir(compiled, fn) ;
+  memcpy(fn + 33 + S6RC_FDHOLDER_LEN, "/S6_FDHOLDER_LIST", 18) ;
+  auto_file(compiled, fn, "\n", 1) ;
+  memcpy(fn + 46 + S6RC_FDHOLDER_LEN, "STORE_REGEX", 12) ;
+  auto_file(compiled, fn, "^pipe:s6rc-\n", 12) ;
+  memcpy(fn + 46 + S6RC_FDHOLDER_LEN, "RETRIEVE_REGEX", 15) ;
+  auto_symlink(compiled, fn, "S6_FDHOLDER_STORE_REGEX") ;
+  memcpy(fn + 46 + S6RC_FDHOLDER_LEN, "SETDUMP", 8) ;
+  auto_file(compiled, fn, "\n", 1) ;
+  fn[46 + S6RC_FDHOLDER_LEN] = 'G' ;
+  auto_file(compiled, fn, "\n", 1) ;
+  memcpy(fn + 24 + S6RC_FDHOLDER_LEN, "gid/0/env", 10) ;
+  auto_symlink(compiled, fn, "../../uid/0/env") ;
 
   for (uint32_t j = 0 ; j < db->nlong ; j++)
     if (db->services[j].x.longrun.nproducers)
@@ -1115,10 +1075,10 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ui
   auto_rights(compiled, "servicedirs/" S6RC_FDHOLDER "/run", 0755) ;
 }
 
-static inline void write_specials (char const *compiled, s6rc_db_t const *db, uid_t const *uids, size_t uidn, gid_t const *gids, size_t gidn, char const *fdhuser, int blocking)
+static inline void write_specials (char const *compiled, s6rc_db_t const *db, char const *fdhuser, int blocking)
 {
-  write_oneshot_runner(compiled, uids, uidn, gids, gidn, blocking) ;
-  write_fdholder(compiled, db, uids, uidn, gids, gidn, fdhuser) ;
+  write_oneshot_runner(compiled, blocking) ;
+  write_fdholder(compiled, db, fdhuser) ;
 }
 
 static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32_t const *bdeps)
@@ -1432,10 +1392,6 @@ static inline void write_compiled (
   bundle_t const *bundles,
   unsigned int nbundles,
   uint32_t const *bdeps,
-  uid_t const *uids,
-  size_t uidn,
-  gid_t const *gids,
-  size_t gidn,
   char const *fdhuser,
   int blocking)
 {
@@ -1445,7 +1401,7 @@ static inline void write_compiled (
   write_resolve(compiled, db, bundles, nbundles, bdeps) ;
   stralloc_free(&data) ;
   write_db(compiled, db) ;
-  write_specials(compiled, db, uids, uidn, gids, gidn, fdhuser, blocking) ;
+  write_specials(compiled, db, fdhuser, blocking) ;
   write_servicedirs(compiled, db, srcdirs) ;
 }
 
@@ -1455,9 +1411,6 @@ int main (int argc, char const *const *argv)
   char const *compiled ;
   char const *fdhuser = 0 ;
   int blocking = 0 ;
-  size_t uidn = 0, gidn = 0 ;
-  uid_t uids[256] ;
-  gid_t gids[256] ;
   PROG = "s6-rc-compile" ;
   {
     subgetopt_t l = SUBGETOPT_ZERO ;
@@ -1468,8 +1421,6 @@ int main (int argc, char const *const *argv)
       switch (opt)
       {
         case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
-        case 'u' : if (!uid_scanlist(uids, 255, l.arg, &uidn)) dieusage() ; break ;
-        case 'g' : if (!gid_scanlist(gids, 255, l.arg, &gidn)) dieusage() ; break ;
         case 'h' : fdhuser = l.arg ; break ;
         case 'b' : blocking = 1 ; break ;
         default : dieusage() ;
@@ -1478,7 +1429,6 @@ int main (int argc, char const *const *argv)
     argc -= l.ind ; argv += l.ind ;
   }
   if (argc < 2) dieusage() ;
-  if (!uidn && !gidn) uids[uidn++] = 0 ;
   compiled = *argv++ ;
   before.specialdeps[0] = add_internal_longrun(&before, S6RC_ONESHOT_RUNNER) ;
   before.specialdeps[1] = add_internal_longrun(&before, S6RC_FDHOLDER) ;
@@ -1525,7 +1475,7 @@ int main (int argc, char const *const *argv)
       uint32_t deps[db.ndeps << 1] ;
       db.deps = deps ;
       flatlist_services(&db, sarray) ;
-      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, uids, uidn, gids, gidn, fdhuser, blocking) ;
+      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, fdhuser, blocking) ;
     }
   }
 
