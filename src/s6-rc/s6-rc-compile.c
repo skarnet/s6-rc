@@ -164,7 +164,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
     {
       info->type = type ;
       if (verbosity >= 4)
-        strerr_warnt4x("previously encountered identifier ", name, " has now type ", typestr(type)) ;
+        strerr_warnt4x("previously encountered identifier ", name, " now has type ", typestr(type)) ;
       switch (type)
       {
         case SVTYPE_UNDEFINED : break ;
@@ -1188,6 +1188,34 @@ static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t c
   auto_rights(compiled, fn, 0755) ;
 }
 
+static int copy_uint (char const *compiled, char const *srcfn, char const *dstfn, unsigned int *u)
+{
+  int r = s6rc_read_uint(srcfn, u) ;
+  if (r < 0)
+  {
+    cleanup(compiled) ;
+    strerr_diefu2sys(111, "read ", srcfn) ;
+  }
+  if (r)
+  {
+    char fmt[UINT_FMT] ;
+    size_t len = uint_fmt(fmt, *u) ;
+    fmt[len++] = '\n' ;
+    if (!openwritenclose_unsafe(dstfn, fmt, len))
+    {
+      cleanup(compiled) ;
+      strerr_diefu2sys(111, "write to ", dstfn) ;
+    }
+    if (chmod(dstfn, 0644) == -1)
+    {
+      cleanup(compiled) ;
+      strerr_diefu2sys(111, "set permissions on ", dstfn) ;
+    }
+    return 1 ;
+  }
+  return 0 ;
+}
+
 static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db, char const *const *srcdirs)
 {
   size_t clen = strlen(compiled) ;
@@ -1197,9 +1225,8 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
   {
     size_t srcdirlen = strlen(srcdirs[i]) ;
     size_t len = strlen(db->string + db->services[i].name) ;
-    unsigned int fd = 0 ;
+    unsigned int u ;
     int ispipelined = db->services[i].x.longrun.nproducers || db->services[i].x.longrun.consumer < db->nlong ;
-    int r ;
     char srcfn[srcdirlen + len + 18] ;
     char dstfn[clen + len + 30] ;
     memcpy(dstfn, compiled, clen) ;
@@ -1210,46 +1237,11 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       cleanup(compiled) ;
       strerr_diefu2sys(111, "mkdir ", dstfn) ;
     }
+    dstfn[clen + len + 13] = '/' ;
     memcpy(srcfn, srcdirs[i], srcdirlen) ;
     srcfn[srcdirlen] = '/' ;
     memcpy(srcfn + srcdirlen + 1, db->string + db->services[i].name, len) ;
-    memcpy(srcfn + srcdirlen + 1 + len, "/notification-fd", 17) ;
-    r = s6rc_read_uint(srcfn, &fd) ;
-    if (r < 0)
-    {
-      cleanup(compiled) ;
-      strerr_diefu2sys(111, "read ", srcfn) ;
-    }
-    if (r)
-    {
-      char fmt[UINT_FMT] ;
-      size_t fmtlen = uint_fmt(fmt, fd) ;
-      fmt[fmtlen++] = '\n' ;
-      memcpy(dstfn + clen + 13 + len, "/notification-fd", 17) ;
-      if (!openwritenclose_unsafe(dstfn, fmt, fmtlen))
-      {
-        cleanup(compiled) ;
-        strerr_diefu2sys(111, "write to ", dstfn) ;
-      }
-      if (fd < 3 && verbosity)
-      {
-        fmt[fmtlen-1] = 0 ;
-        strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
-      }
-    }
-
-    memcpy(srcfn + srcdirlen + 1 + len, "/run", 5) ;
-    memcpy(dstfn + clen + 13 + len, "/run", 5) ;
-    if (ispipelined)
-    {
-      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "run", 0) ;
-      memcpy(dstfn + clen + 17 + len, ".user", 6) ;
-    }
-    if (!filecopy_unsafe(srcfn, dstfn, 0755))
-    {
-      cleanup(compiled) ;
-      strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
-    }
+    srcfn[srcdirlen + len + 1] = '/' ;
 
     memcpy(srcfn + srcdirlen + len + 2, "finish", 7) ;
     if (access(srcfn, R_OK) == 0)
@@ -1267,16 +1259,46 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       }
     }
 
-    memcpy(srcfn + srcdirlen + len + 2, "timeout-kill", 13) ;
-    memcpy(dstfn + clen + 14 + len, "timeout-kill", 13) ;
-    filecopy_unsafe(srcfn, dstfn, 0644) ;
-
-    memcpy(srcfn + srcdirlen + len + 2, "timeout-finish", 15) ;
-    memcpy(dstfn + clen + 14 + len, "timeout-finish", 15) ;
-    filecopy_unsafe(srcfn, dstfn, 0644) ;
+    memcpy(srcfn + srcdirlen + len + 2, "run", 4) ;
+    memcpy(dstfn + clen + 14 + len, "run", 4) ;
+    if (ispipelined)
+    {
+      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "run", 0) ;
+      memcpy(dstfn + clen + 17 + len, ".user", 6) ;
+    }
+    if (!filecopy_unsafe(srcfn, dstfn, 0755))
+    {
+      cleanup(compiled) ;
+      strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
+    }
 
     memcpy(srcfn + srcdirlen + len + 2, "nosetsid", 9) ;
     memcpy(dstfn + clen + 14 + len, "nosetsid", 9) ;
+    filecopy_unsafe(srcfn, dstfn, 0644) ;
+
+    memcpy(srcfn + srcdirlen + len + 2, "notification-fd", 16) ;
+    memcpy(dstfn + clen + 14 + len, "notification-fd", 16) ;
+    if (copy_uint(compiled, srcfn, dstfn, &u) && u < 3 && verbosity)
+    {
+      char fmt[UINT_FMT] ;
+      fmt[uint_fmt(fmt, u)] = 0 ;
+      strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
+    }
+
+    memcpy(srcfn + srcdirlen + len + 2, "timeout-kill", 13) ;
+    memcpy(dstfn + clen + 14 + len, "timeout-kill", 13) ;
+    copy_uint(compiled, srcfn, dstfn, &u) ;
+
+    memcpy(srcfn + srcdirlen + len + 2, "timeout-finish", 15) ;
+    memcpy(dstfn + clen + 14 + len, "timeout-finish", 15) ;
+    copy_uint(compiled, srcfn, dstfn, &u) ;
+
+    memcpy(srcfn + srcdirlen + len + 2, "max-death-tally", 16) ;
+    memcpy(dstfn + clen + 14 + len, "max-death-tally", 16) ;
+    copy_uint(compiled, srcfn, dstfn, &u) ;
+
+    memcpy(srcfn + srcdirlen + len + 2, "down-signal", 12) ;
+    memcpy(dstfn + clen + 14 + len, "down-signal", 12) ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;
 
     memcpy(srcfn + srcdirlen + len + 2, "data", 5) ;

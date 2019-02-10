@@ -1,11 +1,11 @@
 /* ISC license. */
 
-#include <skalibs/nonposix.h>  /* Solaris doesn't know mkdtemp() is POSIX */
+#include <skalibs/nonposix.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>  /* mkdtemp */
+#include <stdlib.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <s6-rc/s6rc-utils.h>
