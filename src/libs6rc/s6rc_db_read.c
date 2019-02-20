@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <skalibs/posixplz.h>
+#include <skalibs/posixishard.h>
 #include <skalibs/buffer.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
