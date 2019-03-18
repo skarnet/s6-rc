@@ -47,6 +47,12 @@ a s6-rc database is the user who owns the supervision tree. </li>
  <li> Everything now builds as PIC by default no matter
 the toolchain's settings. Use the <tt>--disable-all-pic</tt> configure
 option to build executables and static libraries as non-PIC. </li>
+ <li> The underlying s6 dependency needs a major version upgrade.
+It is recommended to first stop all your services, then upgrade
+s6 and s6-rc, then immediately restart your supervision tree,
+then start your services again. Failure to do so *will* cause issues
+if you're relying on s6-ftrigrd notifications (which is the case with
+services managed by s6-rc). </li>
 </ul>
 
 <h2> in 0.4.1.0 </h2>
