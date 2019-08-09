@@ -1,5 +1,11 @@
 Changelog for s6-rc.
 
+In 0.5.1.0
+----------
+
+ - Adaptation to skalibs-2.9.0.0 and s6-2.9.0.0
+
+
 In 0.5.0.0
 ----------
 
