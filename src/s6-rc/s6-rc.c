@@ -44,6 +44,7 @@ static unsigned char *state ;
 static unsigned int *pendingdeps ;
 static tain_t deadline ;
 static char dryrun[UINT_FMT] = "" ;
+static unsigned int lameduck = 0 ;
 
 static inline void announce (void)
 {
@@ -297,7 +298,8 @@ static void on_success (unsigned int i, int h)
   announce() ;
   if (verbosity >= 2)
     strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, h ? " started" : " stopped", " successfully") ;
-  broadcast_success(i, h) ;
+  if (!lameduck)
+    broadcast_success(i, h) ;
 }
 
 static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
@@ -372,6 +374,7 @@ static int handle_signals (int h)
           strerr_warnw3x("received ", sig_name(sig), ", aborting longrun transitions") ;
         /* kill_oneshots() ; */
         kill_longruns() ;
+        lameduck = 1 ;
         break ;
       default : strerr_dief1x(101, "inconsistent signal state") ;
     }
