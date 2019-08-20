@@ -298,8 +298,7 @@ static void on_success (unsigned int i, int h)
   announce() ;
   if (verbosity >= 2)
     strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, h ? " started" : " stopped", " successfully") ;
-  if (!lameduck)
-    broadcast_success(i, h) ;
+  if (!lameduck) broadcast_success(i, h) ;
 }
 
 static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
@@ -371,7 +370,7 @@ static int handle_signals (int h)
       case SIGTERM :
       case SIGINT :
         if (verbosity >= 2)
-          strerr_warnw3x("received ", sig_name(sig), ", aborting longrun transitions") ;
+          strerr_warnw3x("received ", sig_name(sig), ", aborting longrun transitions and exiting asap") ;
         /* kill_oneshots() ; */
         kill_longruns() ;
         lameduck = 1 ;
