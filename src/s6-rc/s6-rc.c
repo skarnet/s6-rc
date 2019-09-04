@@ -641,6 +641,7 @@ int main (int argc, char const *const *argv)
 
       if (what == 2) return print_services() ;
 
+      tain_now_set_stopwatch() ;
       tain_now_g() ;
       tain_add_g(&deadline, &deadline) ;
 

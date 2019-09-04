@@ -59,6 +59,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
   if (argv[0][0] != '/')
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
 
+  tain_now_set_stopwatch() ;
   tain_now_g() ;
   tain_add_g(&deadline, &deadline) ;
 
