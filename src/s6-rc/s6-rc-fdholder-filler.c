@@ -86,8 +86,7 @@ int main (int argc, char const *const *argv)
     s6_fdholder_fd_t dump[n<<1] ;
     close(0) ;
     s6_fdholder_init(&a, 6) ;
-    tain_now_set_stopwatch() ;
-    tain_now_g() ;
+    tain_now_set_stopwatch_g() ;
     tain_add_g(&deadline, &deadline) ;
     for (; i < n ; i++)
     {

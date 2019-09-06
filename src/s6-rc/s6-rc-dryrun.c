@@ -44,8 +44,7 @@ int main (int argc, char const *const *argv)
     }
     buffer_putflush(buffer_1, "\n", 1) ;
   }
-  tain_now_set_stopwatch() ;
-  tain_now_g() ;
+  tain_now_set_stopwatch_g() ;
   tain_add_g(&deadline, &deadline) ;
   deepsleepuntil_g(&deadline) ;
   return 0 ;

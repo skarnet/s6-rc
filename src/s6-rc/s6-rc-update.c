@@ -603,8 +603,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
     size_t prefixlen = 0 ;
     char dbfn[livelen + 10] ;
 
-    tain_now_set_stopwatch() ;
-    tain_now_g() ;
+    tain_now_set_stopwatch_g() ;
     tain_add_g(&deadline, &deadline) ;
 
 
