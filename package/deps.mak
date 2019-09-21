@@ -42,7 +42,7 @@ libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_chec
 endif
 libs6rc.so.xyzzy: EXTRA_LIBS := -ls6 -lskarnet
 libs6rc.so.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
-s6-rc: EXTRA_LIBS := ${TAINNOW_LIB} ${SPAWN_LIB}
+s6-rc: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SPAWN_LIB}
 s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-bundle: EXTRA_LIBS :=
 s6-rc-bundle: src/s6-rc/s6-rc-bundle.o ${LIBS6RC} -lexecline -lskarnet
@@ -50,15 +50,15 @@ s6-rc-compile: EXTRA_LIBS :=
 s6-rc-compile: src/s6-rc/s6-rc-compile.o ${LIBS6RC} -lexecline -lskarnet
 s6-rc-db: EXTRA_LIBS :=
 s6-rc-db: src/s6-rc/s6-rc-db.o ${LIBS6RC} -lskarnet
-s6-rc-dryrun: EXTRA_LIBS := ${TAINNOW_LIB}
+s6-rc-dryrun: EXTRA_LIBS := ${SYSCLOCK_LIB}
 s6-rc-dryrun: src/s6-rc/s6-rc-dryrun.o -lskarnet
-s6-rc-fdholder-filler: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB}
+s6-rc-fdholder-filler: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB}
 s6-rc-fdholder-filler: src/s6-rc/s6-rc-fdholder-filler.o -ls6 -lskarnet
 s6-rc-format-upgrade: EXTRA_LIBS :=
 s6-rc-format-upgrade: src/s6-rc/s6-rc-format-upgrade.o ${LIBS6RC} -lskarnet
-s6-rc-init: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
+s6-rc-init: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
 s6-rc-init: src/s6-rc/s6-rc-init.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-oneshot-run: EXTRA_LIBS :=
 s6-rc-oneshot-run: src/s6-rc/s6-rc-oneshot-run.o ${LIBS6RC} -lskarnet
-s6-rc-update: EXTRA_LIBS := ${TAINNOW_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
+s6-rc-update: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
 s6-rc-update: src/s6-rc/s6-rc-update.o ${LIBS6RC} -ls6 -lexecline -lskarnet

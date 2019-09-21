@@ -1,4 +1,4 @@
 -ls6
 -lskarnet
-${TAINNOW_LIB}
+${SYSCLOCK_LIB}
 ${SOCKET_LIB}

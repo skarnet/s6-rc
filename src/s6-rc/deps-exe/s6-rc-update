@@ -2,6 +2,6 @@ ${LIBS6RC}
 -ls6
 -lexecline
 -lskarnet
-${TAINNOW_LIB}
+${SYSCLOCK_LIB}
 ${SOCKET_LIB}
 ${SPAWN_LIB}
