@@ -3,13 +3,13 @@ Changelog for s6-rc.
 In 0.5.1.0
 ----------
 
- - Adaptation to skalibs-2.9.0.0 and s6-2.9.0.0
+ - Adaptation to skalibs-2.9.0.0 and s6-2.9.0.0.
 
 
 In 0.5.0.0
 ----------
 
- - Adaptation to skalibs-2.8.0.0 and s6-2.8.0.0
+ - Adaptation to skalibs-2.8.0.0 and s6-2.8.0.0.
  - Bugfixes.
  - s6-rc-compile doesn't support -u and -g anymore; the user who
 can run s6-rc on a database is the user who owns the supervision tree.
