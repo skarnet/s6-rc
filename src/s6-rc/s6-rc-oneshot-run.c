@@ -4,10 +4,12 @@
 #include <strings.h>
 #include <stdint.h>
 #include <unistd.h>
+
 #include <skalibs/types.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/djbunix.h>
+
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
@@ -90,6 +92,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       if (r < 0) strerr_diefu3sys(111, "read ", compiled, "/db") ;
       if (!r) strerr_dief3x(4, "invalid service database in ", compiled, "/db") ;
       close(fdcompiled) ;
+      close(compiledlock) ;
 
      /* Run the script */
 

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+
 #include <skalibs/uint32.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/buffer.h>
@@ -10,6 +11,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/cdb.h>
 #include <skalibs/unix-transactional.h>
+
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 

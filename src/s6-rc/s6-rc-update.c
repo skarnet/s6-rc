@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <skalibs/types.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
@@ -21,10 +22,13 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/skamisc.h>
 #include <skalibs/unix-transactional.h>
+
 #include <execline/execline.h>
+
 #include <s6/config.h>
 #include <s6/s6-supervise.h>
 #include <s6/s6-fdholder.h>
+
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 

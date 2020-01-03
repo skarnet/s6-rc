@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>  /* qsort */
+
 #include <skalibs/types.h>
 #include <skalibs/bitarray.h>
 #include <skalibs/strerr2.h>
@@ -21,9 +22,12 @@
 #include <skalibs/skamisc.h>
 #include <skalibs/avltree.h>
 #include <skalibs/unix-transactional.h>
+
 #include <execline/config.h>
 #include <execline/execline.h>
+
 #include <s6/config.h>
+
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
@@ -248,7 +252,7 @@ static unsigned int add_internal_longrun (before_t *be, char const *name)
   return pos ;
 }
 
-static int uint_uniq (unsigned int const *list, unsigned int n, unsigned int pos)
+static inline int uint_uniq (unsigned int const *list, unsigned int n, unsigned int pos)
 {
   while (n--) if (pos == list[n]) return 0 ;
   return 1 ;
@@ -1075,12 +1079,6 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
   auto_rights(compiled, "servicedirs/" S6RC_FDHOLDER "/run", 0755) ;
 }
 
-static inline void write_specials (char const *compiled, s6rc_db_t const *db, char const *fdhuser, int blocking)
-{
-  write_oneshot_runner(compiled, blocking) ;
-  write_fdholder(compiled, db, fdhuser) ;
-}
-
 static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32_t const *bdeps)
 {
   size_t clen = strlen(compiled) ;
@@ -1311,7 +1309,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
   }
 }
 
-static inline int write_service (buffer *b, s6rc_service_t const *sv, int type)
+static int write_service (buffer *b, s6rc_service_t const *sv, int type)
 {
   char pack[49] ;
   unsigned int m ;
@@ -1423,7 +1421,8 @@ static inline void write_compiled (
   write_resolve(compiled, db, bundles, nbundles, bdeps) ;
   stralloc_free(&data) ;
   write_db(compiled, db) ;
-  write_specials(compiled, db, fdhuser, blocking) ;
+  write_oneshot_runner(compiled, blocking) ;
+  write_fdholder(compiled, db, fdhuser) ;
   write_servicedirs(compiled, db, srcdirs) ;
 }
 

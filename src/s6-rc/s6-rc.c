@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+
 #include <skalibs/types.h>
 #include <skalibs/cdb.h>
 #include <skalibs/sgetopt.h>
@@ -18,8 +19,10 @@
 #include <skalibs/selfpipe.h>
 #include <skalibs/iopause.h>
 #include <skalibs/unix-transactional.h>
+
 #include <s6/config.h>
 #include <s6/s6-supervise.h>
+
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
@@ -43,8 +46,8 @@ static unsigned int n ;
 static unsigned char *state ;
 static unsigned int *pendingdeps ;
 static tain_t deadline ;
-static char dryrun[UINT_FMT] = "" ;
 static unsigned int lameduck = 0 ;
+static char dryrun[UINT_FMT] = "" ;
 
 static inline void announce (void)
 {
@@ -59,7 +62,7 @@ static inline void announce (void)
     strerr_diefu2sys(111, "write ", fn) ;
 }
 
-static int print_services (void)
+static inline int print_services (void)
 {
   unsigned int i = 0 ;
   for (; i < n ; i++)
@@ -75,7 +78,7 @@ static int print_services (void)
   strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static int print_diff (void)
+static inline int print_diff (void)
 {
   s6_svstatus_t status ;
   int e = 0 ;
@@ -117,7 +120,7 @@ static uint32_t compute_timeout (unsigned int i, int h)
   return t ;
 }
 
-static pid_t start_oneshot (unsigned int i, int h)
+static inline pid_t start_oneshot (unsigned int i, int h)
 {
   unsigned int m = 0 ;
   char const *newargv[11 + !!dryrun[0] * 8] ;
@@ -158,7 +161,7 @@ static pid_t start_oneshot (unsigned int i, int h)
   return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
 }
 
-static pid_t start_longrun (unsigned int i, int h)
+static inline pid_t start_longrun (unsigned int i, int h)
 {
   size_t svdlen = strlen(db->string + db->services[i].name) ;
   unsigned int m = 0 ;
@@ -201,7 +204,7 @@ static pid_t start_longrun (unsigned int i, int h)
   return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
 }
 
-static void success_longrun (unsigned int i, int h)
+static inline void success_longrun (unsigned int i, int h)
 {
   if (!dryrun[0])
   {
@@ -229,7 +232,7 @@ static void success_longrun (unsigned int i, int h)
   }
 }
 
-static void failure_longrun (unsigned int i, int h)
+static inline void failure_longrun (unsigned int i, int h)
 {
   if (h && !dryrun[0])
   {
@@ -291,7 +294,7 @@ static void broadcast_success (unsigned int i, int h)
   }
 }
 
-static void on_success (unsigned int i, int h)
+static inline void on_success (unsigned int i, int h)
 {
   if (i < db->nlong) success_longrun(i, h) ;
   if (h) state[i] |= 1 ; else state[i] &= 254 ;
@@ -301,7 +304,7 @@ static void on_success (unsigned int i, int h)
   if (!lameduck) broadcast_success(i, h) ;
 }
 
-static void on_failure (unsigned int i, int h, int crashed, unsigned int code)
+static inline void on_failure (unsigned int i, int h, int crashed, unsigned int code)
 {
   if (i < db->nlong) failure_longrun(i, h) ;
   if (verbosity)
@@ -332,7 +335,7 @@ static inline void kill_longruns (void)
     kill(pidindex[j].pid, SIGTERM) ;
 }
 
-static int handle_signals (int h)
+static inline int handle_signals (int h)
 {
   int ok = 1 ;
   for (;;)

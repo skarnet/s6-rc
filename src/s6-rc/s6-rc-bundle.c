@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
+
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
 #include <skalibs/buffer.h>
@@ -15,7 +16,9 @@
 #include <skalibs/cdb.h>
 #include <skalibs/cdb_make.h>
 #include <skalibs/unix-transactional.h>
+
 #include <execline/execline.h>
+
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
@@ -32,7 +35,7 @@ static void cleanup (char const *compiled)
 }
 
 
- /* switch to renameat when it's more portable */
+ /* TODO: switch to renameat when it's more portable */
 
 static inline int renameit (char const *compiled, char const *src, char const *dst)
 {

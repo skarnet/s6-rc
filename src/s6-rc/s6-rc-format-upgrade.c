@@ -1,11 +1,13 @@
 /* ISC license. */
 
 #include <string.h>
+
 #include <skalibs/types.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/tai.h>
 #include <skalibs/unix-transactional.h>
+
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
