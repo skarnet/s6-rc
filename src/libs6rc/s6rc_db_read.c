@@ -3,11 +3,11 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <skalibs/posixishard.h>
 #include <skalibs/buffer.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
+#include <skalibs/posixishard.h>
 #include <s6-rc/s6rc-db.h>
 
 #ifdef DEBUG
