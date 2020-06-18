@@ -46,7 +46,7 @@ static unsigned int n ;
 static unsigned char *state ;
 static unsigned int *pendingdeps ;
 static tain_t deadline ;
-static unsigned int lameduck = 0 ;
+static int lameduck = 0 ;
 static char dryrun[UINT_FMT] = "" ;
 
 static inline void announce (void)
@@ -258,7 +258,7 @@ static void examine (unsigned int i, int h)
     if ((state[i] & 1) == h)
     {
       if (verbosity >= 3)
-        strerr_warni4x("processing service ", name, ": already ", h ? "up" : "down") ;
+        strerr_warni4x("service ", name, ": already ", h ? "up" : "down") ;
       broadcast_success(i, h) ;
     }
     else
@@ -269,7 +269,7 @@ static void examine (unsigned int i, int h)
         pidindex[npids++].i = i ;
         if (verbosity >= 2)
         {
-          strerr_warni4x("processing service ", name, ": ", h ? "starting" : "stopping") ;
+          strerr_warni4x("service ", name, ": ", h ? "starting" : "stopping") ;
         }
       }
       else
@@ -277,7 +277,7 @@ static void examine (unsigned int i, int h)
         if (verbosity)
           strerr_warnwu2sys("spawn subprocess for ", name) ;
         if (verbosity >= 2)
-          strerr_warni5x("processing service ", name, ": ", h ? "start" : "stop", " failed") ;
+          strerr_warni4x("service ", name, ": failed to ", h ? "start" : "stop") ;
       }
     }
   }
@@ -300,7 +300,7 @@ static inline void on_success (unsigned int i, int h)
   if (h) state[i] |= 1 ; else state[i] &= 254 ;
   announce() ;
   if (verbosity >= 2)
-    strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, h ? " started" : " stopped", " successfully") ;
+    strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, "successfully st", h ? "arted" : "opped") ;
   if (!lameduck) broadcast_success(i, h) ;
 }
 
