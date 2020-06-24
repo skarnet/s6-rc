@@ -121,6 +121,7 @@ int main (int argc, char const *const *argv)
   deref = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
   if (!deref)
   {
+    unlink_void(live) ;
     cleanup(&sa) ;
     strerr_diefu3sys(111, "supervise service directories in ", live, "/servicedirs") ;
   }
