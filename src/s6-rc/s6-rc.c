@@ -300,7 +300,7 @@ static inline void on_success (unsigned int i, int h)
   if (h) state[i] |= 1 ; else state[i] &= 254 ;
   announce() ;
   if (verbosity >= 2)
-    strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, "successfully st", h ? "arted" : "opped") ;
+    strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, " successfully st", h ? "arted" : "opped") ;
   if (!lameduck) broadcast_success(i, h) ;
 }
 
