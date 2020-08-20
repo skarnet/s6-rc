@@ -143,6 +143,11 @@ is ignored, but trailing whitespace is not. Lines starting with a <tt>#</tt>
 character are ignored. The file defines the <em>direct dependencies</em> of
 <em>service</em>, i.e. the services that must be up in order for
 <em>service</em> to work properly. </li>
+ <li> An optional regular file named <tt>flag-essential</tt>. The contents of this
+file are irrelevant, only its presence is tested. If this file exists, the service
+will be marked as essential, which means that a <tt>s6-rc -d change <em>foo</em></tt>
+command will not stop the service. Only a <tt>s6-rc -D change <em>foo</em></tt>
+command will. </li>
 </ul>
 
 <p>

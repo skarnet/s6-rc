@@ -12,6 +12,8 @@
 #define S6RC_DB_BANNER_END "\ns6rc-db: end\n"
 #define S6RC_DB_BANNER_END_LEN (sizeof(S6RC_DB_BANNER_END) - 1)
 
+#define S6RC_DB_FLAG_ESSENTIAL 0x00000001U
+
 
 typedef struct s6rc_oneshot_s s6rc_oneshot_t, *s6rc_oneshot_t_ref ;
 struct s6rc_oneshot_s

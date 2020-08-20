@@ -50,7 +50,7 @@ root privileges.
      s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] list <em>servicenames...</em>
      s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] listall <em>servicenames...</em>
      s6-rc [ -l live ] [ -b ] diff
-     s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] [ -p ] [ -v <em>verbosity</em> ] [ -n <em>dryrunthrottle</em> ] [ -t timeout ] change [ <em>servicenames...</em> ]
+     s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d | -D ] [ -p ] [ -v <em>verbosity</em> ] [ -n <em>dryrunthrottle</em> ] [ -t timeout ] change [ <em>servicenames...</em> ]
 </pre>
 
 <ul>
@@ -122,7 +122,16 @@ Default is <em>up</em>.
 <ul>
  <li> <tt>-u</tt>&nbsp;: up. </li>
  <li> <tt>-d</tt>&nbsp;: down. </li>
+ <li> <tt>-D</tt>&nbsp;: force down. </li>
 </ul>
+
+<p>
+ The <tt>-d</tt> option is what should normally be used to down a set of services.
+If a service is marked as <em>essential</em> (there is a <tt>flag-essential</tt> file
+in its service definition directory), then s6-rc will refuse to stop that service.
+The <tt>-D</tt> option will still force that service to shut down; that option should
+only be used when the machine is going to be stopped.
+</p>
 
 <h3> <tt>s6-rc change</tt> control </h3>
 

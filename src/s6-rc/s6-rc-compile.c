@@ -351,10 +351,30 @@ static uint32_t read_timeout (int dfd, char const *srcdir, char const *name, cha
   return timeout ;
 }
 
+static inline uint32_t read_flags (int dfd, char const *srcdir, char const *name)
+{
+  static char const *files[32] =
+  {
+    "flag-essential",
+    0
+  } ;
+  uint32_t flags = 0 ;
+  for (uint32_t i = 0 ; i < 32 ; i++)
+  {
+    if (!files[i]) break ;
+    if (access_at(dfd, files[i], F_OK, 0) < 0)
+    {
+      if (errno != ENOENT)
+        strerr_diefu6sys(111, "read ", srcdir, "/", name, "/", files[i]) ;
+    }
+    else flags |= i ;
+  }
+  return flags ;
+}
+
 static void add_common (before_t *be, int dfd, char const *srcdir, char const *name, common_t *common, servicetype_t svtype)
 {
   unsigned int dummy ;
-  common->annotation_flags = 0 ;
   add_name(be, srcdir, name, svtype, &dummy, &common->kname) ;
   if (!add_namelist(be, dfd, srcdir, name, "dependencies", &common->depindex, &common->ndeps))
   {
@@ -365,6 +385,7 @@ static void add_common (before_t *be, int dfd, char const *srcdir, char const *n
   }
   common->timeout[0] = read_timeout(dfd, srcdir, name, "timeout-down") ;
   common->timeout[1] = read_timeout(dfd, srcdir, name, "timeout-up") ;
+  common->annotation_flags = read_flags(dfd, srcdir, name) ;
 }
 
 static inline void add_oneshot (before_t *be, int dfd, char const *srcdir, char const *name)
