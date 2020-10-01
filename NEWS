@@ -1,5 +1,12 @@
 Changelog for s6-rc.
 
+In 0.5.2.0
+----------
+
+ - "Essential services" support with the flag-essential file
+and the new -D option to s6-rc.
+
+
 In 0.5.1.4
 ----------
 
