@@ -25,7 +25,7 @@
 <a href="//skarnet.org/software/s6/">s6</a>,
 <a href="http://smarden.org/runit/">runit</a>,
 <a href="http://b0llix.net/perp/">perp</a> or
-<a href="http://cr.yp.to/daemontools.html">daemontools</a>
+<a href="https://cr.yp.to/daemontools.html">daemontools</a>
 define a <em>service</em> as a long-lived process, a.k.a
 daemon. They provide tools to run the daemon in a reproducible
 way in a controlled environment and keep it alive if it dies;
@@ -110,7 +110,7 @@ that still favor simplicity. Among them, for instance:
 </p>
 
 <ul>
- <li> <a href="http://savannah.nongnu.org/projects/sysvinit">sysvinit</a>,
+ <li> <a href="https://savannah.nongnu.org/projects/sysvinit">sysvinit</a>,
 the historical GNU/Linux init system, and its companion set of
 <tt>/etc/rc.d</tt> init scripts that some distributions like to
 call <tt>sysv-rc</tt>. Note that sysvinit <em>does</em> have
@@ -174,14 +174,15 @@ a joke.
 </p>
 
 <ul>
- <li> <a href="http://upstart.ubuntu.com/">Upstart</a> was the first
-one. On the front page, in the "feature highlights" section:
-"Tasks and Services are started and stopped
-by events. Events are generated as tasks and services are started
-and stopped." Do you understand what that means? I don't. Also,
-Upstart was the first system that used <tt>ptrace</tt> on the
-processes it spawned in order to keep track of their forks. If
-you don't know what that means: it was pure insanity. </li>
+ <li> <a href="https://upstart.ubuntu.com/">Upstart</a> was the first
+one. The <em>concepts</em> in Upstart are actually pretty good: in
+theory, it's a decent event-based service manager. Unfortunately, the
+<em>implementation</em> is less than ideal. For instance, the service
+file format is full of adhocisms breaking the principle of least surprise.
+But most importantly, Upstart was the first system that used <tt>ptrace</tt>
+on the processes it spawned in order to keep track of their forks. If
+you don't know what that means: it's complete insanity, using a debug
+feature in prodution, with heavy impact on security and efficiency. </li>
  <li> <a href="https://en.wikipedia.org/wiki/Launchd">launchd</a>,
 Darwin's init and service manager. The wikipedia page (linked here
 because Apple doesn't see fit to provide a documentation page for
@@ -192,7 +193,7 @@ has to link in a XML parsing library, and it communicates with process 1
 via a Mach-specific IPC mechanism. Is this the sleek, elegant
 design that Apple is usually known for? Stick to selling iPhones,
 guys. </li>
- <li> <a href="http://www.freedesktop.org/wiki/Software/systemd/">systemd</a>,
+ <li> <a href="https://www.freedesktop.org/wiki/Software/systemd/">systemd</a>,
 the main protagonist (or antagonist) in the "init wars". It has the same
 problems as launchd, up by an order of magnitude;
 <a href="//skarnet.org/software/systemd.html">here is why</a>.

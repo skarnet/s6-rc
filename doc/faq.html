@@ -220,7 +220,7 @@ new database will be used on the next boot, atomically update the link:
  The use of the
 <a href="//skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>
 utility is recommended, because the
-<a href="http://pubs.opengroup.org/onlinepubs/9699919799/utilities/ln.html">ln</a>
+<a href="https://pubs.opengroup.org/onlinepubs/9699919799/utilities/ln.html">ln</a>
 standard actually <em>forbids</em> an atomic replacement, so utilities that
 follow it to the letter, for instance, <tt>ln</tt> from GNU coreutils, cannot
 be atomic: they first remove the old link, then create the new one. If you
