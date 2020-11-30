@@ -1,5 +1,13 @@
 Changelog for s6-rc.
 
+In 1.0.0.0
+----------
+
+ - New model: s6-rc is now event-based.
+ - New service types: virtuals and externals.
+ - New program: s6-rcd.
+
+
 In 0.5.2.0
 ----------
 
