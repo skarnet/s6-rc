@@ -9,6 +9,7 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/exec.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
@@ -16,7 +17,7 @@
 #define USAGE "s6-rc-oneshot-run [ -l live ] [ -b ] up|down servicenumber"
 #define dieusage() strerr_dieusage(100, USAGE)
 
-int main (int argc, char const *const *argv, char const *const *envp)
+int main (int argc, char const *const *argv)
 {
   char const *live = S6RC_LIVE_BASE ;
   unsigned int number ;
@@ -103,7 +104,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         char const **p = newargv ;
         while (sargc--) *p++ = *sargv++ ;
         *p = 0 ;
-        xpathexec0_run(newargv, envp) ;
+        xexec0(newargv) ;
       }
     }
   }

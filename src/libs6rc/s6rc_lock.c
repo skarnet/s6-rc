@@ -2,18 +2,10 @@
 
 #include <string.h>
 #include <errno.h>
+
 #include <skalibs/djbunix.h>
+
 #include <s6-rc/s6rc-utils.h>
-
-static inline int lockex (int fd, int blocking)
-{
-  return blocking ? lock_ex(fd) : lock_exnb(fd) ;
-}
-
-static inline int locksh (int fd, int blocking)
-{
-  return blocking ? lock_sh(fd) : lock_shnb(fd) ;
-}
 
 int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int cwhat, int *ccfd, int blocking)
 {
@@ -21,6 +13,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
 
   if (lwhat)
   {
+    int r ;
     size_t llen = strlen(live) ;
     char lfn[llen + 6] ;
     memcpy(lfn, live, llen) ;
@@ -28,7 +21,9 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     lfd = open_create(lfn) ;
     if (lfd < 0) return 0 ;
     if (coe(lfd) < 0) goto lerr ;
-    if ((lwhat > 1 ? lockex(lfd, blocking) : locksh(lfd, blocking)) < 0) goto lerr ;
+    r = fd_lock(lfd, lwhat > 1, !blocking) ;
+    if (!r) errno = EBUSY ;
+    if (r < 1) goto lerr ;
   }
 
   if (cwhat)
@@ -43,8 +38,11 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
       else cfd = -errno ;
     else
     {
+      int r ;
       if (coe(cfd) < 0) goto cerr ;
-      if ((cwhat > 1 ? lockex(cfd, blocking) : locksh(cfd, blocking)) < 0) goto cerr ;
+      r = fd_lock(cfd, cwhat > 1, !blocking) ;
+      if (!r) errno = EBUSY ;
+      if (r < 1) goto cerr ;
     }
   }
 

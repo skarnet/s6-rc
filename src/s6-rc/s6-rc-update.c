@@ -20,6 +20,7 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/exec.h>
 #include <skalibs/skamisc.h>
 #include <skalibs/unix-transactional.h>
 
@@ -764,9 +765,13 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
         make_new_livedir(oldstate, &olddb, newstate, &newdb, argv[0], invimage, prefix, &sa) ;
         stralloc_free(&sa) ;
-        r = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
-        if (!r) strerr_diefu2sys(111, "manage new service directories in ", live) ;
-        if (r & 2) strerr_warnw3x("s6-svscan not running on ", live, "/scandir") ;
+        if (s6rc_servicedir_manage_g(live, prefix, &deadline) < 0)
+        {
+          if (errno == ENXIO)
+           strerr_diefu5x(100, "manage new service directories in ", live, ": s6-svscan not running on ", live, "/scandir") ;
+          else
+           strerr_diefu2sys(111, "manage new service directories in ", live) ;
+        }
 
        /* Adjust stored pipes */
 
@@ -810,7 +815,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = 0 ;
         if (verbosity >= 2)
           strerr_warni1x("starting services in the new database") ;
-        xpathexec_run(newargv[0], newargv, envp) ;
+        xexec_e(newargv, envp) ;
       }
     }
   }

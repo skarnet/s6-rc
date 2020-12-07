@@ -1,45 +1,26 @@
 /* ISC license. */
 
 #include <string.h>
-#include <stdint.h>
-#include <unistd.h>
 #include <errno.h>
-#include <skalibs/direntry.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
-#include <s6/s6-supervise.h>
-#include <s6/ftrigr.h>
-#include <s6/ftrigw.h>
-#include <s6-rc/s6rc-servicedir.h>
 
-static inline void rollback (char const *live, char const *prefix, char const *s, size_t len)
-{
-  while (len)
-  {
-    size_t n = strlen(s) + 1 ;
-    s6rc_servicedir_unsupervise(live, prefix, s, 0) ;
-    s += n ; len -= n ;
-  }
-}
+#include <skalibs/direntry.h>
+#include <skalibs/stralloc.h>
+
+#include <s6/s6-supervise.h>
+
+#include <s6-rc/s6rc-servicedir.h>
 
 int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *deadline, tain_t *stamp)
 {
-  ftrigr_t a = FTRIGR_ZERO ;
-  stralloc newnames = STRALLOC_ZERO ;
-  genalloc ids = GENALLOC_ZERO ; /* uint16_t */
-  gid_t gid = getgid() ;
+  stralloc names = STRALLOC_ZERO ;
   size_t livelen = strlen(live) ;
-  size_t prefixlen = strlen(prefix) ;
-  int fdlock ;
-  int ok = 1 ;
+  size_t n = 0 ;
   DIR *dir ;
   char dirfn[livelen + 13] ;
-  if (!ftrigr_startf(&a, deadline, stamp)) return 0 ;
   memcpy(dirfn, live, livelen) ;
   memcpy(dirfn + livelen, "/servicedirs", 13) ;
   dir = opendir(dirfn) ;
-  if (!dir) goto closederr ;
+  if (!dir) return -1 ;
   for (;;)
   {
     direntry *d ;
@@ -47,77 +28,28 @@ int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *
     d = readdir(dir) ;
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
-    {
-      size_t len = strlen(d->d_name) ;
-      int r ;
-      uint16_t id ;
-      char srcfn[livelen + 20 + len] ;
-      char dstfn[livelen + 10 + prefixlen + len] ;
-      memcpy(srcfn, dirfn, livelen + 12) ;
-      srcfn[livelen + 12] = '/' ;
-      memcpy(srcfn + livelen + 13, d->d_name, len + 1) ;
-      fdlock = s6_svc_lock_take(srcfn) ;
-      if (fdlock < 0) goto err ;
-      r = s6_svc_ok(srcfn) ;
-      if (r < 0) goto erru ;
-      if (!r)
-      {
-        memcpy(srcfn + livelen + 13 + len, "/down", 6) ;
-        if (!touch(srcfn)) goto erru ;
-        memcpy(srcfn + livelen + 14 + len, "event", 6) ;
-        if (!ftrigw_fifodir_make(srcfn, gid, 0)) goto erru ;
-        id = ftrigr_subscribe(&a, srcfn, "s", 0, deadline, stamp) ;
-        if (!id) goto erru ;
-        s6_svc_lock_release(fdlock) ;
-        if (!genalloc_append(uint16_t, &ids, &id)) goto err ;
-        srcfn[livelen + 13 + len] = 0 ;
-      }
-      else s6_svc_lock_release(fdlock) ;
-      memcpy(dstfn, live, livelen) ;
-      memcpy(dstfn + livelen, "/scandir/", 9) ;
-      memcpy(dstfn + livelen + 9, prefix, prefixlen) ;
-      memcpy(dstfn + livelen + 9 + prefixlen, d->d_name, len + 1) ;
-      if (symlink(srcfn, dstfn) < 0)
-      {
-        if (!r || errno != EEXIST) goto err ;
-      }
-      else if (!r)
-      {
-        if (!stralloc_catb(&newnames, d->d_name, len + 1))
-        {
-          s6rc_servicedir_unsupervise(live, prefix, d->d_name, 0) ;
-          goto err ;
-        }
-      }
-    }
+    if (!stralloc_catb(&names, dirfn, livelen + 12)
+     || !stralloc_catb(&names, "/", 1)
+     || !stralloc_cats(&names, d->d_name)
+     || !stralloc_0(&names)) goto err ;
+    n++ ;
   }
   if (errno) goto err ;
   dir_close(dir) ;
+  if (!n) return 0 ;
+  memcpy(dirfn + livelen + 1, "scandir", 8) ;
   {
-    char scanfn[livelen + 9] ;
+    char const *p = names.s ;
+    char const *servicedirs[n] ;
     int r ;
-    memcpy(scanfn, live, livelen) ;
-    memcpy(scanfn + livelen, "/scandir", 9) ;
-    r = s6_svc_writectl(scanfn, S6_SVSCAN_CTLDIR, "a", 1) ;
-    if (r < 0) goto closederr ;
-    if (!r) ok = 3 ;
-    else if (ftrigr_wait_and(&a, genalloc_s(uint16_t, &ids), genalloc_len(uint16_t, &ids), deadline, stamp) < 0)
-      goto closederr ;
+    for (size_t i = 0 ; i < n ; p += strlen(p) + 1) servicedirs[i++] = p ;
+    r = s6_supervise_link(dirfn, servicedirs, n, prefix, 0, deadline, stamp) ;
+    stralloc_free(&names) ;
+    return r ;
   }
 
-  ftrigr_end(&a) ;
-  genalloc_free(uint16_t, &ids) ;
-  stralloc_free(&newnames) ;
-  return ok ;
-
- erru:
-  s6_svc_lock_release(fdlock) ;
  err:
   dir_close(dir) ;
- closederr:
-  ftrigr_end(&a) ;
-  genalloc_free(uint16_t, &ids) ;
-  rollback(live, prefix, newnames.s, newnames.len) ;
-  stralloc_free(&newnames) ;
-  return 0 ;
+  stralloc_free(&names) ;
+  return -1 ;
 }

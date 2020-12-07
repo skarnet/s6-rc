@@ -10,7 +10,7 @@
 #include <skalibs/djbunix.h>
 #include <s6-rc/s6rc-utils.h>
 
-int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, char const *scandir, char const *prefix, char const *compiled, unsigned char const *state, unsigned int statelen, size_t *dirlen)
+int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, char const *scdir, char const *prefix, char const *compiled, unsigned char const *state, unsigned int statelen, size_t *dirlen)
 {
   size_t newlen, ddirlen ;
   size_t sabase = sa->len ;
@@ -28,7 +28,7 @@ int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, cha
   strcpy(sa->s + newlen, "compiled") ;
   if (symlink(compiled, sa->s + sabase) < 0) goto delerr ;
   strcpy(sa->s + newlen, "scandir") ;
-  if (symlink(scandir, sa->s + sabase) < 0) goto delerr ;
+  if (symlink(scdir, sa->s + sabase) < 0) goto delerr ;
   strcpy(sa->s + newlen, "prefix") ;
   if (!openwritenclose_unsafe(sa->s + sabase, prefix, strlen(prefix))) goto delerr ;
   strcpy(sa->s + newlen, "state") ;

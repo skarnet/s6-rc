@@ -3,8 +3,11 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+
+#include <skalibs/posixplz.h>
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
+
 #include <s6-rc/s6rc-utils.h>
 #include "s6rc-servicedir-internal.h"
 
@@ -14,7 +17,6 @@ static s6rc_servicedir_desc_t const svdir_file_list[] =
   { .name = "finish.user", .type = FILETYPE_NORMAL, .options = SVFILE_EXECUTABLE },
   { .name = "run", .type = FILETYPE_NORMAL, .options = SVFILE_EXECUTABLE | SVFILE_MANDATORY | SVFILE_ATOMIC },
   { .name = "run.user", .type = FILETYPE_NORMAL, .options = SVFILE_EXECUTABLE },
-  { .name = "nosetsid", .type = FILETYPE_EMPTY, .options = 0 },
   { .name = "notification-fd", .type = FILETYPE_UINT, .options = 0 },
   { .name = "timeout-kill", .type = FILETYPE_UINT, .options = 0 },
   { .name = "timeout-finish", .type = FILETYPE_UINT, .options = 0 },

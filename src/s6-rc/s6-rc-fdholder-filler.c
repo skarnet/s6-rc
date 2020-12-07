@@ -3,11 +3,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+
 #include <skalibs/types.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/tai.h>
+
 #include <s6/s6-fdholder.h>
 
 #define USAGE "s6-rc-fdholder-filler [ -1 ] [ -t timeout ] < autofilled-filename"
@@ -15,7 +17,21 @@
 
 #define N 4096
 
-static unsigned int parse_servicenames (char *s, unsigned int *indices)
+static inline unsigned int class (char c)
+{
+  switch (c)
+  {
+    case 0 : return 0 ;
+    case '\n' : return 1 ;
+    case '#' : return 2 ;
+    case ' ' :
+    case '\r' :
+    case '\t' : return 3 ;
+    default : return 4 ;
+  }
+}
+
+static inline unsigned int parse_servicenames (char *s, unsigned int *indices)
 {
   static unsigned char const table[3][5] =
   {
@@ -26,17 +42,9 @@ static unsigned int parse_servicenames (char *s, unsigned int *indices)
   unsigned int pos = 0 ;
   unsigned int n = 0 ;
   unsigned int state = 0 ;
-
-  unsigned char class[256] ;
-  memset(class, 4, 256) ;
-  class[0] = 0 ;
-  class['\n'] = 1 ;
-  class['#'] = 2 ;
-  class[' '] = class['\r'] = class['\t'] = 3 ;
-
   for (; state < 3 ; pos++)
   {
-    unsigned char c = table[state][class[(unsigned char)s[pos]]] ;
+    unsigned char c = table[state][class(s[pos])] ;
     state = c & 3 ;
     if (c & 4) indices[n++] = pos ;
     if (c & 8) s[pos] = 0 ;

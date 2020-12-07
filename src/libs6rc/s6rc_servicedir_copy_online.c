@@ -5,7 +5,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
+
 #include <skalibs/djbunix.h>
+
 #include <s6-rc/s6rc-utils.h>
 #include "s6rc-servicedir-internal.h"
 #include <s6-rc/s6rc-servicedir.h>
@@ -27,7 +29,12 @@ int s6rc_servicedir_copy_online (char const *src, char const *dst)
   memcpy(oldfn, dst, dstlen) ;
   memcpy(oldfn + dstlen, "/old", 5) ;
   if (rm_rf(oldfn) < 0 && errno != ENOENT) return 0 ;
-  if (mkdir(oldfn, 0755) < 0) return 0 ;
+  {
+    mode_t m = umask(0) ;
+    int r = mkdir(oldfn, 0755) ;
+    umask(m) ;
+    if (r < 0) return 0 ;
+  }
   dstfn[dstlen] = '/' ;
   oldfn[dstlen + 4] = '/' ;
   wantup = s6rc_servicedir_block(dst) ;

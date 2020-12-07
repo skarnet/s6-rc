@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#include <skalibs/posixplz.h>
 #include <skalibs/types.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/strerr2.h>
@@ -118,14 +119,14 @@ int main (int argc, char const *const *argv)
     strerr_diefu4sys(111, "symlink ", sa.s + dirlen, " to ", live) ;
   }
 
-  deref = s6rc_servicedir_manage_g(live, prefix, &deadline) ;
-  if (!deref)
+  if (s6rc_servicedir_manage_g(live, prefix, &deadline) < 0)
   {
     unlink_void(live) ;
     cleanup(&sa) ;
-    strerr_diefu3sys(111, "supervise service directories in ", live, "/servicedirs") ;
+    if (errno == ENXIO)
+      strerr_diefu5x(100, "supervise service directories in ", live, "/servicedirs", ": s6-svscan not running on ", argv[0]) ;
+    else
+      strerr_diefu3sys(111, "supervise service directories in ", live, "/servicedirs") ;
   }
-  if (deref & 2)
-    strerr_warnw2x("s6-svscan not running on ", argv[0]) ;
   return 0 ;
 }

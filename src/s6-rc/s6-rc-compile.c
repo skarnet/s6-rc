@@ -1085,9 +1085,9 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
   if (!stralloc_cats(&satmp,
     "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n"
     EXECLINE_EXTBINPREFIX "pipeline -dw --\n{\n  "
-    EXECLINE_EXTBINPREFIX "if -n --\n  {\n    "
-    EXECLINE_EXTBINPREFIX "forstdin -x 1 -- i\n    "
-    EXECLINE_EXTBINPREFIX "exit 1\n  }\n  "
+    EXECLINE_EXTBINPREFIX "if --\n  {\n    "
+    EXECLINE_EXTBINPREFIX "forstdin -x0 -- i\n      "
+    EXECLINE_EXTBINPREFIX "exit 0\n  }\n  "
     EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    "
     EXECLINE_EXTBINPREFIX "redirfd -r 0 ./data/autofilled\n    "
     S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
