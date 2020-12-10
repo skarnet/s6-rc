@@ -43,7 +43,7 @@ int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *
     char const *servicedirs[n] ;
     int r ;
     for (size_t i = 0 ; i < n ; p += strlen(p) + 1) servicedirs[i++] = p ;
-    r = s6_supervise_link(dirfn, servicedirs, n, prefix, 0, deadline, stamp) ;
+    r = s6_supervise_link(dirfn, servicedirs, n, prefix, 4, deadline, stamp) ;
     stralloc_free(&names) ;
     return r ;
   }
