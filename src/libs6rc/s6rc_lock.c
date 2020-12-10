@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include <skalibs/djbunix.h>
 
@@ -18,9 +19,8 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     char lfn[llen + 6] ;
     memcpy(lfn, live, llen) ;
     memcpy(lfn + llen, "/lock", 6) ;
-    lfd = open_create(lfn) ;
+    lfd = open(lfn, O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK | O_CLOEXEC, 0644) ;
     if (lfd < 0) return 0 ;
-    if (coe(lfd) < 0) goto lerr ;
     r = fd_lock(lfd, lwhat > 1, !blocking) ;
     if (!r) errno = EBUSY ;
     if (r < 1) goto lerr ;
@@ -32,15 +32,13 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     char cfn[clen + 6] ;
     memcpy(cfn, compiled, clen) ;
     memcpy(cfn + clen, "/lock", 6) ;
-    cfd = open_create(cfn) ;
+    cfd = open(cfn, O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK | O_CLOEXEC, 0644) ;
     if (cfd < 0)
       if (cwhat > 1 || errno != EROFS) goto lerr ;
       else cfd = -errno ;
     else
     {
-      int r ;
-      if (coe(cfd) < 0) goto cerr ;
-      r = fd_lock(cfd, cwhat > 1, !blocking) ;
+      int r = fd_lock(cfd, cwhat > 1, !blocking) ;
       if (!r) errno = EBUSY ;
       if (r < 1) goto cerr ;
     }
