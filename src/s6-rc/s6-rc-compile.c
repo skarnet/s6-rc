@@ -1301,10 +1301,6 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
     }
 
-    memcpy(srcfn + srcdirlen + len + 2, "nosetsid", 9) ;
-    memcpy(dstfn + clen + 14 + len, "nosetsid", 9) ;
-    filecopy_unsafe(srcfn, dstfn, 0644) ;
-
     memcpy(srcfn + srcdirlen + len + 2, "notification-fd", 16) ;
     memcpy(dstfn + clen + 14 + len, "notification-fd", 16) ;
     if (copy_uint(compiled, srcfn, dstfn, &u) && u < 3 && verbosity)
