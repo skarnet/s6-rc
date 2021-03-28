@@ -79,7 +79,6 @@ int ep_add (uint8_t type, char const *name, uint32_t owner, ep_func_t_ref f, voi
 {
   epelem_t ee = { .owner = owner, .f = f, .aux = aux } ;
   uint32_t d ;
-  if (type >= S6RC_EVENTTYPE_PHAIL) return (errno = EINVAL, 0) ;
   if (!avltree_search(&ep[type].map, name, &d))
   {
     eplist_t newlist = { .name = name, .list = GENALLOC_ZERO } ;
@@ -97,7 +96,6 @@ int ep_add (uint8_t type, char const *name, uint32_t owner, ep_func_t_ref f, voi
 void ep_delete (uint8_t type, char const *name, uint32_t owner, ep_func_t_ref f, void *aux)
 {
   uint32_t d ;
-  if (type >= S6RC_EVENTTYPE_PHAIL) return ;
   if (!avltree_search(&ep[type].map, name, &d)) return ;
 
   epelem_t ee = { .owner = owner, .f = f, .aux = aux } ;

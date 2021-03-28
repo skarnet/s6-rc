@@ -57,18 +57,8 @@ void client_yoink (client_t **c)
   client_connections-- ;
 }
 
-void client_setdeadline (client_t *c)
-{
-  tain_t blah ;
-  tain_half(&blah, &tain_infinite_relative) ;
-  tain_add_g(&blah, &blah) ;
-  if (tain_less(&blah, &c->deadline))
-    tain_add_g(&c->deadline, &client_answer_tto) ;
-}
-
 int client_prepare_iopause (client_t *c, tain_t *deadline, iopause_fd *x, uint32_t *j)
 {
-  if (tain_less(&c->deadline, deadline)) *deadline = c->deadline ;
   if (!textmessage_sender_isempty(&c->connection.out) || !textmessage_receiver_isempty(&c->connection.in) || (!flags.lameduck && !textmessage_receiver_isfull(&c->connection.in)))
   {
     x[*j].fd = textmessage_sender_fd(&c->connection.out) ;
@@ -83,6 +73,12 @@ int client_prepare_iopause (client_t *c, tain_t *deadline, iopause_fd *x, uint32
     c->xindex[1] = (*j)++ ;
   }
   else c->xindex[1] = 0 ;
+  if (!textmessage_sender_isempty(&c->connection.out) || (ismonitored(c) && !textmessage_sender_isempty(&c->monitor)))
+  {
+    tain_t foo ;
+    tain_add_g(&foo, &client_answer_tto) ;
+    if (tain_less(&foo, deadline)) *deadline = foo ;
+  }
   return !!c->xindex[0] || !!c->xindex[1] ;
 }
 
@@ -91,7 +87,6 @@ int client_add (int fd, uint8_t perms)
   client_t *c = alloc(sizeof(client_t)) ;
   if (!c) return 0 ;
   c->xindex[0] = c->xindex[1] = 0 ;
-  tain_add_g(&c->deadline, &client_answer_tto) ;
   c->perms = perms ;
   c->monitor = textmessage_sender_zero ;
   textmessage_sender_init(&c->connection.out, fd) ;
@@ -107,24 +102,16 @@ int client_add (int fd, uint8_t perms)
 int client_flush (client_t *c, iopause_fd const *x)
 {
   int ok = 1 ;
-  int done = 1 ;
   if (c->xindex[0] && (x[c->xindex[0]].revents & IOPAUSE_WRITE))
   {
-    if (!textmessage_sender_flush(&c->connection.out))
-    {
-      done = 0 ;
-      if (!error_isagain(errno)) ok = 0 ;
-    }
+    if (!textmessage_sender_flush(&c->connection.out) && !error_isagain(errno))
+      ok = 0 ;
   }
   if (ismonitored(c) && c->xindex[1] && (x[c->xindex[1]].revents & IOPAUSE_WRITE))
   {
-    if (!textmessage_sender_flush(&c->monitor))
-    {
-      done = 0 ;
-      if (!error_isagain(errno)) ok = 0 ;
-    }
+    if (!textmessage_sender_flush(&c->monitor) && !error_isagain(errno))
+      monitor_finish(c) ;
   }
-  if (done) tain_add_g(&c->deadline, &tain_infinite_relative) ;
   return ok ;
 }
 
@@ -132,15 +119,6 @@ int client_read (client_t *c, iopause_fd const *x)
 {
   return !textmessage_receiver_isempty(&c->connection.in) || (c->xindex[0] && (x[c->xindex[0]].revents & IOPAUSE_READ)) ?
     textmessage_handle(&c->connection.in, command_handle, c) > 0 : 1 ;
-}
-
-int monitor_init (client_t *c, int fd, unsigned int v)
-{
-  if (ismonitored(c)) return (errno = EINVAL, 0) ;
-  textmessage_sender_init(&c->monitor, fd) ;
-  c->monitor_verbosity = v ;
-  client_monitors++ ;
-  return 1 ;
 }
 
 void monitor_finish (client_t *c)
@@ -152,7 +130,7 @@ void monitor_finish (client_t *c)
   client_monitors-- ;
 }
 
-void monitor_put (unsigned int v, char const *s, size_t len)
+void monitor_put (uint32_t v, char const *s, size_t len)
 {
   if (!client_monitors) return ;
   for (client_t *c = client_head ; c ; c = c->next)

@@ -12,7 +12,7 @@ extern int ev_enqueue (s6rc_event_t const *) ;
 extern int ev_pop (s6rc_event_t *) ;
 
 
- /* Event processor: the static part */
+ /* Event processor: the builtin part */
 
 extern void ev_handle (s6rc_event_t const *) ;
 

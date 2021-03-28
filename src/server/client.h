@@ -20,13 +20,12 @@ struct client_s
   client_t *prev ;
   client_t *next ;
   uint32_t xindex[2] ;
-  tain_t deadline ;
   s6rc_connection_t connection ;
   textmessage_sender_t monitor ;
-  unsigned int monitor_verbosity ;
+  uint32_t monitor_verbosity ;
   uint8_t perms ;
 } ;
-#define CLIENT_ZERO { .next = 0, .xindex = 0, .deadline = TAIN_ZERO, .connection = S6RC_CONNECTION_ZERO, .monitor = TEXTMESSAGE_SENDER_ZERO, .monitor_verbosity = 0, .perms = 0 }
+#define CLIENT_ZERO { .next = 0, .xindex = 0, .connection = S6RC_CONNECTION_ZERO, .monitor = TEXTMESSAGE_SENDER_ZERO, .monitor_verbosity = 0, .perms = 0 }
 
 extern tain_t client_answer_tto ;
 extern client_t *client_head ;
@@ -37,14 +36,11 @@ extern int client_prepare_iopause (client_t *, tain_t *, iopause_fd *, uint32_t 
 extern int client_flush (client_t *, iopause_fd const *) ;
 extern int client_add (int, uint8_t) ;
 
-extern void client_setdeadline (client_t *) ;
-
 
  /* Monitors */
 
 extern uint32_t client_monitors ;
-extern int monitor_init (client_t *, int) ;
 extern int monitor_finish (client_t *) ;
-extern int monitor_put (unsigned int, char const *, size_t) ;
+extern int monitor_put (uint32_t, char const *, size_t) ;
 
 #endif

@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 
+
 typedef enum s6rc_eventtype_e s6rc_eventtype_t, *s6rc_eventtype_t_ref ;
 enum s6rc_eventtype_e
 {

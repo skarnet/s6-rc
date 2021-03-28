@@ -5,7 +5,6 @@
 
 #include <sys/uio.h>
 
-#include <skalibs/textmessage.h>
 
  /* Client commands */
 
