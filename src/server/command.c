@@ -18,6 +18,8 @@ static inline int answer (client_t *c, char e)
 static int do_query (client_t *c, char const *s, size_t len)
 {
   if (!len--) return (errno = EPROTO, 0) ;
+  if (!(c->flags & 2)) return answer(c, EPERM) ;
+  /* TODO */
   return 1 ;
 }
 
@@ -71,16 +73,25 @@ static int do_monitor (client_t *c, char const *s, size_t len)
 
 static int do_change (client_t *c, char const *s, size_t len)
 {
+  if (!len--) return (errno = EPROTO, 0) ;
+  if (!(c->flags & 4)) return answer(c, EPERM) ;
+  /* TODO */
   return 1 ;
 }
 
 static int do_event (client_t *c, char const *s, size_t len)
 {
+  if (!len--) return (errno = EPROTO, 0) ;
+  if (!(c->flags & 8)) return answer(c, EPERM) ;
+  /* TODO */
   return 1 ;
 }
 
 static int do_admin (client_t *c, char const *s, size_t len)
 {
+  if (!len--) return (errno = EPROTO, 0) ;
+  if (!(c->flags & 16)) return answer(c, EPERM) ;
+  /* TODO */
   return 1 ;
 }
 
