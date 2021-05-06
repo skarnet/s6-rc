@@ -779,6 +779,19 @@ int main (int argc, char const *const *argv, char const *const *envp)
           strerr_warni1x("updating s6rc-fdholder pipe storage") ;
 
         update_fdholder(&olddb, oldstate, &newdb, newstate, invimage, envp, &deadline) ;
+
+       /* Clean up scandir */
+
+        if (verbosity >= 2)
+          strerr_warni1x("cleaning up scan directory") ;
+
+        {
+          char scdir[livelen + 9] ;
+          memcpy(scdir, live, livelen) ;
+          memcpy(scdir + livelen, "/scandir", 9) ;
+          if (s6_svc_writectl(scdir, S6_SVSCAN_CTLDIR, "an", 2) <= 0)
+            strerr_warnwu2sys("send command to s6-svscan on ", scdir) ;
+        }
       }
 
 
