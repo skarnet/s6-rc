@@ -368,7 +368,7 @@ static uint32_t read_flags (int dfd, char const *srcdir, char const *name)
       if (errno != ENOENT)
         strerr_diefu6sys(111, "read ", srcdir, "/", name, "/", files[i]) ;
     }
-    else flags |= i ;
+    else flags |= 1 << i ;
   }
   return flags ;
 }
