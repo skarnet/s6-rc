@@ -1,23 +1,53 @@
 /* ISC license. */
 
-#ifndef S6RC_DB_H
-#define S6RC_DB_H
+#ifndef S6RC_SERVICE_H
+#define S6RC_SERVICE_H
 
 #include <stdint.h>
-#include <skalibs/diuint32.h>
-#include <skalibs/buffer.h>
 
-#define S6RC_DB_BANNER_START "s6rc-db: start\n"
-#define S6RC_DB_BANNER_START_LEN (sizeof(S6RC_DB_BANNER_START) - 1)
-#define S6RC_DB_BANNER_END "\ns6rc-db: end\n"
-#define S6RC_DB_BANNER_END_LEN (sizeof(S6RC_DB_BANNER_END) - 1)
 
-#define S6RC_DB_FLAG_ESSENTIAL 0x00000001U
+ /* Service types and db representation in memory */
 
+typedef enum s6rc_stype_e s6rc_stype_t, *s6rc_stype_t_ref ;
+enum s6rc_stype_e
+{
+  S6RC_STYPE_LONGRUN,
+  S6RC_STYPE_ONESHOT,
+  S6RC_STYPE_EXTERNAL,
+  S6RC_STYPE_BUNDLE,
+  S6RC_STYPE_VIRTUAL,
+  S6RC_STYPE_PHAIL
+} ;
+
+typedef struct s6rc_sid_s s6rc_sid_t, *s6rc_sid_t_ref ;
+struct s6rc_sid_s
+{
+  uint32_t i ;
+  char const *param ;
+  s6rc_stype_t stype ;
+} ;
+
+typedef struct s6rc_common_s s6rc_common_t, *s6rc_common_t_ref ;
+struct s6rc_common_s
+{
+  uint32_t name ;
+  uint32_t deps[2] ;
+  uint32_t ndeps[2] ;
+  uint32_t flag_essential : 1 ;
+  uint32_t flags : 31 ;
+} ;
+
+typedef struct s6rc_atomic_s s6rc_atomic_t, *s6rc_atomic_t_ref ;
+struct s6rc_atomic_s
+{
+  s6rc_common_t common ;
+  uint32_t timeout[2] ;
+} ;
 
 typedef struct s6rc_oneshot_s s6rc_oneshot_t, *s6rc_oneshot_t_ref ;
 struct s6rc_oneshot_s
 {
+  s6rc_atomic_t satomic ;
   uint32_t argc[2] ;
   uint32_t argv[2] ;
 } ;
@@ -25,52 +55,52 @@ struct s6rc_oneshot_s
 typedef struct s6rc_longrun_s s6rc_longrun_t, *s6rc_longrun_t_ref ;
 struct s6rc_longrun_s
 {
-  uint32_t consumer ;
+  s6rc_atomic_t satomic ;
+  s6rc_sid_t consumer ;
   uint32_t nproducers ;
   uint32_t producers ;
 } ;
 
-typedef union s6rc_longshot_u s6rc_longshot_t, *s6rc_longshot_t_ref ;
-union s6rc_longshot_u
+typedef struct s6rc_external_s s6rc_external_t, *s6rc_external_t_ref ;
+struct s6rc_external_s
 {
-  s6rc_oneshot_t oneshot ;
-  s6rc_longrun_t longrun ;
+  s6rc_common_t common ;
 } ;
 
-typedef struct s6rc_service_s s6rc_service_t, *s6rc_service_t_ref ;
-struct s6rc_service_s
+typedef struct s6rc_bundle_s s6rc_bundle_t, *s6rc_bundle_t_ref ;
+struct s6rc_bundle_s
 {
-  uint32_t name ;
-  uint32_t flags ;
-  uint32_t deps[2] ;
-  uint32_t ndeps[2] ;
-  uint32_t timeout[2] ;
-  s6rc_longshot_t x ;
+  s6rc_common_t common ;
+  uint32_t ncontents ;
+  uint32_t contents ;
+} ;
+
+typedef struct s6rc_deptype_s s6rc_deptype_t, *s6rc_deptype_t_ref ;
+struct s6rc_deptype_s
+{
+  uint8_t passive : 1 ;
+  uint8_t soft : 1 ;
+  uint8_t loose : 1 ;
 } ;
 
 typedef struct s6rc_db_s s6rc_db_t, *s6rc_db_t_ref ;
 struct s6rc_db_s
 {
-  s6rc_service_t *services ;
-  unsigned int nshort ;
-  unsigned int nlong ;
-  unsigned int stringlen ;
-  unsigned int nargvs ;
-  unsigned int ndeps ;
-  unsigned int nproducers ;
-  char *string ;
+  uint32_t ntotal ;
+  uint32_t n[STYPE_PHAIL << 1] ;
+  uint32_t storagelen ;
+  s6rc_longrun_t *longruns ;
+  s6rc_oneshot_t *oneshots ;
+  s6rc_external_t *externals ;
+  s6rc_bundle_t *bundles ;
+  s6rc_bundle_t *virtuals ;
+  s6rc_sid_t *deps[2] ;
+  s6rc_deptype_t *deptypes[2] ;
+  s6rc_sid_t *producers ;
   char const **argvs ;
-  uint32_t *deps ;
-  uint32_t *producers ;
+  char *storage ;
 } ;
 
-extern int s6rc_db_read_uint32 (buffer *, uint32_t *) ;
-
-extern int s6rc_db_read_sizes (int, s6rc_db_t *) ;
-extern int s6rc_db_read (int, s6rc_db_t *) ;
-
-extern int s6rc_db_check_pipelines (s6rc_db_t const *, diuint32 *) ;
-extern int s6rc_db_check_depcycles (s6rc_db_t const *, int, diuint32 *) ;
-extern int s6rc_db_check_revdeps (s6rc_db_t const *) ;
+extern s6rc_common_t const *s6rc_service_common (s6rc_db_t const *, s6rc_sid_t const *) ;
 
 #endif
