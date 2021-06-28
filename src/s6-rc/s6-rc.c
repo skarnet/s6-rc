@@ -610,7 +610,7 @@ int main (int argc, char const *const *argv)
             char pack[cdb_datalen(&c) + 1] ;
             char const *p = pack ;
             if (cdb_read(&c, pack, cdb_datalen(&c), cdb_datapos(&c)) < 0)
-            if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
+              strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
             while (len--)
             {
               uint32_t x ;
