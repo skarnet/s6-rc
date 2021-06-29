@@ -6,7 +6,6 @@
 #include "client.h"
 #include "clientrules.h"
 #include "command.h"
-#include "db.h"
 #include "dynstorage.h"
 #include "ep.h"
 #include "ev.h"

@@ -1,12 +1,15 @@
 /* ISC license. */
 
-#ifndef S6RC_SERVICE_H
-#define S6RC_SERVICE_H
+#ifndef S6RCD_SERVICE_H
+#define S6RCD_SERVICE_H
 
 #include <stdint.h>
 
 
  /* Service types and db representation in memory */
+
+#define S6RC_INSTANCES_MAX 0xffffffU
+#define S6RC_INSTANCEPARAM_MAXLEN 0xffffffU
 
 typedef enum s6rc_stype_e s6rc_stype_t, *s6rc_stype_t_ref ;
 enum s6rc_stype_e
@@ -19,12 +22,19 @@ enum s6rc_stype_e
   S6RC_STYPE_PHAIL
 } ;
 
-typedef struct s6rc_sid_s s6rc_sid_t, *s6rc_sid_t_ref ;
-struct s6rc_sid_s
+
+typedef struct s6rc_baseid_s s6rc_baseid_t, *s6rc_baseid_t_ref ;
+struct s6rc_baseid_s
 {
   uint32_t i ;
-  char const *param ;
   s6rc_stype_t stype ;
+} ;
+
+typedef struct s6rc_id_s s6rc_id_t, *s6rc_id_t_ref ;
+struct s6rc_id_s
+{
+  char const *param ;
+  s6rc_baseid_t baseid ;
 } ;
 
 typedef struct s6rc_common_s s6rc_common_t, *s6rc_common_t_ref ;
@@ -86,17 +96,15 @@ struct s6rc_deptype_s
 typedef struct s6rc_db_s s6rc_db_t, *s6rc_db_t_ref ;
 struct s6rc_db_s
 {
-  uint32_t ntotal ;
   uint32_t n[STYPE_PHAIL << 1] ;
-  uint32_t storagelen ;
   s6rc_longrun_t *longruns ;
   s6rc_oneshot_t *oneshots ;
   s6rc_external_t *externals ;
   s6rc_bundle_t *bundles ;
   s6rc_bundle_t *virtuals ;
-  s6rc_sid_t *deps[2] ;
+  s6rc_baseid_t *deps[2] ;
   s6rc_deptype_t *deptypes[2] ;
-  s6rc_sid_t *producers ;
+  s6rc_baseid_t *producers ;
   char const **argvs ;
   char *storage ;
 } ;

@@ -5,8 +5,7 @@
 
 #include <skalibs/genalloc.h>
 
-#include <s6-rc/db.h>
-
+#include "db.h"
 
  /* Service states, instances, machine state */
 

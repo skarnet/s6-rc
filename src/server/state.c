@@ -4,15 +4,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <skalibs/alloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
 
-#include <s6-rc/db.h>
+#include "db.h"
 #include "dynstorage.h"
 #include "state.h"
+
+#include <skalibs/posixishard.h>
 
 static stateatom_t const stateatom_zero = STATEATOM_ZERO ;
 
@@ -154,6 +157,7 @@ int state_read (char const *file, state_t *st, uint32_t const *dbn)
       char pack[4] ;
       if (buffer_get(&b, pack, 4) < 4) goto err ;
       uint32_unpack_big(pack, &n) ;
+      if (n > S6RC_INSTANCES_MAX) goto eproto ;
       if (!genalloc_ready(instance_t, st->dyn[type] + i, n)) goto err ;
       for (uint32_t j = 0 ; i < n ; j++)
       {
@@ -162,10 +166,11 @@ int state_read (char const *file, state_t *st, uint32_t const *dbn)
         if (!atom_read(&b, &ins->state)) goto err ;
         if (buffer_get(&b, pack, 4) < 4) goto err ;
         uint32_unpack_big(pack, &len) ;
+        if (len > S6RC_INSTANCE_MAXLEN) goto eproto ;
         {
           char param[len + 1] ;
           if (buffer_get(&b, param, len + 1) < len + 1) goto err ;
-          if (param[len]) { errno = EINVAL ; goto err ; }
+          if (param[len]) goto eproto ;
           ins->param = dynstorage_add(param) ;
           if (!ins_param) goto err ;
         }
@@ -173,9 +178,20 @@ int state_read (char const *file, state_t *st, uint32_t const *dbn)
       genalloc_setlen(instance_t, st->dyn[type] + i, n) ;
     }
 
+  {
+    char c ;
+    switch (buffer_get(&b, &c, 1))
+    {
+      case -1 : goto err ;
+      case 1 : goto eproto ;
+    }
+  }
+
   fd_close(fd) ;
   return 1 ;
 
+ eproto:
+  errno = EPROTO ;
  err:
   fd_close(fd) ;
  err0:
