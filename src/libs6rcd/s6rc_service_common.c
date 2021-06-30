@@ -1,19 +1,16 @@
 /* ISC license. */
 
-#include <stdint.h>
-
 #include "db.h"
 
-s6rc_common_t const *s6rc_service_common (s6rc_db_t const *db, s6rc_sid_t const *id)
+s6rc_common_t const *s6rc_service_common (s6rc_db_t const *db, s6rc_id_t const *id)
 {
-  uint32_t i = id->i + (id->param ? db->n[id->stype] : 0) ;
-  switch (id->stype)
+  switch (stype(id))
   {
-    case STYPE_LONGRUN :  return &db->longruns[i].common ;
-    case STYPE_ONESHOT :  return &db->oneshots[i].common ;
-    case STYPE_EXTERNAL : return &db->externals[i].common ;
-    case STYPE_BUNDLE :   return &db->bundles[i].common ;
-    case STYPE_VIRTUAL :  return &db->virtuals[i].common ;
+    case STYPE_LONGRUN :  return &db->longruns[snum(id)].common ;
+    case STYPE_ONESHOT :  return &db->oneshots[snum(id)].common ;
+    case STYPE_EXTERNAL : return &db->externals[snum(id)].common ;
+    case STYPE_BUNDLE :   return &db->bundles[snum(id)].common ;
+    case STYPE_VIRTUAL :  return &db->virtuals[snum(id)].common ;
     default : return 0 ;
   }
 }
