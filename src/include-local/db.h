@@ -34,6 +34,9 @@ struct s6rc_common_s
   uint32_t ndeps[2] ;
 } ;
 
+#define S6RC_DB_FLAG_ESSENTIAL 0x80000000u
+#define S6RC_DB_FLAG_WEAK 0x40000000u
+
 typedef struct s6rc_atomic_s s6rc_atomic_t, *s6rc_atomic_t_ref ;
 struct s6rc_atomic_s
 {
@@ -94,8 +97,7 @@ struct s6rc_db_s
 } ;
 #define S6RC_DB_ZERO = { .map = 0, .len = 0 }
 
-
 extern int s6rc_service_resolve (cdb_t *, char const *, s6rc_id_t *, char const **) ;
-extern s6rc_common_t const *s6rc_service_common (s6rc_db_t const *, s6rc_id_t const *) ;
+extern s6rc_common_t const *s6rc_service_common (s6rc_db_t const *, s6rc_id_t) ;
 
 #endif

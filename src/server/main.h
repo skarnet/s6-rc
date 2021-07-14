@@ -4,7 +4,7 @@
 #define S6RCD_MAIN_H
 
 
- /* Exported by the main file, s6-rcd.c */
+ /* Misc globals, exported by the file containing main() */
 
 typedef struct globalflags_s globalflags_t, *globalflags_t_ref ;
 struct globalflags_s

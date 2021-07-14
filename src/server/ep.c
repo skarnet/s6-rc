@@ -9,13 +9,14 @@
 #include <skalibs/gensetdyn.h>
 #include <skalibs/avltree.h>
 
-#include <s6-rc/event.h>
+#include "db.h"
+#include "event.h"
 #include "ep.h"
 
 typedef struct epelem_s epelem_t, *epelem_t_ref ;
 struct epelem_s
 {
-  uint32_t owner ;
+  s6rc_id_t owner ;
   ep_func_t_ref f ;
   void *aux ;
 } ;

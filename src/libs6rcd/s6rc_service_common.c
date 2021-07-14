@@ -2,7 +2,7 @@
 
 #include "db.h"
 
-s6rc_common_t const *s6rc_service_common (s6rc_db_t const *db, s6rc_id_t const *id)
+s6rc_common_t const *s6rc_service_common (s6rc_db_t const *db, s6rc_id_t id)
 {
   switch (stype(id))
   {
