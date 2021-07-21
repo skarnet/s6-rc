@@ -14,6 +14,6 @@
 #define deptype_soft(dt) ((dt) & 0x02u)
 #define deptype_loose(dt) ((dt) & 0x04u)
 
-extern int deps_fulfilled (s6rc_db_t const *, mstate_t const *, s6rc_id_t, char const *, int) ;
+extern int deps_fulfilled (s6rc_db_t const *, mstate_t const *, uint32_t, char const *, int) ;
 
 #endif

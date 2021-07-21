@@ -56,8 +56,8 @@ typedef instance_func *instance_func_ref ;
 
 extern instancelen_func_ref const instancelen_nop ;
 
-extern sstate_t *instance_create (mstate_t *, s6rc_id_t, char const *) ;
-extern void instance_remove (mstate_t *, s6rc_id_t, char const *) ;
+extern sstate_t *instance_create (mstate_t *, uint32_t, char const *) ;
+extern void instance_remove (mstate_t *, uint32_t, char const *) ;
 
 extern void mstate_free (mstate_t *, uint32_t const *) ;
 extern int mstate_init (mstate_t *, uint32_t const *) ;

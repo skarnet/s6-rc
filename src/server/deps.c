@@ -4,22 +4,45 @@
 #include <sys/uio.h>
 #include <errno.h>
 
-#include "db.h"
+#include <s6-rc/db.h>
 #include "state.h"
 
-int deps_fulfilled (s6rc_db_t const *db, mstate_t const *m, s6rc_id_t id, char const *param, int h)
+static int state_allownext (sstate_t const *st, uint8_t deptype, uint8_t subtype, int h)
 {
-  s6rc_common_t const *common = s6rc_service_common(db, id) ;
+  return !(st->bits & SSTATE_WANTED) == h && subtype != S6RC_STYPE_EXTERNAL && subtype != S6RC_STYPE_N + S6RC_STYPE_EXTERNAL ? 0 :
+  (!(st->bits & SSTATE_CURRENT) != h && !(st->bits & SSTATE_TRANSITIONING))
+   || (s6rc_deptype_soft(deptype) && st->bits & SSTATE_FAILED)
+   || (s6rc_deptype_loose(deptype) && !(st->bits & SSTATE_TRANSITIONING))
+}
+
+static int instances_alldown (mstate_t const *m, uint8_t deptype, uint8_t type, uint32_t num)
+{
+  instance_t const *ins = genalloc_s(instance_t, m->dyn[type] + num) ;
+  size_t n = genalloc_len(instance_t, m->dyn[type] + num) ;
+  for (size_t i = 0 ; i < n ; i++)
+    if (!state_allownext(&ins[i].sstate, deptype, subtype, 0)) return 0 ;
+  return 1 ;
+}
+
+int deps_fulfilled (s6rc_db_t const *db, mstate_t const *m, uint32_t id, char const *param, int h)
+{
+  s6rc_common_t const *common ;
+  uint32_t num ;
+  uint8_t type ;
+  s6rc_service_typenum(db->n, id, &type, &num) ;
+  common = s6rc_service_common_tn(db, type, num) ;
   for (uint32_t i = 0 ; i < common->ndeps[h] ; i++)
   {
-    s6rc_id_t depid = db->deps[h][common->deps[h] + i] ;
-    sstate_t *st = sstate(m, depid, param) ;
+    uint32_t subnum ;
+    uint8_t subtype ;
     uint8_t deptype = db->deptypes[h][common->deps[h] + i] ;
-    if (!(st->bits & SSTATE_WANTED) == h && stype(depid) != S6RC_STYPE_EXTERNAL && stype(depid) != S6RC_STYPE_N + S6RC_STYPE_EXTERNAL) return 0 ;
-    if (!(st->bits & SSTATE_CURRENT) != h && !(st->bits & SSTATE_TRANSITIONING)) continue ;
-    if (s6rc_deptype_soft(deptype) && st->bits & SSTATE_FAILED) continue ;
-    if (s6rc_deptype_loose(deptype) && !(st->bits & SSTATE_TRANSITIONING)) continue ;
-    return 0 ;
+    s6rc_service_typenum(db->n, db->deps[h][common->deps[h] + i], &subtype, &subnum) ;
+    if (!h && type < S6RC_STYPE_N && subtype >= S6RC_STYPE_N)
+      return instances_alldown(m, deptype, subtype, subnum) ;
+    if (h && type >= S6RC_STYPE_N && subtype < S6RC_STYPE_N)
+      param = 0 ;
+    if (!state_allownext(sstate_tn(m, subtype, subnum, param), deptype, subtype, h))
+      return 0 ;
   }
   return 1 ;
 }
@@ -45,7 +68,7 @@ struct recinfo_s
   uint8_t h : 1 ;
 }
 
-static int mstate_dep_closure_rec (recinfo_t *recinfo, s6rc_id_t id)
+static int mstate_dep_closure_rec (recinfo_t *recinfo, uint32_t id)
 {
   sstate_t *st = sstate(recinfo->db, recinfo->m, id, recinfo->param) ;
   if (!st)
@@ -71,7 +94,7 @@ int mstate_change_wanted (s6rc_db_t const *db, cdb_t *c, mstate_t *m, char const
   for (size_t i = 0 ; i < n ; n++)
   {
     sstate_t *st ;
-    s6rc_id_t id ;
+    uint32_t id ;
     char const *param ;
     int r = s6rc_service_resolve(c, args[i], &id, &param) ;
     if (r < 0) return -1 ;

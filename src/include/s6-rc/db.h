@@ -52,7 +52,7 @@ struct s6rc_longrun_s
   s6rc_atomic_t satomic ;
   uint32_t nproducers ;
   uint32_t producers ;
-  s6rc_id_t consumer ;
+  uint32_t consumer ;
 } ;
 
 typedef struct s6rc_oneshot_s s6rc_oneshot_t, *s6rc_oneshot_t_ref ;
@@ -87,9 +87,9 @@ struct s6rc_db_s
   s6rc_external_t const *externals ;
   s6rc_bundle_t const *bundles ;
   s6rc_bundle_t const *virtuals ;
-  s6rc_id_t const *deps[2] ;
+  uint32_t const *deps[2] ;
   uint8_t const *deptypes[2] ;
-  s6rc_id_t const *producers ;
+  uint32_t const *producers ;
   char const *storage ;
   char const **argvs ;  /* alloced */
 } ;

@@ -104,7 +104,7 @@ int s6rc_db_load (char const *dir, s6rc_db_t *db, cdb_t *c)
     db->externals = (s6rc_external_t const *)(db->oneshots + db->n[S6RC_STYPE_ONESHOT] + db->n[S6RC_STYPE_N + S6RC_STYPE_ONESHOT]) ;
     db->bundles = (s6rc_bundle_t const *)(db->externals + db->n[S6RC_STYPE_EXTERNAL] + db->n[S6RC_STYPE_N + S6RC_STYPE_EXTERNAL]) ;
     db->virtuals = (s6rc_bundle_t const *)(db->bundles + db->n[S6RC_STYPE_BUNDLE] + db->n[S6RC_STYPE_N + S6RC_STYPE_BUNDLE]) ;
-    db->deps[0] = (s6rc_id_t const *)(db->virtuals + db->n[S6RC_STYPE_VIRTUAL] + db->n[S6RC_STYPE_N + S6RC_STYPE_VIRTUAL]) ;
+    db->deps[0] = (uint32_t const *)(db->virtuals + db->n[S6RC_STYPE_VIRTUAL] + db->n[S6RC_STYPE_N + S6RC_STYPE_VIRTUAL]) ;
     db->deps[1] = db->deps[0] + ndeps ;
     db->producers = db->deps[1] + ndeps ;
     db->deptypes[0] = (uint8_t const *)(db->producers + nproducers) ;

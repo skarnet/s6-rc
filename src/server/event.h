@@ -8,7 +8,7 @@
 typedef event_s event_t, *event_t_ref ;
 struct event_s
 {
-  s6rc_id_t id ;
+  uint32_t id ;
   char const *param ;
   uint8_t wanted : 1 ;
   uint8_t up : 1 ;
