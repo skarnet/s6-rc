@@ -11,7 +11,7 @@
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
 
-#include "db.h"
+#include <s6-rc/db.h>
 #include "dynstorage.h"
 #include "state.h"
 
@@ -19,26 +19,43 @@
 
 static sstate_t const sstate_zero = SSTATE_ZERO ;
 
-void instance_free (instance_t *ins)
+static inline void instance_free (instance_t *ins)
 {
   dynstorage_remove(ins->param) ;
 }
 
-int instance_new (instance_t *ins, sstate_t const *st, char const *param) ;
+void instance_remove (mstate_t *m, uint8_t type, uint32_t num, char const *param)
 {
-  char const *s = dynstorage_add(param) ;
-  if (!s) return 0 ;
-  ins->state = *st ;
-  inst->param = s ;
-  return 1 ;
+  genalloc *g = m->dyn[type] + num ;
+  instance_t *ins = genalloc_s(instance_t, g) ;
+  uint32_t n = genalloc_len(instance_t, g) ;
+  uint32_t i = 0 ;
+  for (; i < n ; i++) if (!strcmp(param, ins[i].param)) break ;
+  if (i >= n) return ;
+  instance_free(ins + i) ;
+  ins[i] = ins[n-1] ;
+  genalloc_setlen(instance_t, g, n-1) ;
+}
+
+sstate_t *instance_create (mstate_t *m, uint8_t type, uint32_t num, char const *param)
+{
+  genalloc *g = m->dyn[type] + num ;
+  instance_t ins = { .sstate = SSTATE_ZERO, .param = dynstorage_add(param) } ;
+  if (!ins.param) return 0 ;
+  if (!genalloc_catb(instance_t, g, &ins, 1))
+  {
+    dynstorage_remove(ins.param) ;
+    return 0 ;
+  }
+  return &genalloc_s(instance_t, g)[genalloc_len(instance_t, g) - 1].sstate ;
 }
 
 void mstate_free (mstate_t *st, uint32_t const *dbn)
 {
-  for (size_t type = 0 ; type < S6RC_STYPE_N ; type++)
+  for (uint8_t type = 0 ; type < S6RC_STYPE_N ; type++)
   {
     alloc_free(st->sta[type]) ;
-    for (size_t i = 0 ; i < dbn[S6RC_STYPE_N + type] ; i++)
+    for (uint32_t i = 0 ; i < dbn[S6RC_STYPE_N + type] ; i++)
     {
       for (size_t j = 0 ; j < genalloc_len(instance_t, st->dyn[type] + i) ; j++)
         instance_free(genalloc_s(instance_t, st->dyn[type] + i) + j) ;
@@ -50,7 +67,7 @@ void mstate_free (mstate_t *st, uint32_t const *dbn)
 
 int mstate_init (mstate_t *st, uint32_t const *dbn)
 {
-  size_t type = 0 ;
+  uint8_t type = 0 ;
   for (; type < S6RC_STYPE_N ; type++)
   {
     st->sta[type] = alloc(dbn[type]) ;
@@ -73,18 +90,40 @@ int mstate_init (mstate_t *st, uint32_t const *dbn)
   return 0 ;
 }
 
-static int sstate_write (buffer *b, sstate_t const *state)
+int mstate_iterate (mstate_t *m, uint32_t const *dbn, sstate_func_ref staf, instancelen_func_ref lenf, instance_func_ref dynf, void *arg)
 {
-  return buffer_put(b, (char *)state->bits, 1) == 1 ;
+  for (uint8_t type = 0 ; type < S6RC_STYPE_N ; type++)
+    for (uint32_t i = 0 ; i < dbn[type] ; i++)
+      if (!staf(m->sta[type] + i, arg)) return 0 ;
+
+  for (uint8_t type = 0 ; type < S6RC_STYPE_N ; type++)
+    for (uint32_t i = 0 ; i < dbn[S6RC_STYPE_N + type] ; i++)
+    {
+      uint32_t n = genalloc_len(instance_t, m->dyn[type] + i) ;
+      instance_t const *p = genalloc_s(instance_t, m->dyn[type] + i) ;
+      if (!lenf(n, arg)) return 0 ;
+      for (size_t j = 0 ; j < n ; j++)
+        if (!dynf(p + j, arg)) goto err ;
+    }
+
+  return 1 ;
 }
 
-static int sstate_read (buffer *b, sstate_t *state)
+static int sstate_write (sstate_t *state, void *b)
 {
-  return buffer_get(b, (char *)state->bits, 1) == 1 ;
+  return buffer_put((buffer *)b, (char *)&state->bits, 1) == 1 ;
 }
 
-static inline int instance_write (buffer *b, instance_t const *ins)
+static int instancelen_write (uint32_t n, void *b)
 {
+  char pack[4] ;
+  uint32_pack_big(pack, n) ;
+  return buffer_put((buffer *)b, pack, 4) == 4 ;
+}
+
+static int instance_write (instance_t *ins, void *arg)
+{
+  buffer *b = arg ;
   uint32_t len = strlen(ins->param) ;
   char pack[4] ;
   uint32_pack_big(pack, len) ;
@@ -94,7 +133,37 @@ static inline int instance_write (buffer *b, instance_t const *ins)
   return 1 ;
 }
 
-static inline int instance_read (buffer *b, instance_t *ins)
+int mstate_write (char const *file, mstate_t const *m, uint32_t const *dbn)
+{
+  size_t filelen = strlen(file) ;
+  int fd ;
+  buffer b ;
+  char buf[1024] ;
+  char fn[filelen + 12] ;
+  memcpy(fn, file, filelen) ;
+  memcpy(fn + filelen, ":tmp:XXXXXX", 12) ;
+  fd = mkstemp(fn) ;
+  if (fd == -1) return 0 ;
+  buffer_init(&b, &buffer_write, fd, buf, 1024) ;
+  if (!mstate_iterate(m, &sstate_write, &instancelen_write, &instance_write, &b)) goto err ;
+  if (!buffer_flush(&b)) goto err ;
+  fd_close(fd) ;
+  if (rename(fn, file) == -1) goto err0 ;
+  return 1 ;
+
+ err:
+  fd_close(fd) ;
+ err0:
+  unlink_void(fn) ;
+  return 0 ;
+}
+
+static int sstate_read (buffer *b, sstate_t *state)
+{
+  return buffer_get(b, (char *)&state->bits, 1) == 1 ;
+}
+
+static int instance_read (buffer *b, instance_t *ins)
 {
   sstate_t st ;
   char const *p ;
@@ -116,47 +185,6 @@ static inline int instance_read (buffer *b, instance_t *ins)
   return 1 ;
 }
 
-int mstate_write (char const *file, mstate_t const *st, uint32_t const *dbn)
-{
-  size_t filelen = strlen(file) ;
-  int fd ;
-  buffer b ;
-  char buf[1024] ;
-  char fn[filelen + 12] ;
-  memcpy(fn, file, filelen) ;
-  memcpy(fn + filelen, ":tmp:XXXXXX", 12) ;
-  fd = mkstemp(fn) ;
-  if (fd == -1) return 0 ;
-  buffer_init(&b, &buffer_write, fd, buf, 1024) ;
-
-  for (size_t type = 0 ; type < S6RC_STYPE_N ; type++)
-    for (uint32_t i = 0 ; i < dbn[type] ; i++)
-      if (!sstate_write(&b, st->sta[type] + i)) goto err ;
-
-  for (size_t type = 0 ; type < S6RC_STYPE_N ; type++)
-    for (uint32_t i = 0 ; i < dbn[S6RC_STYPE_N + type] ; i++)
-    {
-      uint32_t n = genalloc_len(instance_t, st->dyn[type] + i) ;
-      instance_t const *p = genalloc_s(instance_t, st->dyn[type] + i) ;
-      char pack[4] ;
-      uint32_pack_big(pack, n) ;
-      if (buffer_put(&b, pack, 4) < 4) goto err ;
-      for (uint32_t j = 0 ; j < n ; j++)
-        if (!instance_write(&b, p + j)) goto err ;
-    }
-
-  if (!buffer_flush(&b)) goto err ;
-  fd_close(fd) ;
-  if (rename(fn, file) == -1) goto err0 ;
-  return 1 ;
-
- err:
-  fd_close(fd) ;
- err0:
-  unlink_void(fn) ;
-  return 0 ;
-}
-
 int mstate_read (char const *file, mstate_t *st, uint32_t const *dbn)
 {
   int fd ;
@@ -167,11 +195,11 @@ int mstate_read (char const *file, mstate_t *st, uint32_t const *dbn)
   if (fd == -1) goto err0 ;
   buffer_init(&b, &buffer_read, fd, buf, 1024) ;
 
-  for (size_t type = 0 ; type < S6RC_STYPE_N ; type++)
+  for (uint8_t type = 0 ; type < S6RC_STYPE_N ; type++)
     for (uint32_t i = 0 ; i < dbn[type] ; i++)
       if (!sstate_read(&b, st->sta[type] + i)) goto err ;
 
-  for (size_t type = 0 ; type < S6RC_STYPE_N ; type++)
+  for (uint8_t type = 0 ; type < S6RC_STYPE_N ; type++)
     for (uint32_t i = 0 ; i < dbn[S6RC_STYPE_N + type] ; i++)
     {
       uint32_t n ;
@@ -180,7 +208,7 @@ int mstate_read (char const *file, mstate_t *st, uint32_t const *dbn)
       uint32_unpack_big(pack, &n) ;
       if (n > S6RC_INSTANCES_MAX) goto eproto ;
       if (!genalloc_ready(instance_t, st->dyn[type] + i, n)) goto err ;
-      for (uint32_t j = 0 ; j < n ; j++)
+      for (size_t j = 0 ; j < n ; j++)
         if (!instance_read(&b, genalloc_s(instance_t, st->dyn[type] + i) + j)) goto err ;
       genalloc_setlen(instance_t, st->dyn[type] + i, n) ;
     }
@@ -206,25 +234,32 @@ int mstate_read (char const *file, mstate_t *st, uint32_t const *dbn)
   return 0 ;
 }
 
-sstate_t *sstate (mstate_t const *m, s6rc_id_t id, char const *param)
+sstate_t *sstate_tn (mstate_t *m, uint8_t type, uint32_t num, char const *param)
 {
-  if (stype(id) >= S6RC_STYPE_N)
+  if (type >= S6RC_STYPE_N)
   {
-    size_t n = genalloc_len(instance_t, st->dyn[stype(id)] + snum(id)) ;
-    instance_t *instances = genalloc_s(instance_t, st->dyn[stype(id)] + snum(id)) ;
+    size_t n = genalloc_len(instance_t, m->dyn[type] + num) ;
+    instance_t *instances = genalloc_s(instance_t, m->dyn[type] + num) ;
     for (size_t i = 0 ; i < n ; i++)
       if (!strcmp(param, instances[i].param)) return &instances[i].sstate ;
-    return STATE_PHAIL ;
+    return 0 ;
   }
-  else return st->sta[stype(id)] + snum(id) ;
+  else return m->sta[type] + num ;
 }
 
-int state_deps_fulfilled (s6rc_db_t const *db, mstate_t const *m, s6rc_id_t id, char const *param, int h)
+sstate_t *sstate (uint32_t const *dbn, mstate_t *m, uint32_t id, char const *param)
 {
-  s6rc_common_t const *common = s6rc_service_common(db, id) ;
-  for (uint32_t i = 0 ; i < common->ndeps[h] ; i++)
-  {
-    uint8_t deptype = db->deptypes[h][common->deps[h] + i] ;
-    sstate_t *st = sstate(m, db->deps[h][common->deps[h] + i], param) ;
-  }
+  uint32_t num ;
+  uint8_t type ;
+  s6rc_service_typenum(dbn, id, &type, &num) ;
+  return sstate_tn(m, type, num, param) ;
 }
+
+static int instancelen_nop_ (uint32_t n, void *arg)
+{
+  (void)n ;
+  (void)arg ;
+  return 1 ;
+}
+
+instancelen_func_ref const instancelen_nop = &instancelen_nop_ ;

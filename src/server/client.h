@@ -22,10 +22,11 @@ struct client_s
   uint32_t xindex[2] ;
   s6rc_connection_t connection ;
   textmessage_sender_t monitor ;
+  unsigned char *monitor_filter ;
   uint32_t monitor_verbosity ;
   uint8_t perms ;
 } ;
-#define CLIENT_ZERO { .next = 0, .xindex = 0, .connection = S6RC_CONNECTION_ZERO, .monitor = TEXTMESSAGE_SENDER_ZERO, .monitor_verbosity = 0, .perms = 0 }
+#define CLIENT_ZERO { .next = 0, .xindex = 0, .connection = S6RC_CONNECTION_ZERO, .monitor = TEXTMESSAGE_SENDER_ZERO, .monitor_filter = 0, .monitor_verbosity = 0, .perms = 0 }
 
 extern tain_t client_answer_tto ;
 extern client_t *client_head ;
@@ -40,7 +41,8 @@ extern int client_add (int, uint8_t) ;
  /* Monitors */
 
 extern uint32_t client_monitors ;
-extern int monitor_finish (client_t *) ;
-extern int monitor_put (uint32_t, char const *, size_t) ;
+extern void monitor_finish (client_t *) ;
+extern void monitor_put (uint32_t, char const *, size_t) ;
+extern void monitor_announce (uint32_t, uint8_t) ;
 
 #endif

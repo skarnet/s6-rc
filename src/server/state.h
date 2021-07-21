@@ -11,23 +11,27 @@
 
  /* Service states, instances, machine state */
 
-#define SSTATE_STABLE 0x00u
-#define SSTATE_WAITING 0x01u
-#define SSTATE_TRANSITIONING 0x02u
-#define SSTATE_FAILED 0x03u
-
+   /* bits */
+#define SSTATE_TRANSITIONING 0x01u
+#define SSTATE_FAILED 0x02u
 #define SSTATE_CURRENT 0x04u
 #define SSTATE_WANTED 0x08u
 #define SSTATE_EXPLICIT 0x10u
-#define SSTATE_GRAY 0x20u
-#define SSTATE_BLACK 0x40u
 #define SSTATE_INVALID 0x80u
+
+   /* tmp */
+#define SSTATE_GRAY 0x01u
+#define SSTATE_BLACK 0x02u
+#define SSTATE_MARK 0x04u
+#define SSTATE_EXPLICIT 0x08u
 
 typedef struct sstate_s sstate_t, *sstate_t_ref ;
 struct sstate_s
 {
-  uint8_t bits ;
+  uint8_t bits ;  /* the real state, saved to the fs */
+  uint8_t tmp ;  /* bits used for computations e.g. recursive dep walks */
 }
+#define SSTATE_ZERO { .bits = 0, .tmp = 0 }
 
 typedef struct instance_s instance_t, *instance_t_ref ;
 struct instance_s
@@ -43,8 +47,17 @@ struct mstate_s
   genalloc *dyn[S6RC_STYPE_N] ;  /* every genalloc is a list of instance_t */
 } ;
 
-extern void instance_free (instance_t *) ;
-extern int instance_new (instance_t *, uint8_t *, char const *) ;
+typedef int sstate_func (sstate_t *, void *) ;
+typedef sstate_func *sstate_func_ref ;
+typedef int instancelen_func (uint32_t, void *) ;
+typedef instancelen_func *instancelen_func_ref ;
+typedef instance_func (instance_t *, void *) ;
+typedef instance_func *instance_func_ref ;
+
+extern instancelen_func_ref const instancelen_nop ;
+
+extern sstate_t *instance_create (mstate_t *, s6rc_id_t, char const *) ;
+extern void instance_remove (mstate_t *, s6rc_id_t, char const *) ;
 
 extern void mstate_free (mstate_t *, uint32_t const *) ;
 extern int mstate_init (mstate_t *, uint32_t const *) ;
@@ -52,7 +65,9 @@ extern int mstate_init (mstate_t *, uint32_t const *) ;
 extern int mstate_write (char const *, mstate_t const *, uint32_t const *) ;
 extern int mstate_read (char const *, mstate_t *, uint32_t const *) ; /* also inits */
 
-extern sstate_t *sstate_get (s6rc_db_t const *, mstate_t const *, s6rc_id_t, char const *) ;
-extern int sstate_deps_fulfilled (s6rc_db_t const *, mstate_t const *, s6rc_id_t, char const *, int) ;
+extern int mstate_iterate (mstate_t *, uint32_t const *, sstate_func_ref, instancelen_func_ref, instance_func_ref, void *) ;
+
+extern sstate_t *sstate_tn (mstate_t *, uint8_t, uint32_t, char const *) ;
+extern sstate_t *sstate (uint32_t const *, mstate_t *, uint32_t, char const *) ;
 
 #endif

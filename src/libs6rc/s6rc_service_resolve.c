@@ -9,11 +9,10 @@
 
 #include <s6-rc/db.h>
 
-int s6rc_service_resolve (cdb_t *c, s6rc_sid_t *id, char const *s)
+int s6rc_service_resolve (cdb_t *c, char const *s, uint32_t *id, char const **param)
 {
   size_t len = strlen(s) ;
-  char const *param = 0 ;
-  char pack[5] ;
+  char const *p = 0 ;
   int r = cdb_find(c, s, len) ;
   if (r < 0) return r ;
   if (!r)
@@ -23,11 +22,9 @@ int s6rc_service_resolve (cdb_t *c, s6rc_sid_t *id, char const *s)
     if (at == len - 1) return (errno = EINVAL, -1) ;
     r = cdb_find(c, s, at + 1) ;
     if (r <= 0) return r ;
-    param = s + at + 1 ;
+    p = s + at + 1 ;
   }
-  if (cdb_read(c, pack, 5, cdb_datapos(c)) < 0) return -1 ;
-  id->stype = pack[0] ;
-  uint32_unpack_big(pack + 1, &id->i) ;
-  id->param = param ;
+  uint32_unpack_big(cdb_datapos(c), id) ;
+  *param = p ;
   return 1 ;
 }

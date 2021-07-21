@@ -1,10 +1,11 @@
 /* ISC license. */
 
+#include <sys/mman.h>
 #include <errno.h>
 
 #include <skalibs/alloc.h>
 
-#include "db.h"
+#include <s6-rc/db.h>
 
 void s6rc_db_free (s6rc_db_t *db)
 {

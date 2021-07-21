@@ -10,9 +10,10 @@
 #include <skalibs/alloc.h>
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/cdb.h>
 #include <skalibs/sha256.h>
 
-#include "db.h"
+#include <s6-rc/db.h>
 
 #include <skalibs/posixishard.h>
 
@@ -23,7 +24,7 @@ static int gethu32 (buffer *b, SHA256Schedule *ctx, uint32_t *n)
   return 1 ;
 }
 
-int s6rc_db_load (char const *dir, s6rc_db_t *db)
+int s6rc_db_load (char const *dir, s6rc_db_t *db, cdb_t *c)
 {
   SHA256Schedule ctx = SHA256_INIT() ;
   uint32_t ntotal, ndeps, nproducers, storagelen, nargv ;
@@ -31,7 +32,7 @@ int s6rc_db_load (char const *dir, s6rc_db_t *db)
   buffer b ;
   int fd ;
   char buf[4096] ;
-  char fn[len + 10] ;
+  char fn[len + 13] ;
   memcpy(fn, dir, len) ;
   memcpy(fn + len, "/db_nomap", 10) ;
   fd = openc_read(fn) ;
@@ -77,17 +78,25 @@ int s6rc_db_load (char const *dir, s6rc_db_t *db)
       db->map = map ;
     }
     db->n = (uint32_t const *)db->map ;
-    if (ntotal != db->n[0] + db->n[1] + db->n[2] + db->n[3] + db->n[4] + db->n[5] + db->n[6] + db->n[7] + db->n[8] + db->n[9]) goto eproto1 ;
+    if (ntotal != db->n[0] + db->n[1] + db->n[2] + db->n[3] + db->n[4] + db->n[5] + db->n[6] + db->n[7] + db->n[8] + db->n[9])
+    {
+      errno = EPROTO ;
+      goto err1 ;
+    }
+
+    memcpy(fn + len, "/resolve.cdb", 13) ;
+    if (!cdb_mapfile(fn, c)) goto err1 ;
 
     {
       ssize_t r ;
       memcpy(fn + len, "/hash", 6) ;
       r = openreadnclose(fn, buf+32, 33) ;
-      if (r == 33) goto eproto1 ;
-      if (r < 32) goto err1 ;
+      if (r == 33) goto eproto2 ;
+      if (r < 32) goto err2 ;
       sha256_update(&ctx, db->map, db->size) ;
+      sha256_update(&ctx, c->map, c->size) ;
       sha256_final(&ctx, buf) ;
-      if (memcmp(buf, buf+32, 32)) goto eproto1 ;
+      if (memcmp(buf, buf+32, 32)) goto eproto2 ;
     }
 
     db->longruns = (s6rc_longrun_t const *)(db->map + 4 * 2 * S6RC_STYPE_N) ;
@@ -101,17 +110,19 @@ int s6rc_db_load (char const *dir, s6rc_db_t *db)
     db->deptypes[0] = (uint8_t const *)(db->producers + nproducers) ;
     db->deptypes[1] = db->deptypes[0] + ndeps ;
     db->storage = (char const *)(db->deptypes[1] + ndeps) ;
-    if (db->storage + storagelen != db->map + db->size) goto eproto1 ;
+    if (db->storage + storagelen != db->map + db->size) goto eproto2 ;
 
     db->argvs = (char const **)alloc(sizeof(char const *) * nargv) ;
-    if (!db->argvs) goto err1 ;
+    if (!db->argvs) goto err2 ;
     for (uint32_t i = 0 ; i < nargv ; i++)
       db->argvs[i] = argvs[i] ? db->storage + argvs[i] : 0 ;
   }
   return 1 ;
 
- eproto1:
+ eproto2:
   errno = EPROTO ;
+ err2:
+  cdb_free(c) ;
  err1:
   {
     int e = errno ;

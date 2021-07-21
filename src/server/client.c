@@ -51,7 +51,7 @@ void client_yoink (client_t **c)
   client_t *prev = (*c)->prev ;
   if (prev) prev->next = (*c)->next ; else client_head = (*c)->next ;
   if ((*c)->next) (*c)->next->prev = prev ;
-  if (ismonitored(*c)) nmonitors-- ;
+  if (ismonitored(*c)) client_monitors-- ;
   client_free(*c) ;
   *c = prev ;
   client_connections-- ;
@@ -134,6 +134,19 @@ void monitor_put (uint32_t v, char const *s, size_t len)
 {
   if (!client_monitors) return ;
   for (client_t *c = client_head ; c ; c = c->next)
-    if (ismonitored(c) && v >= c->monitor_verbosity && !textmessage_put(&c->monitor, s, len))
-      strerr_diefu1sys("queue message to monitor") ;
+    if (ismonitored(c) && v >= c->monitor_verbosity)
+      if (!textmessage_put(&c->monitor, s, len))
+        strerr_diefu1sys("queue message to monitor") ;
+}
+
+void monitor_announce (uint32_t id, uint8_t state)
+{
+  char pack[6] = "E" ;
+  if (!client_monitors) return ;
+  uint32_pack_big(pack + 1, id) ;
+  pack[5] = state ;
+  for (client_t *c = client_head ; c ; c = c->next)
+    if (ismonitored(c) && bitarray_peek(c->monitor_filter, id))
+      if (!textmessage_put(&c->monitor, pack, 6))
+        strerr_diefu1sys("queue message to monitor") ;
 }
