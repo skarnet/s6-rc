@@ -263,3 +263,20 @@ static int instancelen_nop_ (uint32_t n, void *arg)
 }
 
 instancelen_func_ref const instancelen_nop = &instancelen_nop_ ;
+
+static int sstate_zerotmp (sstate_t *st, void *arg)
+{
+  st->tmp = 0 ;
+  (void)arg ;
+  return 1 ;
+}
+
+static int instance_zerotmp (instance_t *ins, void *arg)
+{
+  return sstate_zerotmp(&ins->sstate) ;
+}
+
+void mstate_zerotmp (mstate_t *m, uint32_t const *dbn)
+{
+  mstate_iterate(m, dbn, &sstate_zerotmp, &instancelen_nop, &instance_zerotmp, 0) ;
+}

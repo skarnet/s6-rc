@@ -81,6 +81,7 @@ struct s6rc_db_s
 {
   char const *map ;
   off_t size ;
+  cdb resolve ;
   uint32_t const *n ;
   s6rc_longrun_t const *longruns ;
   s6rc_oneshot_t const *oneshots ;
@@ -93,7 +94,10 @@ struct s6rc_db_s
   char const *storage ;
   char const **argvs ;  /* alloced */
 } ;
-#define S6RC_DB_ZERO = { .map = 0, .len = 0 }
+#define S6RC_DB_ZERO = { .map = 0, .len = 0, .resolve = CDB_ZERO }
+
+extern void s6rc_db_free (s6rc_db_t *) ;
+extern int s6rc_db_init (s6rc_db_t *, char const *) ;
 
 extern uint32_t s6rc_service_id (uint32_t const *, uint8_t, uint32_t) ;
 extern void s6rc_service_typenum (uin32_t const *, uint32_t, uint8_t *, uint32_t *) ;

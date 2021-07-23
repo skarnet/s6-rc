@@ -11,19 +11,12 @@
 
  /* Service states, instances, machine state */
 
-   /* bits */
 #define SSTATE_TRANSITIONING 0x01u
 #define SSTATE_FAILED 0x02u
 #define SSTATE_CURRENT 0x04u
 #define SSTATE_WANTED 0x08u
 #define SSTATE_EXPLICIT 0x10u
 #define SSTATE_INVALID 0x80u
-
-   /* tmp */
-#define SSTATE_GRAY 0x01u
-#define SSTATE_BLACK 0x02u
-#define SSTATE_MARK 0x04u
-#define SSTATE_EXPLICIT 0x08u
 
 typedef struct sstate_s sstate_t, *sstate_t_ref ;
 struct sstate_s
@@ -66,6 +59,7 @@ extern int mstate_write (char const *, mstate_t const *, uint32_t const *) ;
 extern int mstate_read (char const *, mstate_t *, uint32_t const *) ; /* also inits */
 
 extern int mstate_iterate (mstate_t *, uint32_t const *, sstate_func_ref, instancelen_func_ref, instance_func_ref, void *) ;
+extern void mstate_zerotmp (mstate_t *, uint32_t const *) ;
 
 extern sstate_t *sstate_tn (mstate_t *, uint8_t, uint32_t, char const *) ;
 extern sstate_t *sstate (uint32_t const *, mstate_t *, uint32_t, char const *) ;

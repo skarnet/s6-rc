@@ -24,7 +24,7 @@ static int gethu32 (buffer *b, SHA256Schedule *ctx, uint32_t *n)
   return 1 ;
 }
 
-int s6rc_db_load (char const *dir, s6rc_db_t *db, cdb_t *c)
+int s6rc_db_init (s6rc_db_t *db, char const *dir)
 {
   SHA256Schedule ctx = SHA256_INIT() ;
   uint32_t ntotal, ndeps, nproducers, storagelen, nargv ;
@@ -85,7 +85,7 @@ int s6rc_db_load (char const *dir, s6rc_db_t *db, cdb_t *c)
     }
 
     memcpy(fn + len, "/resolve.cdb", 13) ;
-    if (!cdb_mapfile(fn, c)) goto err1 ;
+    if (!cdb_init(&db->resolve, fn)) goto err1 ;
 
     {
       ssize_t r ;
@@ -122,7 +122,7 @@ int s6rc_db_load (char const *dir, s6rc_db_t *db, cdb_t *c)
  eproto2:
   errno = EPROTO ;
  err2:
-  cdb_free(c) ;
+  cdb_free(&db->resolve) ;
  err1:
   {
     int e = errno ;
