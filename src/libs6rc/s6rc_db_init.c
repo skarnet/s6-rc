@@ -31,12 +31,11 @@ int s6rc_db_init (s6rc_db_t *db, char const *dir)
   size_t len = strlen(dir) ;
   buffer b ;
   int fd ;
+  int dfd = openc_read(dir) ;
   char buf[4096] ;
-  char fn[len + 13] ;
-  memcpy(fn, dir, len) ;
-  memcpy(fn + len, "/db_nomap", 10) ;
-  fd = openc_read(fn) ;
-  if (fd == -1) return 0 ;
+  if (dfd == -1) return 0 ;
+  fd = openc_readat(dfd, "db_nomap") ;
+  if (fd == -1) goto errd ;
   buffer_init(&b, &buffer_read, fd, buf, 4096) ;
   {
     uint32_t canary ;
@@ -61,16 +60,14 @@ int s6rc_db_init (s6rc_db_t *db, char const *dir)
     }
     fd_close(fd) ;
     sha256_update(&ctx, (char *)argvs, nargv * 4) ;
-    memcpy(fn + len, "/db", 4) ;
 
     {
       struct stat st ;
       void *map ;
-      fd = openc_read(fn) ;
-      if (fd == -1) return 0 ;
+      fd = openc_readat(dfd, "db") ;
+      if (fd == -1) goto errd ;
       if (fstat(fd, &st) == -1) goto err0 ;
-      if (!S_ISREG(st.st_mode)) goto eproto0 ;
-      if (st.st_size < 8 * S6RC_STYPE_N) goto eproto0 ;
+      if (!S_ISREG(st.st_mode) || st.st_size < 8 * S6RC_STYPE_N) goto eproto0 ;
       map = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fd, 0) ;
       if (map == MAP_FAILED) goto err0 ;
       fd_close(fd) ;
@@ -83,18 +80,13 @@ int s6rc_db_init (s6rc_db_t *db, char const *dir)
       errno = EPROTO ;
       goto err1 ;
     }
-
-    memcpy(fn + len, "/resolve.cdb", 13) ;
-    if (!cdb_init(&db->resolve, fn)) goto err1 ;
-
+    if (!cdb_init_at(&db->resolve, dfd, "resolve.cdb")) goto err1 ;
     {
-      ssize_t r ;
-      memcpy(fn + len, "/hash", 6) ;
-      r = openreadnclose(fn, buf+32, 33) ;
+      ssize_t r = openreadnclose_at(dfd, "hash", buf+32, 33) ;
       if (r == 33) goto eproto2 ;
       if (r < 32) goto err2 ;
       sha256_update(&ctx, db->map, db->size) ;
-      sha256_update(&ctx, c->map, c->size) ;
+      sha256_update(&ctx, db->resolve.map, db->resolve.size) ;
       sha256_final(&ctx, buf) ;
       if (memcmp(buf, buf+32, 32)) goto eproto2 ;
     }
@@ -117,6 +109,7 @@ int s6rc_db_init (s6rc_db_t *db, char const *dir)
     for (uint32_t i = 0 ; i < nargv ; i++)
       db->argvs[i] = argvs[i] ? db->storage + argvs[i] : 0 ;
   }
+  fd_close(dfd) ;
   return 1 ;
 
  eproto2:
@@ -124,17 +117,14 @@ int s6rc_db_init (s6rc_db_t *db, char const *dir)
  err2:
   cdb_free(&db->resolve) ;
  err1:
-  {
-    int e = errno ;
-    munmap(db->map, db->size) ;
-    errno = e ;
-  }
+  munmap_void(db->map, db->size) ;
   db->map = 0 ;
-  return 0 ;
-
+  goto errd ;
  eproto0:
-  errno = EPROTO ;
+   errno = EPROTO ;
  err0:
   fd_close(fd) ;
+ errd:
+  fd_close(dfd) ;
   return 0 ;
 }

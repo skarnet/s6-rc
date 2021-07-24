@@ -104,9 +104,9 @@ extern void s6rc_service_typenum (uin32_t const *, uint32_t, uint8_t *, uint32_t
 extern uint8_t s6rc_service_type (uint32_t const *, uint32_t) ;
 extern uint32_t s6rc_service_num (uint32_t const *, uint32_t) ;
 
-extern int s6rc_service_resolve (cdb_t *, char const *, uint32_t *, char const **) ;
+extern int s6rc_service_resolve (s6rc_db_t const *, char const *, uint32_t *, char const **) ;
 extern s6rc_common_t const *s6rc_service_common (s6rc_db_t const *, uint32_t) ;
 extern s6rc_common_t const *s6rc_service_common_tn (s6rc_db_t const *, uint8_t, uint32_t) ;
-extern int s6rc_service_recheck_instance (s6rc_db_t const *, cdb_t *, uint32_t *, char const **) ;
+extern int s6rc_service_recheck_instance (s6rc_db_t const *, uint32_t *, char const **) ;
 
 #endif
