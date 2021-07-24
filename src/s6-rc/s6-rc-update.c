@@ -66,7 +66,7 @@ static unsigned int verbosity = 1 ;
    128 -> depends on a new service, has to be restarted
  */
 
-static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
+static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigned int *newnames, unsigned char *oldstate, cdb const *oldc, s6rc_db_t const *olddb)
 {
   size_t base = sa->len ;
   unsigned int oldn = olddb->nshort + olddb->nlong ;
@@ -84,16 +84,14 @@ static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigne
   sa->len = base ;
   if (n--)
   {
-    char pack[4] ;
+    cdb_data data ;
     uint32_t x ;
     unsigned int cur ;
-    int r = cdb_find(oldc, sa->s + base + slen, strlen(sa->s + base + slen)) ;
-    if (r < 0) strerr_diefu3sys(111, "read ", live, "/compiled/resolve.cdb") ;
+    int r = cdb_find(oldc, &data, sa->s + base + slen, strlen(sa->s + base + slen)) ;
+    if (r < 0) strerr_dief3x(4, "invalid cdb in ", live, "/compiled/resolve.cdb") ;
     if (!r) strerr_dief5x(3, "unknown identifier in ", live, "/compiled/resolve.cdb", ": ", sa->s + base + slen) ;
-    if (cdb_datalen(oldc) != 4) strerr_dief5x(5, "identifier ", sa->s + base + slen, " does not represent an atomic service in ", live, "/compiled") ;
-    if (cdb_read(oldc, pack, 4, cdb_datapos(oldc)) < 0)
-      strerr_diefu3sys(111, "read ", live, "/compiled/resolve.cdb") ;
-    uint32_unpack_big(pack, &x) ;
+    if (data.len != 4) strerr_dief5x(5, "identifier ", sa->s + base + slen, " does not represent an atomic service in ", live, "/compiled") ;
+    uint32_unpack_big(data.s, &x) ;
     if (x >= oldn) strerr_dief3x(4, "invalid database in ", live, "/compiled") ;
     if (oldstate[x] & 64)
       strerr_dief3x(6, "service ", olddb->string + olddb->services[x].name, " appears more than once in conversion file") ;
@@ -118,7 +116,7 @@ static inline void parse_line (stralloc *sa, char const *s, size_t slen, unsigne
   }
 }
 
-static inline void parse_conversion_file (char const *convfile, stralloc *sa, unsigned int *newnames, unsigned char *oldstate, cdb_t *oldc, s6rc_db_t const *olddb)
+static inline void parse_conversion_file (char const *convfile, stralloc *sa, unsigned int *newnames, unsigned char *oldstate, cdb const *oldc, s6rc_db_t const *olddb)
 {
   int fd = openb_read(convfile) ;
   char buf[4096] ;
@@ -146,19 +144,14 @@ static inline void parse_conversion_file (char const *convfile, stralloc *sa, un
 
 static inline void stuff_with_oldc (unsigned char *oldstate, int fdoldc, s6rc_db_t const *olddb, char const *convfile, unsigned int *oldindex, stralloc *namedata)
 {
-  cdb_t oldc = CDB_ZERO ;
-  int oldfdres = open_readatb(fdoldc, "resolve.cdb") ;
-  if (oldfdres < 0) strerr_diefu3sys(111, "open ", live, "/compiled/resolve.cdb") ;
-  if (!cdb_init_map(&oldc, oldfdres, 1))
+  cdb oldc = CDB_ZERO ;
+  if (!cdb_init_at(&oldc, fdoldc, "resolve.cdb"))
     strerr_diefu3sys(111, "cdb_init ", live, "/compiled/resolve.cdb") ;
-
   parse_conversion_file(convfile, namedata, oldindex, oldstate, &oldc, olddb) ;
-
   cdb_free(&oldc) ;
-  close(oldfdres) ;
 }
 
-static inline void fill_convtable_and_flags (unsigned char *conversion_table, unsigned char *oldstate, unsigned char *newstate, char const *namedata, unsigned int const *oldindex, unsigned int *invimage, cdb_t *newc, char const *newfn, s6rc_db_t const *olddb, s6rc_db_t const *newdb)
+static inline void fill_convtable_and_flags (unsigned char *conversion_table, unsigned char *oldstate, unsigned char *newstate, char const *namedata, unsigned int const *oldindex, unsigned int *invimage, cdb const *newc, char const *newfn, s6rc_db_t const *olddb, s6rc_db_t const *newdb)
 {
   unsigned int newn = newdb->nshort + newdb->nlong ;
   unsigned int i = olddb->nshort + olddb->nlong ;
@@ -166,9 +159,9 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
   while (i--)
   {
     char const *newname = oldstate[i] & 16 ? namedata + oldindex[i] : olddb->string + olddb->services[i].name ;
-    uint32_t len ;
-    int r = cdb_find(newc, newname, strlen(newname)) ;
-    if (r < 0) strerr_diefu3sys(111, "read ", newfn, "/resolve.cdb") ;
+    cdb_data data ;
+    int r = cdb_find(newc, &data, newname, strlen(newname)) ;
+    if (r < 0) strerr_dief3x(111, "invalid cdb in ", newfn, "/resolve.cdb") ;
     if (!r)
     {
       if (oldstate[i] & 16)
@@ -176,35 +169,26 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
       oldstate[i] |= 34 ; /* disappeared */
       continue ;
     }
-    if (cdb_datalen(newc) & 3)
+    if (data.len & 3) strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
+    if (data.len >> 2 > newn)
       strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
-    len = cdb_datalen(newc) >> 2 ;
-    if (len > newn)
-      strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
+    if (data.len == 4) oldstate[i] |= 8 ;
+    while (data.len)
     {
-      char pack[cdb_datalen(newc) + 1] ;
-      char const *p = pack ;
-      if (cdb_read(newc, pack, cdb_datalen(newc), cdb_datapos(newc)) < 0)
-        strerr_diefu3sys(111, "read ", newfn, "/resolve.cdb") ;
-      if (len == 1) oldstate[i] |= 8 ;
-      while (len--)
+      uint32_t x ;
+      uint32_unpack_big(data.s, &x) ; data.s += 4 ; data.len -= 4 ;
+      if (x >= newn)
+        strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
+      if (newstate[x] & 8)
+        strerr_diefu4x(6, "convert database: new service ", newdb->string + newdb->services[x].name, " is a target for more than one conversion, including old service ", olddb->string + olddb->services[i].name) ;
+      newstate[x] |= 8 ;
+      invimage[x] = i ;
+      if (oldstate[i] & 16) newstate[x] |= 16 ;
+      bitarray_set(conversion_table + i * bitarray_div8(newn), x) ;
+      if (oldstate[i] & 8)
       {
-        uint32_t x ;
-        uint32_unpack_big(p, &x) ; p += 4 ;
-        if (x >= newn)
-          strerr_dief3x(4, "invalid resolve database in ", newfn, "/resolve.cdb") ;
-        if (newstate[x] & 8)
-          strerr_diefu4x(6, "convert database: new service ", newdb->string + newdb->services[x].name, " is a target for more than one conversion, including old service ", olddb->string + olddb->services[i].name) ;
-        newstate[x] |= 8 ;
-        invimage[x] = i ;
-        if (oldstate[i] & 16) newstate[x] |= 16 ;
-        bitarray_set(conversion_table + i * bitarray_div8(newn), x) ;
-        if (oldstate[i] & 8)
-        {
-          newstate[x] |= 4 ;
-          if ((i < olddb->nlong) != (x < newdb->nlong))
-            oldstate[i] |= 4 ;
-        }
+        newstate[x] |= 4 ;
+        if ((i < olddb->nlong) != (x < newdb->nlong)) oldstate[i] |= 4 ;
       }
     }
   }
@@ -212,16 +196,11 @@ static inline void fill_convtable_and_flags (unsigned char *conversion_table, un
 
 static inline void stuff_with_newc (int fdnewc, char const *newfn, unsigned char *conversion_table, unsigned char *oldstate, unsigned char *newstate, char const *namedata, unsigned int const *oldindex, unsigned int *invimage, s6rc_db_t const *olddb, s6rc_db_t const *newdb)
 {
-  cdb_t newc = CDB_ZERO ;
-  int newfdres = open_readatb(fdnewc, "resolve.cdb") ;
-  if (newfdres < 0) strerr_diefu3sys(111, "open ", newfn, "/compiled/resolve.cdb") ;
-  if (!cdb_init_map(&newc, newfdres, 1))
+  cdb newc = CDB_ZERO ;
+  if (!cdb_init_at(&newc, fdnewc, "resolve.cdb"))
     strerr_diefu3sys(111, "cdb_init ", newfn, "/compiled/resolve.cdb") ;
-
   fill_convtable_and_flags(conversion_table, oldstate, newstate, namedata, oldindex, invimage, &newc, newfn, olddb, newdb) ;
-
   cdb_free(&newc) ;
-  close(newfdres) ;
 }
 
 static void compute_transitions (char const *convfile, unsigned char *oldstate, int fdoldc, s6rc_db_t const *olddb, unsigned char *newstate, unsigned int *invimage, int fdnewc, char const *newfn, s6rc_db_t const *newdb, stralloc *sa)

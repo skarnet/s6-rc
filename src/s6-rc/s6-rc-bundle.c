@@ -14,7 +14,7 @@
 #include <skalibs/bitarray.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cdb.h>
-#include <skalibs/cdb_make.h>
+#include <skalibs/cdbmake.h>
 #include <skalibs/unix-transactional.h>
 
 #include <execline/execline.h>
@@ -53,10 +53,11 @@ static inline int renameit (char const *compiled, char const *src, char const *d
   return rename(srcfn, dstfn) ;
 }
 
-static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force, char const *compiled)
+static void check (cdb const *cr, s6rc_db_t *db, char const *name, int h, int force, char const *compiled)
 {
   size_t namelen = strlen(name) ;
-  int r = cdb_find(cr, name, namelen) ;
+  cdb_data data ;
+  int r = cdb_find(cr, &data, name, namelen) ;
   if (r < 0) strerr_diefu3sys(111, "cdb_find in ", compiled, "/resolve.cdb") ;
   if (!r)
   {
@@ -66,13 +67,10 @@ static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force,
   }
   if (h && !force)
     strerr_dief4x(1, "identifier ", name, " already exists in database ", compiled) ;
-  if (cdb_datalen(cr) == 4)
+  if (data.len == 4)
   {
     uint32_t x ;
-    char pack[4] ;
-    if (cdb_read(cr, pack, 4, cdb_datapos(cr)) < 0)
-      strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
-    uint32_unpack_big(pack, &x) ;
+    uint32_unpack_big(data.s, &x) ;
     if (x >= db->nshort + db->nlong)
       strerr_dief2x(4, "invalid database in ", compiled) ;
     if (!strcmp(name, db->string + db->services[x].name))
@@ -82,63 +80,43 @@ static void check (cdb_t *cr, s6rc_db_t *db, char const *name, int h, int force,
 
 static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *todel, unsigned int todeln, char const *const *toadd, char const *const *const *toadd_contents, unsigned int toaddn, int force, char const *compiled)
 {
-  cdb_t cr = CDB_ZERO ;
-  struct cdb_make cw = CDB_MAKE_ZERO ;
-  uint32_t kpos ;
+  cdb cr = CDB_ZERO ;
+  cdbmaker cw = CDBMAKER_ZERO ;
+  uint32_t pos = CDB_TRAVERSE_INIT() ;
   unsigned int i = toaddn ;
   int fdw ;
-  int fdr = open_readatb(fdcompiled, "resolve.cdb") ;
   unsigned int n = db->nlong + db->nshort ;
   unsigned char bits[bitarray_div8(n)] ;
-  if (fdr < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb") ;
-  if (!cdb_init_map(&cr, fdr, 1))
+  if (!cdb_init_at(&cr, fdcompiled, "resolve.cdb"))
     strerr_diefu3sys(111, "cdb_init ", compiled, "/resolve.cdb") ;
   while (i--) check(&cr, db, toadd[i], 1, force, compiled) ;
   i = todeln ;
   while (i--) check(&cr, db, todel[i], 0, force, compiled) ;
   fdw = open_truncatb(fdcompiled, "resolve.cdb.new") ;
   if (fdw < 0) strerr_diefu3sys(111, "open ", compiled, "/resolve.cdb.new") ;
-  if (cdb_make_start(&cw, fdw) < 0)
+  if (!cdbmake_start(&cw, fdw))
   {
     cleanup(compiled) ;
-    strerr_diefu1sys(111, "cdb_make_start") ;
+    strerr_diefu1sys(111, "cdbmake_start") ;
   }
-  cdb_traverse_init(&cr, &kpos) ;
   for (;;)
   {
-    int r = cdb_nextkey(&cr, &kpos) ;
+    cdb_data key, data ;
+    int r = cdb_traverse_next(&cr, &key, &data, &pos) ;
     if (r < 0)
     {
       cleanup(compiled) ;
-      strerr_diefu3sys(111, "cdb_nextkey in ", compiled, "/resolve.cdb") ;
+      strerr_dief3x(4, "invalid cdb in ", compiled, "/resolve.cdb") ;
     }
     if (!r) break ;
+    for (i = 0 ; i < todeln ; i++) if (key.len == strlen(todel[i]) && !strncmp(todel[i], key.s, key.len)) break ;
+    if (i < todeln) continue ;
+    for (i = 0 ; i < toaddn ; i++) if (key.len == strlen(toadd[i]) && !strncmp(toadd[i], key.s, key.len)) break ;
+    if (i < toaddn) continue ;
+    if (!cdbmake_add(&cw, key.s, key.len, data.s, data.len))
     {
-      uint32_t klen = cdb_keylen(&cr) ;
-      char ktmp[klen + 1] ;
-      if (cdb_read(&cr, ktmp, klen, cdb_keypos(&cr)) < 0)
-      {
-        cleanup(compiled) ;
-        strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
-      }
-      for (i = 0 ; i < todeln ; i++) if (klen == strlen(todel[i]) && !strncmp(todel[i], ktmp, klen)) break ;
-      if (i < todeln) continue ;
-      for (i = 0 ; i < toaddn ; i++) if (klen == strlen(toadd[i]) && !strncmp(toadd[i], ktmp, klen)) break ;
-      if (i < toaddn) continue ;
-      {
-        uint32_t dlen = cdb_datalen(&cr) ;
-        char dtmp[dlen + 1] ;
-        if (cdb_read(&cr, dtmp, dlen, cdb_datapos(&cr)) < 0)
-        {
-          cleanup(compiled) ;
-          strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
-        }
-        if (cdb_make_add(&cw, ktmp, klen, dtmp, dlen) < 0)
-        {
-          cleanup(compiled) ;
-          strerr_diefu1sys(111, "cdb_make_add") ;
-        }
-      }
+      cleanup(compiled) ;
+      strerr_diefu1sys(111, "cdb_make_add") ;
     }
   }
   i = toaddn ;
@@ -149,30 +127,21 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
     memset(bits, 0, bitarray_div8(n)) ;
     for (; *p ; p++)
     {
-      int r = cdb_find(&cr, *p, strlen(*p)) ;
-      if (r < 0) strerr_diefu3sys(111, "cdb_find in ", compiled, "/resolve.cdb") ;
+      cdb_data data ;
+      int r = cdb_find(&cr, &data, *p, strlen(*p)) ;
+      if (r < 0) strerr_diefu3x(4, "invalid cdb in ", compiled, "/resolve.cdb") ;
       if (!r) strerr_dief4x(3, "identifier ", *p, " does not exist in database ", compiled) ;
+      for (uint32_t j = 0 ; j < data.len ; j += 4)
       {
-        uint32_t j = cdb_datalen(&cr) ;
-        char pack[j + 1] ;
-        if (cdb_read(&cr, pack, j, cdb_datapos(&cr)) < 0)
-        {
-          cleanup(compiled) ;
-          strerr_diefu3sys(111, "cdb_read ", compiled, "/resolve.cdb") ;
-        }
-        j >>= 2 ;
-        while (j--)
-        {
-          uint32_t x ;
-          uint32_unpack_big(pack + (j << 2), &x) ;
-          if (x >= db->nshort + db->nlong)
-            strerr_dief2x(4, "invalid database in ", compiled) ;
-          if (!bitarray_testandset(bits, x)) total++ ;
-        }
+        uint32_t x ;
+        uint32_unpack_big(data.s + j, &x) ;
+        if (x >= db->nshort + db->nlong)
+          strerr_dief2x(4, "invalid database in ", compiled) ;
+        if (!bitarray_testandset(bits, x)) total++ ;
       }
     }
     {
-      char pack[(total << 2) + 1] ;
+      char pack[total << 2 ? total << 2 : 1] ;
       char *s = pack ;
       uint32_t j = n ;
       while (j--) if (bitarray_peek(bits, j))
@@ -180,16 +149,15 @@ static void modify_resolve (int fdcompiled, s6rc_db_t *db, char const *const *to
         uint32_pack_big(s, j) ;
         s += 4 ;
       }
-      if (cdb_make_add(&cw, toadd[i], strlen(toadd[i]), pack, total << 2) < 0)
+      if (!cdbmake_add(&cw, toadd[i], strlen(toadd[i]), pack, total << 2))
       {
         cleanup(compiled) ;
-        strerr_diefu1sys(111, "cdb_make_add") ;
+        strerr_diefu1sys(111, "cdbmake_add") ;
       }
     }
   }
   cdb_free(&cr) ;
-  close(fdr) ;
-  if (cdb_make_finish(&cw) < 0 || fsync(fdw) < 0)
+  if (!cdbmake_finish(&cw) || fsync(fdw) < 0)
   {
     cleanup(compiled) ;
     strerr_diefu3sys(111, "write to ", compiled, "/resolve.cdb.new") ;

@@ -589,40 +589,29 @@ int main (int argc, char const *const *argv)
      /* Resolve the args and add them to the selection */
 
       {
-        cdb_t c = CDB_ZERO ;
-        int fd = open_readatb(fdcompiled, "resolve.cdb") ;
-        if (fd < 0) strerr_diefu3sys(111, "open ", dbfn, "/resolve.cdb") ;
-        if (!cdb_init_map(&c, fd, 1))
+        cdb c = CDB_ZERO ;
+        if (!cdb_init_at(&c, fdcompiled, "resolve.cdb"))
           strerr_diefu3sys(111, "cdb_init ", dbfn, "/resolve.cdb") ;
         for (; *argv ; argv++)
         {
-          uint32_t len ;
-          int r = cdb_find(&c, *argv, strlen(*argv)) ;
-          if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
-          if (!r)
-            strerr_dief4x(3, *argv, " is not a recognized identifier in ", dbfn, "/resolve.cdb") ;
-          if (cdb_datalen(&c) & 3)
+          cdb_data data ;
+          int r = cdb_find(&c, &data, *argv, strlen(*argv)) ;
+          if (r < 0) strerr_dief3x(4, "invalid cdb in ", dbfn, "/resolve.cdb") ;
+          if (!r) strerr_dief4x(3, *argv, " is not a recognized identifier in ", dbfn, "/resolve.cdb") ;
+          if (data.len & 3)
             strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
-          len = cdb_datalen(&c) >> 2 ;
-          if (len > n)
+          if (data.len >> 2 > n)
             strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
+          while (data.len)
           {
-            char pack[cdb_datalen(&c) + 1] ;
-            char const *p = pack ;
-            if (cdb_read(&c, pack, cdb_datalen(&c), cdb_datapos(&c)) < 0)
-              strerr_diefu3sys(111, "read ", dbfn, "/resolve.cdb") ;
-            while (len--)
-            {
-              uint32_t x ;
-              uint32_unpack_big(p, &x) ; p += 4 ;
-              if (x >= n)
-                strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
-              state[x] |= 2 ;
-            }
+            uint32_t x ;
+            uint32_unpack_big(data.s, &x) ; data.s += 4 ; data.len -= 4 ;
+            if (x >= n)
+              strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
+            state[x] |= 2 ;
           }
         }
         cdb_free(&c) ;
-        close(fd) ;
       }
       close(fdcompiled) ;
 

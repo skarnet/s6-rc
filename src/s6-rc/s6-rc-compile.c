@@ -14,7 +14,7 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
-#include <skalibs/cdb_make.h>
+#include <skalibs/cdbmake.h>
 #include <skalibs/direntry.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
@@ -1114,7 +1114,7 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
 {
   size_t clen = strlen(compiled) ;
   int fd ;
-  struct cdb_make c = CDB_MAKE_ZERO ;
+  cdbmaker c = CDBMAKER_ZERO ;
   unsigned int i = db->nshort + db->nlong ;
   char fn[clen + 13] ;
   if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/resolve.cdb") ;
@@ -1126,10 +1126,10 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
     cleanup(compiled) ;
     strerr_diefu2sys(111, "open_trunc ", fn) ;
   }
-  if (cdb_make_start(&c, fd) < 0)
+  if (!cdbmake_start(&c, fd))
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "cdb_make_start on ", fn) ;
+    strerr_diefu2sys(111, "cdbmake_start on ", fn) ;
   }
 
  /* atomic services */
@@ -1137,10 +1137,10 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
   {
     char pack[4] ;
     uint32_pack_big(pack, i) ;
-    if (cdb_make_add(&c, db->string + db->services[i].name, strlen(db->string + db->services[i].name), pack, 4) < 0)
+    if (!cdbmake_add(&c, db->string + db->services[i].name, strlen(db->string + db->services[i].name), pack, 4))
     {
       cleanup(compiled) ;
-      strerr_diefu1sys(111, "cdb_make_add") ;
+      strerr_diefu1sys(111, "cdbmake_add") ;
     }
   }
 
@@ -1152,14 +1152,14 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
     char pack[(bundles[i].n << 2) + 1] ; /* +1 because braindead C standard */
     for (; j < bundles[i].n ; j++)
       uint32_pack_big(pack + (j << 2), bdeps[bundles[i].listindex + j]) ;
-    if (cdb_make_add(&c, data.s + bundles[i].name, strlen(data.s + bundles[i].name), pack, bundles[i].n << 2) < 0)
+    if (!cdbmake_add(&c, data.s + bundles[i].name, strlen(data.s + bundles[i].name), pack, bundles[i].n << 2))
     {
       cleanup(compiled) ;
-      strerr_diefu1sys(111, "cdb_make_add") ;
+      strerr_diefu1sys(111, "cdbmake_add") ;
     }
   }
 
-  if (cdb_make_finish(&c) < 0 || fsync(fd) < 0)
+  if (!cdbmake_finish(&c) || fsync(fd) < 0)
   {
     cleanup(compiled) ;
     strerr_diefu2sys(111, "write to ", fn) ;
