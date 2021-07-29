@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="s6-rc: services">
+    <meta name="keywords" content="s6-rc service management services dependencies unix administration root laurent bercot ska skarnet supervision init system boot systemd alternative" />
+    <title>s6-rc: services</title>
+    <link rel="stylesheet" href="/css/pure/pure-min.css">
+    <!-- <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-G9DpmGxRIF6tpgbrkZVcZDeIomEU22LgTguPAI739bbKytjPE/kHTK5YxjJAAEXC" crossorigin="anonymous"> -->
+    <link rel="stylesheet" href="/layouts/side-menu/styles.css">
+</head>
+<body>
+
+<div id="layout">
+  <!-- Menu toggle -->
+  <a href="#menu" id="menuLink" class="menu-link">
+    <!-- Hamburger icon -->
+    <span></span>
+  </a>
+
+  <div id="menu">
+    <div class="pure-menu">
+      <a class="pure-menu-heading" style="text-transform:none;" href="/">skarnet.com</a>
+      <ul class="pure-menu-list">
+        <li class="pure-menu-item"> <a href="/" class="pure-menu-link">Home</a> </li>
+        <li class="pure-menu-item"> <a href="/projects/" class="pure-menu-link">Projects</a> </li>
+        <li class="pure-menu-item"> <a href="/contact/" class="pure-menu-link">Contact</a> </li>
+        <li class="pure-menu-item"> <a href="//skarnet.org/" class="pure-menu-link">skarnet.org</a> </li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="main">
+    <div class="header">
+      <h1> s6-rc: services </h1>
+        <h2> The basic building block </h2>
+    </div>
+
+    <div class="content">
+
+      <p>
+      </p>
+
+      <h2 class="content-subhead" id="toc"> Table of contents </h2>
+
+      <ul>
+        <li> <a href="#toc">Table of contents</a> </li>
+        <li> <a href="#stypes">Service types</a> </li>
+        <li> <a href="#instances">Dynamic instantiation</a> </li>
+      </ul>
+
+      <h2 class="content-subhead" id="stypes"> Service types </h2>
+
+      <p>
+        In all genericity, a <em>service</em> is a basic unit that can undergo a
+        transition; but not all services can be handled the same way. Services
+        are divided into several categories, which we call <em>types</em>; these
+        are the following.
+      </p>
+
+      <ol>
+       <li> <strong>Longrun</strong>.
+
+        <p>
+          A <em>longrun</em> is the "traditional" definition of a service,
+          implemented by a <em>long-lived process</em>, a.k.a. a daemon. As a first
+          approximation, it means that when the daemon is alive, the service is up,
+          and when the daemon is not present, the service is down. Longruns are the
+          most common type of service, and the main reason why it's a good thing for
+          a service manager to work in tandem with a process supervisor: the details
+          of keeping the daemon alive, surveying its readiness, etc. are delegated
+          to the process supervisor, which abstracts some complexity away from the
+          service manager.
+        </p>
+       </li>
+
+       <li> <strong>Oneshot</strong>.
+
+        <p>
+          A <em>oneshot</em> is a service that represents a state change in the
+          machine, but that does not need a daemon because the state is maintained by
+          the kernel. For instance, "mounting a filesystem" and "setting a sysctl" are
+          oneshots: the service is considered <em>up</em> when the filesystem is mounted
+          or the sysctl has been performed, and <em>down</em> when the filesystem is
+          unmounted or the sysctl has its default value. Note that it's generally
+          meaningless to revert a sysctl (and in most cases it's also a bad idea to try
+          and unmount filesystems before the very end of a shutdown procedure), so it is
+          quite common for the <em>down transition</em> of a oneshot to be a nop: after
+          the first time the service has been brought up, the state basically never
+          changes.
+        </p>
+
+        <p>
+          <em>Longruns</em> and <em>oneshots</em> are collectively called <em>atomic
+          services</em>. They are the core service types, the ones that actually do the
+          work. Other service types are just convenience tools around them.
+        </p>
+       </li>
+
+       <li> <strong>External</strong>.
+
+        <p>
+          An <em>external</em> is a service that is not handled by the
+          service manager itself, but by a system that is external to it. It is a way for
+          the service manager to delegate complex subsystems to other programs such as a
+          network manager. The service manager does not know how to perform transitions
+          for an external, it does not know anything but its name.
+        </p>
+
+        <p>
+          It is impossible to set the <em>wanted state</em> of an <em>external</em>: such
+          a service has to be triggered entirely outside of the service manager. All the
+          service manager does is receive events that inform it of the external's <em>current
+          state</em>.
+        </p>
+
+        <p>
+          Consequently, an <em>external</em> does have any dependencies. It is, however,
+          possible for a service to depend on an external &mdash; that is their intended use,
+          gating the transition of another service to the reception of an external event.
+        </p>
+       </li>
+
+       <li> <strong>Bundle</strong>.
+
+        <p>
+          A <em>bundle</em> is a pseudo-service representing a set of services: it is used
+          to implement service conjunction (<tt>AND</tt>). when a
+          bundle is <em>wanted up</em>, it means that <em>all</em> the services it
+          contains are <em>wanted up</em>. A bundle's <em>current state</em> is <em>up</em>
+          if <em>all</em> the services it contains are up, and it is <em>down</em> otherwise.
+        </p>
+        <p>
+          However, when a bundle is <em>wanted down</em>, it also means that <em>all</em>
+          (and not just one!) of the services it contains are <em>wanted down</em>, so take
+          care when explicitly bringing down bundles.
+        </p>
+       </li>
+
+       <li> <strong>Virtual</strong>.
+
+        <p>
+          A <em>virtual</em> is a pseudo-service representing a set of services, but used for
+          disjunction (<tt>OR</tt>) instead: instead of meaning "all the services in the set", it means
+          "one of the services in the set". A virtual's <em>current state</em> is <em>up</em>
+          if at least one of the services it represents is <em>up</em>, and <em>down</em>
+          otherwise.
+        </p>
+       </li>
+      <ol>
+
+      <h2 class="content-subhead" id="instances"> Dynamic instantiation </h2>
+
+      <p>
+        In all genericity, a <em>service</em> is a basic unit that can undergo a
+        transition; but not all services can be handled the same way. Services
+        are divided into several categories, which we call <em>types</em>; these
+        are the following.
+      </p>
+
+
+
+       <li> <strong>Dynamically instantiated longrun</strong>.
+
+        <p>
+          A <em>dynamically instantiated longrun</em>, or <em>DIL</em>, is a template for
+          an indeterminate amount of <em>longruns</em> that all follow the same model,
+          and that differ by one parameter, the <em>instance name</em>. They are used
+          to implement sets of similar services that the user will want to start on
+          demand: for instance, a set of gettys. A <em>DIL</em> is identified by a
+          <tt>@</tt> at the end of the service name; anything that follows the <tt>@</tt>
+          is the <tt>instance parameter</tt>. For instance, <tt>getty@</tt> can be the name
+          of the <em>DIL</em> spawning the gettys, and <tt>getty@tty2</tt> can be a
+          dynamic instance of <tt>getty@</tt> with <tt>tty2</tt> as the <em>instance
+          parameter</em>.
+        </p>
+
+        <p>
+          (It is possible to define a regular, <em>static</em> (as opposed to dynamically
+          instantiated), <tt>getty@tty1</tt> service even if
+          the <tt>getty@</tt> DIL exists: in that case, <tt>getty@tty1</tt> will always
+          refer to the static service and it will be impossible to spawn a <tt>getty@</tt>
+          instance with <tt>tty1</tt> as an instance parameter. This can be a good way to
+          ensure that specific "instances" are special-cased.)
+        </p>
+
+        <p>
+          However, DILs have a strong limitation: only dynamically instantiated services
+          can depend on them, and only <em>with the same instance parameter</em>. In other
+          words: <tt>B</tt> cannot depend on <tt>A@</tt>, only <tt>B@</tt> can depend on
+          <tt>A@</tt>, and that means that for any <tt>x</tt>, <tt>B@x</tt> depends on
+          <tt>A@x</tt>.
+        </p>
+       </li>
+
+    </div>
+  </div>
+</div>
+
+<script src="/js/ui.js"></script>
+</body>
+</html>
