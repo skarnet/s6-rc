@@ -385,7 +385,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
 
  /* Updating the pipes contained in the fdholder */
 
-static inline int delete_unused_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, unsigned char const *oldstate, tain_t const *deadline)
+static inline int delete_unused_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, unsigned char const *oldstate, tain const *deadline)
 {
   unsigned int i = olddb->nlong ;
   while (i--)
@@ -402,10 +402,10 @@ static inline int delete_unused_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb,
   return 1 ;
 }
 
-static inline int rename_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, s6rc_db_t const *newdb, unsigned char const *newstate, unsigned int const *invimage, tain_t const *deadline)
+static inline int rename_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, s6rc_db_t const *newdb, unsigned char const *newstate, unsigned int const *invimage, tain const *deadline)
 {
-  tain_t nano1 = { .sec = TAI_ZERO, .nano = 1 } ;
-  tain_t limit ;
+  tain nano1 = { .sec = TAI_ZERO, .nano = 1 } ;
+  tain limit ;
   tain_add_g(&limit, &tain_infinite_relative) ;
   unsigned int i = newdb->nlong ;
   while (i--)
@@ -446,10 +446,10 @@ static inline int rename_pipes (s6_fdholder_t *a, s6rc_db_t const *olddb, s6rc_d
   return 1 ;
 }
 
-static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, unsigned char const *newstate, tain_t const *deadline)
+static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, unsigned char const *newstate, tain const *deadline)
 {
-  tain_t nano1 = { .sec = TAI_ZERO, .nano = newdb->nlong % 1000000000U } ;
-  tain_t limit ;
+  tain nano1 = { .sec = TAI_ZERO, .nano = newdb->nlong % 1000000000U } ;
+  tain limit ;
   unsigned int i = newdb->nlong ;
   tain_add_g(&limit, &tain_infinite_relative) ;
   tain_add(&limit, &limit, &nano1) ;
@@ -485,10 +485,10 @@ static inline int create_new_pipes (s6_fdholder_t *a, s6rc_db_t const *newdb, un
   return 1 ;
 }
 
-static void fill_tfmt (char *tfmt, tain_t const *deadline)
+static void fill_tfmt (char *tfmt, tain const *deadline)
 {
   int t ;
-  tain_t tto ;
+  tain tto ;
   tain_sub(&tto, deadline, &STAMP) ;
   t = tain_to_millisecs(&tto) ;
   if (!t) t = 1 ;
@@ -496,7 +496,7 @@ static void fill_tfmt (char *tfmt, tain_t const *deadline)
   tfmt[uint_fmt(tfmt, t)] = 0 ;
 }
 
-static inline void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldstate, s6rc_db_t const *newdb, unsigned char const *newstate, unsigned int const *invimage, char const *const *envp, tain_t const *deadline)
+static inline void update_fdholder (s6rc_db_t const *olddb, unsigned char const *oldstate, s6rc_db_t const *newdb, unsigned char const *newstate, unsigned int const *invimage, char const *const *envp, tain const *deadline)
 {
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
   char fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER "/s")] ;
@@ -546,13 +546,13 @@ static unsigned int want_count (unsigned char const *state, unsigned int n)
 int main (int argc, char const *const *argv, char const *const *envp)
 {
   char const *convfile = "/dev/null" ;
-  tain_t deadline ;
+  tain deadline ;
   int dryrun = 0 ;
   int blocking = 0 ;
   PROG = "s6-rc-update" ;
   {
     unsigned int t = 0 ;
-    subgetopt_t l = SUBGETOPT_ZERO ;
+    subgetopt l = SUBGETOPT_ZERO ;
     for (;;)
     {
       int opt = subgetopt_r(argc, argv, "v:t:nl:f:b", &l) ;

@@ -29,7 +29,7 @@ static void cleanup (stralloc *sa)
 
 int main (int argc, char const *const *argv)
 {
-  tain_t deadline ;
+  tain deadline ;
   stralloc sa = STRALLOC_ZERO ;
   size_t dirlen ;
   char const *live = S6RC_LIVE_BASE ;
@@ -39,7 +39,7 @@ int main (int argc, char const *const *argv)
   PROG = "s6-rc-init" ;
   {
     unsigned int t = 0 ;
-    subgetopt_t l = SUBGETOPT_ZERO ;
+    subgetopt l = SUBGETOPT_ZERO ;
     for (;;)
     {
       int opt = subgetopt_r(argc, argv, "c:l:p:t:bd", &l) ;

@@ -12,7 +12,7 @@ extern int s6rc_servicedir_copy_online (char const *, char const *) ;
 #define s6rc_servicedir_copy(src, dst, h) ((h) ? s6rc_servicedir_copy_online(src, dst) : s6rc_servicedir_copy_offline(src, dst))
 extern void s6rc_servicedir_unsupervise (char const *, char const *, char const *, int) ;
 
-extern int s6rc_servicedir_manage (char const *, char const *, tain_t const *, tain_t *) ;
+extern int s6rc_servicedir_manage (char const *, char const *, tain const *, tain *) ;
 #define s6rc_servicedir_manage_g(live, suffix, deadline) s6rc_servicedir_manage(live, suffix, (deadline), &STAMP)
 
 #endif

@@ -13,11 +13,11 @@
 int main (int argc, char const *const *argv)
 {
   unsigned int verbosity = 1 ;
-  tain_t deadline ;
+  tain deadline ;
   PROG = "s6-rc-dryrun" ;
   {
     unsigned int t = 1000 ;
-    subgetopt_t l = SUBGETOPT_ZERO ;
+    subgetopt l = SUBGETOPT_ZERO ;
     for (;;)
     {
       int opt = subgetopt_r(argc, argv, "v:t:", &l) ;

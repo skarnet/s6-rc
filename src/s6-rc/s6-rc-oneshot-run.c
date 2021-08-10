@@ -25,7 +25,7 @@ int main (int argc, char const *const *argv)
   int blocking = 0 ;
   PROG = "s6-rc-oneshot-run" ;
   {
-    subgetopt_t l = SUBGETOPT_ZERO ;
+    subgetopt l = SUBGETOPT_ZERO ;
     for (;;)
     {
       int opt = subgetopt_r(argc, argv, "l:b", &l) ;

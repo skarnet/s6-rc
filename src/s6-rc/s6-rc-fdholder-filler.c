@@ -55,7 +55,7 @@ static inline unsigned int parse_servicenames (char *s, unsigned int *indices)
 int main (int argc, char const *const *argv)
 {
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
-  tain_t deadline ;
+  tain deadline ;
   int notif = 0 ;
   unsigned int n ;
   unsigned int indices[N] ;
@@ -63,7 +63,7 @@ int main (int argc, char const *const *argv)
   PROG = "s6-rc-fdholder-filler" ;
   {
     unsigned int t = 0 ;
-    subgetopt_t l = SUBGETOPT_ZERO ;
+    subgetopt l = SUBGETOPT_ZERO ;
     for (;;)
     {
       int opt = subgetopt_r(argc, argv, "1t:", &l) ;
@@ -88,7 +88,7 @@ int main (int argc, char const *const *argv)
   n = parse_servicenames(buf, indices) ;
   if (n)
   {
-    tain_t offset = { .sec = TAI_ZERO } ;
+    tain offset = { .sec = TAI_ZERO } ;
     int p[2] ;
     unsigned int i = 0 ;
     s6_fdholder_fd_t dump[n<<1] ;

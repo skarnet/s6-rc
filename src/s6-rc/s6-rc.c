@@ -45,7 +45,7 @@ static s6rc_db_t *db ;
 static unsigned int n ;
 static unsigned char *state ;
 static unsigned int *pendingdeps ;
-static tain_t deadline ;
+static tain deadline ;
 static int lameduck = 0 ;
 static int forcestop = 0 ;
 static char dryrun[UINT_FMT] = "" ;
@@ -112,7 +112,7 @@ static uint32_t compute_timeout (unsigned int i, int h)
 {
   uint32_t t = db->services[i].timeout[h] ;
   int globalt ;
-  tain_t globaltto ;
+  tain globaltto ;
   tain_sub(&globaltto, &deadline, &STAMP) ;
   globalt = tain_to_millisecs(&globaltto) ;
   if (!globalt) globalt = 1 ;
@@ -468,7 +468,7 @@ int main (int argc, char const *const *argv)
   PROG = "s6-rc" ;
   {
     unsigned int t = 0 ;
-    subgetopt_t l = SUBGETOPT_ZERO ;
+    subgetopt l = SUBGETOPT_ZERO ;
     for (;;)
     {
       int opt = subgetopt_r(argc, argv, "v:n:t:l:uDdpaXb", &l) ;
@@ -654,7 +654,7 @@ int main (int argc, char const *const *argv)
         sigaddset(&set, SIGCHLD) ;
         sigaddset(&set, SIGTERM) ;
         sigaddset(&set, SIGINT) ;
-        if (selfpipe_trapset(&set) < 0)
+        if (!selfpipe_trapset(&set))
           strerr_diefu1sys(111, "trap signals") ;
       }
 

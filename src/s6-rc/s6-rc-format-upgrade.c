@@ -19,7 +19,7 @@ static unsigned int verbosity = 1 ;
 
  /* This function will change if format changes become heavier */
 
-static inline void update_livedir (char const *live, char const *newcompiled, tain_t const *deadline)
+static inline void update_livedir (char const *live, char const *newcompiled, tain const *deadline)
 {
   size_t livelen = strlen(live) ;
   char cfn[livelen + 10] ;
@@ -32,14 +32,14 @@ static inline void update_livedir (char const *live, char const *newcompiled, ta
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-  tain_t deadline ;
+  tain deadline ;
   char const *live = S6RC_LIVE_BASE ;
   int blocking = 0 ;
   int livelock ;
   PROG = "s6-rc-format-upgrade" ;
   {
     unsigned int t = 0 ;
-    subgetopt_t l = SUBGETOPT_ZERO ;
+    subgetopt l = SUBGETOPT_ZERO ;
     for (;;)
     {
       int opt = subgetopt_r(argc, argv, "v:t:l:b", &l) ;

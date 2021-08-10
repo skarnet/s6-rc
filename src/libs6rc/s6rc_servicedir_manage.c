@@ -10,7 +10,7 @@
 
 #include <s6-rc/s6rc-servicedir.h>
 
-int s6rc_servicedir_manage (char const *live, char const *prefix, tain_t const *deadline, tain_t *stamp)
+int s6rc_servicedir_manage (char const *live, char const *prefix, tain const *deadline, tain *stamp)
 {
   stralloc names = STRALLOC_ZERO ;
   size_t livelen = strlen(live) ;
