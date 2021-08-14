@@ -7,13 +7,13 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <skalibs/posixplz.h>
 #include <skalibs/types.h>
 #include <skalibs/cdb.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/tai.h>
-#include <skalibs/environ.h>
 #include <skalibs/sig.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/selfpipe.h>
