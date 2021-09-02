@@ -3,7 +3,9 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <s6/s6-supervise.h>
+
+#include <s6/supervise.h>
+
 #include <s6-rc/s6rc-servicedir.h>
 
 int s6rc_servicedir_unblock (char const *dir, int h)

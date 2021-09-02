@@ -10,7 +10,7 @@
 #include <skalibs/allreadwrite.h>
 #include <skalibs/tai.h>
 
-#include <s6/s6-fdholder.h>
+#include <s6/fdholder.h>
 
 #define USAGE "s6-rc-fdholder-filler [ -1 ] [ -t timeout ] < autofilled-filename"
 #define dieusage() strerr_dieusage(100, USAGE)

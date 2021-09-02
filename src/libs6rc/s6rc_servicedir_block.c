@@ -6,7 +6,7 @@
 #include <skalibs/posixplz.h>
 #include <skalibs/djbunix.h>
 
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 
 #include <s6-rc/s6rc-servicedir.h>
 

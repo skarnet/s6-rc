@@ -21,7 +21,7 @@
 #include <skalibs/unix-transactional.h>
 
 #include <s6/config.h>
-#include <s6/s6-supervise.h>
+#include <s6/supervise.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
