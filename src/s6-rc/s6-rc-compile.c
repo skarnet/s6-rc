@@ -1310,6 +1310,15 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
     }
 
+    memcpy(srcfn + srcdirlen + len + 2, "lock-fd", 8) ;
+    memcpy(dstfn + clen + 14 + len, "lock-fd", 8) ;
+    if (copy_uint(compiled, srcfn, dstfn, &u) && u < 3 && verbosity)
+    {
+      char fmt[UINT_FMT] ;
+      fmt[uint_fmt(fmt, u)] = 0 ;
+      strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a lock-fd of ", fmt) ;
+    }
+
     memcpy(srcfn + srcdirlen + len + 2, "timeout-kill", 13) ;
     memcpy(dstfn + clen + 14 + len, "timeout-kill", 13) ;
     copy_uint(compiled, srcfn, dstfn, &u) ;

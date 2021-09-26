@@ -18,6 +18,7 @@ static s6rc_servicedir_desc_t const svdir_file_list[] =
   { .name = "run", .type = FILETYPE_NORMAL, .options = SVFILE_EXECUTABLE | SVFILE_MANDATORY | SVFILE_ATOMIC },
   { .name = "run.user", .type = FILETYPE_NORMAL, .options = SVFILE_EXECUTABLE },
   { .name = "notification-fd", .type = FILETYPE_UINT, .options = 0 },
+  { .name = "lock-fd", .type = FILETYPE_UINT, .options = 0 },
   { .name = "timeout-kill", .type = FILETYPE_UINT, .options = 0 },
   { .name = "timeout-finish", .type = FILETYPE_UINT, .options = 0 },
   { .name = "max-death-tally", .type = FILETYPE_UINT, .options = 0 },
