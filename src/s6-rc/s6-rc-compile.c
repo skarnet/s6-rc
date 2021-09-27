@@ -1254,6 +1254,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
   {
     size_t srcdirlen = strlen(srcdirs[i]) ;
     size_t len = strlen(db->string + db->services[i].name) ;
+    unsigned int fdnotif = 0 ;
     unsigned int u ;
     int ispipelined = db->services[i].x.longrun.nproducers || db->services[i].x.longrun.consumer < db->nlong ;
     char srcfn[srcdirlen + len + 18] ;
@@ -1303,20 +1304,38 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
 
     memcpy(srcfn + srcdirlen + len + 2, "notification-fd", 16) ;
     memcpy(dstfn + clen + 14 + len, "notification-fd", 16) ;
-    if (copy_uint(compiled, srcfn, dstfn, &u) && u < 3 && verbosity)
+    if (copy_uint(compiled, srcfn, dstfn, &u))
     {
-      char fmt[UINT_FMT] ;
-      fmt[uint_fmt(fmt, u)] = 0 ;
-      strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
+      if (u < 3)
+      {
+        if (verbosity)
+        {
+          char fmt[UINT_FMT] ;
+          fmt[uint_fmt(fmt, u)] = 0 ;
+          strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
+        }
+      }
+      else fdnotif = u ;
     }
 
     memcpy(srcfn + srcdirlen + len + 2, "lock-fd", 8) ;
     memcpy(dstfn + clen + 14 + len, "lock-fd", 8) ;
-    if (copy_uint(compiled, srcfn, dstfn, &u) && u < 3 && verbosity)
+    if (copy_uint(compiled, srcfn, dstfn, &u))
     {
-      char fmt[UINT_FMT] ;
-      fmt[uint_fmt(fmt, u)] = 0 ;
-      strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a lock-fd of ", fmt) ;
+      if (u < 3)
+      {
+        if (verbosity)
+        {
+          char fmt[UINT_FMT] ;
+          fmt[uint_fmt(fmt, u)] = 0 ;
+          strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a lock-fd of ", fmt) ;
+        }
+      }
+      else if (fdnotif == u)
+      {
+        cleanup(compiled) ;
+        strerr_dief3x(1, "longrun ", db->string + db->services[i].name, " has the same value for notification-fd and lock-fd") ;
+      }
     }
 
     memcpy(srcfn + srcdirlen + len + 2, "timeout-kill", 13) ;
