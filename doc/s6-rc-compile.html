@@ -115,15 +115,23 @@ contents, i.e. all the services it represents will be marked as essential. </li>
 <h3> For bundles </h3>
 
 <ul>
- <li> A regular file named <tt>contents</tt>. This file must be a list
+ <li> A directory named <tt>contents.d</tt>. This directory must contain
+files, no matter their type, no matter their contents, named after services.
+(Typically, empty regular files are used.)
+All the services named in this directory will be represented by the bundle
+named <em>service</em>. </li>
+ <li> If <tt>contents.d</tt> does not exist, the bundle contents can be read
+from a regular file named <tt>contents</tt>. This file must be a list
 of service names, one per line. Whitespace at the beginning of a line
 is ignored, but trailing whitespace is not. Lines starting with a <tt>#</tt>
 character are ignored. The file defines the services that will be
-represented by the bundle named <em>service</em>. </li>
+represented by the bundle named <em>service</em>. Note that this format is
+deprecated. </li>
 </ul>
 
 <p>
- It is possible to use bundle names in a <tt>contents</tt> file.
+ It is possible to use bundle names in a <tt>contents.d</tt> directory or a
+<tt>contents</tt> file.
 However, if s6-rc-compile detects a cycle in bundle definitions, it will
 complain and exit 1.
 </p>
@@ -143,22 +151,27 @@ must contain an integer, which is the maximum number of milliseconds
 stop; if stopping the service takes longer than this value, s6-rc will declare
 the transition a failure. If the file does not exist, or contains 0, no timeout
 is defined and s6-rc will wait indefinitely for the service to stop. </li>
- <li> An optional regular file named <tt>dependencies</tt>. This file must be a list
+ <li> An optional directory named <tt>dependencies.d</tt>. This directory must contain
+files, no matter their type, no matter their contents, named after services.
+(Typically, empty regular files are used.) All the services named in this directory
+will be <em>direct dependencies</em> of <em>service</em>, i.e. the services that must
+be up in order for <em>service</em> to work properly. </li>
+ <li> If <tt>dependencies.d</tt> does not exist: an optional regular file named
+<tt>dependencies</tt>. This file must be a list
 of service names, one per line. Whitespace at the beginning of a line
 is ignored, but trailing whitespace is not. Lines starting with a <tt>#</tt>
 character are ignored. The file defines the <em>direct dependencies</em> of
-<em>service</em>, i.e. the services that must be up in order for
-<em>service</em> to work properly. </li>
+<em>service</em>. Note that this format is deprecated. </li>
 </ul>
 
 <p>
  It is unnecessary to manually define complete sets of dependencies in the
-<tt>dependencies</tt> file, because
+<tt>dependencies.d</tt> directory or the <tt>dependencies</tt> file, because
 <a href="s6-rc.html">s6-rc</a> will properly handle dependency chains.
 If <em>A</em> depends on <em>B</em>, no matter the underlying
 implementation of <em>B</em>, and the current implementation of <em>B</em>
 depends on <em>C</em>, then you should just put <em>B</em> in
-<tt><em>A</em>/dependencies</tt>; when starting the set,
+<tt><em>A</em>/dependencies.d</tt>; when starting the set,
 <a href="s6-rc.html">s6-rc</a> will start <em>C</em> first, then
 <em>B</em>, then <em>A</em>. If the underlying implementation of <em>B</em>
 changes and does not depend on <em>C</em>, then you will just have to
@@ -168,7 +181,7 @@ will still be correct.
 
 <p>
  Of course, if <em>A</em> depends on <em>C</em> anyway, you should add
-both <em>B</em> and <em>C</em> to <tt><em>A</em>/dependencies</tt>.
+both <em>B</em> and <em>C</em> to <tt><em>A</em>/dependencies.d</tt>.
 </p>
 
 <p>

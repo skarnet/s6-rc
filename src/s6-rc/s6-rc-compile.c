@@ -266,7 +266,11 @@ static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *
   int cont = 1 ;
   char buf[2048] ;
   int fd = open_readatb(dfd, list) ;
-  if (fd < 0) return 0 ;
+  if (fd < 0)
+  {
+    if (errno == ENOENT) return 0 ;
+    strerr_diefu6sys(111, "open ", srcdir, "/", name, "/", list) ;
+  }
   buffer_init(&b, &buffer_read, fd, buf, 2048) ;
   *listindex = genalloc_len(unsigned int, &be->indices) ;
   while (cont)
@@ -300,6 +304,32 @@ static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *
     }
   }
   close(fd) ;
+  *n = genalloc_len(unsigned int, &be->indices) - *listindex ;
+  return 1 ;
+}
+
+static int add_namelistd (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+{
+  DIR *dir = opendir_at(dfd, list) ;
+  if (!dir)
+  {
+    if (errno == ENOENT) return 0 ;
+    strerr_diefu6sys(111, "opendir ", srcdir, "/", name, "/", list) ;
+  }
+  *listindex = genalloc_len(unsigned int, &be->indices) ;
+  for (;;)
+  {
+    direntry *d ;
+    unsigned int pos, kpos ;
+    errno = 0 ;
+    d = readdir(dir) ;
+    if (!d) break ;
+    if (d->d_name[0] == '.') continue ;
+    add_name(be, name, d->d_name, SVTYPE_UNDEFINED, &pos, &kpos) ;
+    if (!genalloc_append(unsigned int, &be->indices, &pos)) dienomem() ;
+  }
+  dir_close(dir) ;
+  if (errno) strerr_diefu4sys(111, "readdir ", srcdir, "/", list) ;
   *n = genalloc_len(unsigned int, &be->indices) - *listindex ;
   return 1 ;
 }
@@ -377,10 +407,9 @@ static void add_common (before_t *be, int dfd, char const *srcdir, char const *n
 {
   unsigned int dummy ;
   add_name(be, srcdir, name, svtype, &dummy, &common->kname) ;
-  if (!add_namelist(be, dfd, srcdir, name, "dependencies", &common->depindex, &common->ndeps))
+  if (!add_namelistd(be, dfd, srcdir, name, "dependencies.d", &common->depindex, &common->ndeps)
+   && !add_namelist(be, dfd, srcdir, name, "dependencies", &common->depindex, &common->ndeps))
   {
-    if (errno != ENOENT)
-      strerr_diefu5sys(111, "open ", srcdir, "/", name, "/dependencies") ;
     common->depindex = genalloc_len(unsigned int, &be->indices) ;
     common->ndeps = 0 ;
   }
@@ -489,8 +518,9 @@ static inline void add_bundle (before_t *be, int dfd, char const *srcdir, char c
   unsigned int dummy ;
   if (verbosity >= 3) strerr_warni3x(name, " has type ", "bundle") ;
   add_name(be, srcdir, name, SVTYPE_BUNDLE, &bundle.name, &dummy) ;
-  if (!add_namelist(be, dfd, srcdir, name, "contents", &bundle.listindex, &bundle.n))
-    strerr_diefu5sys(111, "open ", srcdir, "/", name, "/contents") ;
+  if (!add_namelistd(be, dfd, srcdir, name, "contents.d", &bundle.listindex, &bundle.n)
+   && !add_namelist(be, dfd, srcdir, name, "contents", &bundle.listindex, &bundle.n))
+      strerr_diefu5sys(111, "open ", srcdir, "/", name, "/contents") ;
   bundle.annotation_flags = read_flags(dfd, srcdir, name) ;
   if (!genalloc_append(bundle_t, &be->bundles, &bundle)) dienomem() ;
 }
