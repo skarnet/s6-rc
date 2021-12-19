@@ -1,12 +1,12 @@
 Changelog for s6-rc.
 
-In 0.6.0.0
+In 0.5.3.0
 ----------
 
  - s6-rc-compile now reads service dependencies and bundle contents
 from directories, not from files. This makes it easier for package
 managers to drop services in a source database without modifying
-existing files.
+existing files. The old format is still supported.
 
 
 In 0.5.2.3
