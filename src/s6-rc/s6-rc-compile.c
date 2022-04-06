@@ -220,7 +220,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
 
 static void check_identifier (char const *srcdir, char const *s)
 {
-  if (!strncmp(s, "s6rc-", 5) && !strncmp(s, "s6-rc-", 6))
+  if (!strncmp(s, "s6rc-", 5) || !strncmp(s, "s6-rc-", 6))
     strerr_dief5x(1, "in ", srcdir, ": identifier ", s, " starts with reserved prefix") ;
 }
 
