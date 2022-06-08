@@ -366,8 +366,8 @@ static uint32_t read_timeout (int dfd, char const *srcdir, char const *name, cha
 {
   char buf[64] ;
   uint32_t timeout = 0 ;
-  size_t r = openreadnclose_at(dfd, tname, buf, 63) ;
-  if (!r)
+  ssize_t r = openreadnclose_at(dfd, tname, buf, 63) ;
+  if (r == -1)
   {
     if (errno && errno != ENOENT)
       strerr_diefu6sys(111, "read ", srcdir, "/", name, "/", tname) ;
@@ -528,10 +528,10 @@ static inline void add_bundle (before_t *be, int dfd, char const *srcdir, char c
 static inline void add_source (before_t *be, int dfd, char const *srcdir, char const *name)
 {
   char typestr[8] = "" ;
-  size_t r ;
+  ssize_t r ;
   if (verbosity >= 2) strerr_warni4x("parsing ", srcdir, "/", name) ;
   r = openreadnclose_at(dfd, "type", typestr, 8) ;
-  if (!r)
+  if (r == -1)
   {
     if (!errno) errno = EINVAL ;
     strerr_diefu5sys(111, "read ", srcdir, "/", name, "/type") ;

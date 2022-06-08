@@ -565,7 +565,8 @@ int main (int argc, char const *const *argv)
       memcpy(dbfn + livelen + 1, "state", 6) ;
       {
         ssize_t r = openreadnclose(dbfn, (char *)state, n) ;
-        if (r != n) strerr_diefu2sys(111, "read ", dbfn) ;
+        if (r == -1) strerr_diefu2sys(111, "read ", dbfn) ;
+        if (r < n) strerr_diefu2x(4, "read valid db in ", dbfn) ;
         {
           unsigned int i = n ;
           while (i--) state[i] &= 1 ;
