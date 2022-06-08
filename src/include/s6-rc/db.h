@@ -50,9 +50,6 @@ typedef struct s6rc_longrun_s s6rc_longrun_t, *s6rc_longrun_t_ref ;
 struct s6rc_longrun_s
 {
   s6rc_atomic_t satomic ;
-  uint32_t nproducers ;
-  uint32_t producers ;
-  uint32_t consumer ;
 } ;
 
 typedef struct s6rc_oneshot_s s6rc_oneshot_t, *s6rc_oneshot_t_ref ;
@@ -90,7 +87,6 @@ struct s6rc_db_s
   s6rc_bundle_t const *virtuals ;
   uint32_t const *deps[2] ;
   uint8_t const *deptypes[2] ;
-  uint32_t const *producers ;
   char const *storage ;
   char const **argvs ;  /* alloced */
 } ;
@@ -108,5 +104,20 @@ extern int s6rc_service_resolve (s6rc_db_t const *, char const *, uint32_t *, ch
 extern s6rc_common_t const *s6rc_service_common (s6rc_db_t const *, uint32_t) ;
 extern s6rc_common_t const *s6rc_service_common_tn (s6rc_db_t const *, uint8_t, uint32_t) ;
 extern int s6rc_service_recheck_instance (s6rc_db_t const *, uint32_t *, char const **) ;
+
+typedef struct s6rc_pinfo_s s6rc_pinfo_t, *s6rc_pinfo_t_ref ;
+struct s6rc_pinfo_s
+{
+  uint32_t nproducers ;
+  uint32_t producers ;
+  uint32_t consumer ;
+} ;
+
+typedef struct s6rc_pdb_s s6rc_pdb_t, *s6rc_pdb_t_ref ;
+struct s6rc_pdb_s
+{
+  uint32_t const *pinfo ;
+  uint32_t const *producers ;
+} ;
 
 #endif
