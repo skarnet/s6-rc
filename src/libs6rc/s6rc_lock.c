@@ -34,7 +34,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     memcpy(cfn + clen, "/lock", 6) ;
     cfd = open(cfn, O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK | O_CLOEXEC, 0644) ;
     if (cfd < 0)
-      if (cwhat > 1 || errno != EROFS) goto lerr ;
+      if (cwhat > 1 || (errno != EROFS || errno != EPERM)) goto lerr ;
       else cfd = -errno ;
     else
     {
