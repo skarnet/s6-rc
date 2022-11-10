@@ -377,7 +377,6 @@ int main (int argc, char const *const *argv)
 
    /* Read the sizes of the compiled db */
 
-    fdcompiled = open_readb(compiled) ;
     if (!s6rc_db_read_sizes(fdcompiled, &dbblob))
       strerr_diefu3sys(111, "read ", compiled, "/n") ;
 
