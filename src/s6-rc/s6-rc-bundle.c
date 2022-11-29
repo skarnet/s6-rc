@@ -9,7 +9,7 @@
 #include <skalibs/posixplz.h>
 #include <skalibs/uint32.h>
 #include <skalibs/buffer.h>
-#include <skalibs/strerr2.h>
+#include <skalibs/strerr.h>
 #include <skalibs/sgetopt.h>
 #include <skalibs/bitarray.h>
 #include <skalibs/djbunix.h>
