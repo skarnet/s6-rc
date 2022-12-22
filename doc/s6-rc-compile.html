@@ -277,6 +277,11 @@ the generated
 they are meant to be used by the
 <a href="//skarnet.org/software/s6/s6-supervise.html">s6-supervise</a>
 process that will manage the longrun service. </li>
+ <li> Optional directories named <tt>instance</tt> and <tt>instances</tt>. These will
+be copied verbatim into the generated service directory. They are used
+internally by some s6 tools; using them for your own purposes is not
+recommended - you should ignore them and use the <tt>data</tt> directory
+instead. </li>
  <li> Optional directories named <tt>data</tt> and <tt>env</tt>. These will
 be copied verbatim into the generated service directory. </li>
  <li> An optional file named <tt>producer-for</tt>. If this file exists, then
