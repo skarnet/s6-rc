@@ -1384,6 +1384,14 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     memcpy(dstfn + clen + 14 + len, "down-signal", 12) ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;
 
+    memcpy(srcfn + srcdirlen + len + 2, "instance", 9) ;
+    memcpy(dstfn + clen + 14 + len, "instance", 9) ;
+    dircopy(compiled, srcfn, dstfn) ;
+
+    memcpy(srcfn + srcdirlen + len + 2, "instances", 10) ;
+    memcpy(dstfn + clen + 14 + len, "instances", 10) ;
+    dircopy(compiled, srcfn, dstfn) ;
+
     memcpy(srcfn + srcdirlen + len + 2, "data", 5) ;
     memcpy(dstfn + clen + 14 + len, "data", 5) ;
     dircopy(compiled, srcfn, dstfn) ;
