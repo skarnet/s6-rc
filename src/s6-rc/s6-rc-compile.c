@@ -1197,12 +1197,12 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
   close(fd) ;
 }
 
-static void dircopy (char const *compiled, char const *srcfn, char const *dstfn)
+static int dircopy (char const *compiled, char const *srcfn, char const *dstfn)
 {
   struct stat st ;
   if (stat(srcfn, &st) < 0)
   {
-    if (errno == ENOENT) return ;
+    if (errno == ENOENT) return 0 ;
     cleanup(compiled) ;
     strerr_diefu2sys(111, "stat ", srcfn) ;
   }
@@ -1216,6 +1216,7 @@ static void dircopy (char const *compiled, char const *srcfn, char const *dstfn)
     cleanup(compiled) ;
     strerr_diefu4sys(111, "recursively copy ", srcfn, " to ", dstfn) ;
   }
+  return 1 ;
 }
 
 static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, char const *exe, int needargs)
@@ -1384,13 +1385,23 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     memcpy(dstfn + clen + 14 + len, "down-signal", 12) ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;
 
-    memcpy(srcfn + srcdirlen + len + 2, "instance", 9) ;
-    memcpy(dstfn + clen + 14 + len, "instance", 9) ;
-    dircopy(compiled, srcfn, dstfn) ;
-
-    memcpy(srcfn + srcdirlen + len + 2, "instances", 10) ;
-    memcpy(dstfn + clen + 14 + len, "instances", 10) ;
-    dircopy(compiled, srcfn, dstfn) ;
+    memcpy(srcfn + srcdirlen + len + 2, "template", 9) ;
+    memcpy(dstfn + clen + 14 + len, "template", 9) ;
+    if (dircopy(compiled, srcfn, dstfn))
+    {
+      memcpy(dstfn + clen + 14 + len, "instances", 10)
+      if (mkdir(dstfn, 0755) == -1)
+      {
+        cleanup(compiled) ;
+        strerr_diefu2sys(111, "mkdir ", dstfn) ;
+      }
+      dstfn[clen + 22 + len] = 0 ;
+      if (mkdir(dstfn, 0755) == -1)
+      {
+        cleanup(compiled) ;
+        strerr_diefu2sys(111, "mkdir ", dstfn) ;
+      }
+    }
 
     memcpy(srcfn + srcdirlen + len + 2, "data", 5) ;
     memcpy(dstfn + clen + 14 + len, "data", 5) ;
