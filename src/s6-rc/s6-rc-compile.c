@@ -1389,7 +1389,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     memcpy(dstfn + clen + 14 + len, "template", 9) ;
     if (dircopy(compiled, srcfn, dstfn))
     {
-      memcpy(dstfn + clen + 14 + len, "instances", 10)
+      memcpy(dstfn + clen + 14 + len, "instances", 10) ;
       if (mkdir(dstfn, 0755) == -1)
       {
         cleanup(compiled) ;
