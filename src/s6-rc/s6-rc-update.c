@@ -33,6 +33,8 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
+#include <skalibs/posixishard.h>
+
 #define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] [ -b ] newdb"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "build string") ;
@@ -315,14 +317,14 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   pos = sa->len ;
   {
     ssize_t r ;
-    char sdtarget[PATH_MAX] ;
+    char sdtarget[SKALIBS_PATH_MAX] ;
     char sdlink[livelen + 9] ;
     unsigned char tmpstate[newdb->nlong + newdb->nshort] ;
     memcpy(sdlink, live, livelen) ;
     memcpy(sdlink + livelen, "/scandir", 9) ;
-    r = readlink(sdlink, sdtarget, PATH_MAX) ;
+    r = readlink(sdlink, sdtarget, SKALIBS_PATH_MAX) ;
     if (r < 0) strerr_diefu2sys(111, "readlink ", sdlink) ;
-    if (r >= PATH_MAX - 1) strerr_dief3x(100, "target for ", sdlink, " is too long") ;
+    if (r >= SKALIBS_PATH_MAX - 1) strerr_dief3x(100, "target for ", sdlink, " is too long") ;
     sdtarget[r] = 0 ;
     while (i--) tmpstate[i] = newstate[i] & 1 ;
     if (!s6rc_livedir_create(sa, live, PROG, sdtarget, prefix, newcompiled, tmpstate, newdb->nlong + newdb->nshort, &dirlen))
