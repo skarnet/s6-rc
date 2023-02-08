@@ -28,6 +28,7 @@
 
 #include <s6/config.h>
 #include <s6/supervise.h>
+#include <s6/servicedir.h>
 #include <s6/fdholder.h>
 
 #include <s6-rc/config.h>
@@ -355,7 +356,20 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
       if (rename(oldfn, sa->s + pos) < 0) goto rollback ;
       if (!s6rc_servicedir_copy_online(newfn, sa->s + pos)) { i++ ; goto rollback ; }
     }
-    else if (!s6rc_servicedir_copy_offline(newfn, sa->s + pos)) goto rollback ;
+    else
+    {
+      if (!s6rc_servicedir_copy_offline(newfn, sa->s + pos)) goto rollback ;
+      if (invimage[i] < olddb->nlong)
+      {
+        char const *oldname = newstate[i] & 8 ? olddb->string + olddb->services[invimage[i]].name : newdb->string + newdb->services[i].name ;
+        size_t oldnamelen = strlen(oldname) ;
+        char oldfn[livelen + 14 + oldnamelen] ;
+        memcpy(oldfn, live, livelen) ;
+        memcpy(oldfn + livelen, "/servicedirs/", 13) ;
+        memcpy(oldfn + livelen + 13, oldname, oldnamelen + 1) ;
+        if (s6_servicedir_instances_recreate_offline(oldfn, sa->s + pos) == -1) goto rollback ;
+      }
+    }
   }
   sa->len = newlen ;
   sa->s[sa->len] = 0 ;
