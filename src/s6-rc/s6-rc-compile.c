@@ -1219,11 +1219,10 @@ static int dircopy (char const *compiled, char const *srcfn, char const *dstfn)
   return 1 ;
 }
 
-static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, char const *exe, int needargs)
+static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, char const *exe)
 {
   size_t base = satmp.len ;
-  if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -")
-   || !stralloc_cats(&satmp, needargs ? "S0\n" : "P\n")) dienomem() ;
+  if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -S0\n")) dienomem() ;
   if (db->services[i].x.longrun.nproducers)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-r-")
@@ -1241,8 +1240,7 @@ static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t c
   }
   if (!stralloc_cats(&satmp, "./")
    || !stralloc_cats(&satmp, exe)
-   || !stralloc_cats(&satmp, ".user")
-   || !stralloc_cats(&satmp, needargs ? " $@\n" : "\n")) dienomem() ;
+   || !stralloc_cats(&satmp, ".user $@\n")) dienomem() ;
   auto_file(compiled, fn, satmp.s + base, satmp.len - base) ;
   satmp.len = base ;
   auto_rights(compiled, fn, 0755) ;
@@ -1310,7 +1308,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       memcpy(dstfn + clen + 14 + len, "finish", 7) ;
       if (ispipelined)
       {
-        write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "finish", 1) ;
+        write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "finish") ;
         memcpy(dstfn + clen + 20 + len, ".user", 6) ;
       }
       if (!filecopy_unsafe(srcfn, dstfn, 0755))
@@ -1324,7 +1322,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     memcpy(dstfn + clen + 14 + len, "run", 4) ;
     if (ispipelined)
     {
-      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "run", 0) ;
+      write_exe_wrapper(compiled, dstfn + clen + 1, db, i, "run") ;
       memcpy(dstfn + clen + 17 + len, ".user", 6) ;
     }
     if (!filecopy_unsafe(srcfn, dstfn, 0755))
