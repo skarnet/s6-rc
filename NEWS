@@ -1,9 +1,10 @@
 Changelog for s6-rc.
 
-In 0.5.3.4
+In 0.5.4.0
 ----------
 
  - Bugfixes.
+ - New s6-rc commands: start (-u change) and stop (-d change).
 
 
 In 0.5.3.3

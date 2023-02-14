@@ -442,6 +442,8 @@ static inline unsigned int parse_command (char const *command)
     "listall",
     "diff",
     "change",
+    "start",
+    "stop",
     0
   } ;
   unsigned int i = lookup(command_table, command) ;
@@ -505,6 +507,14 @@ int main (int argc, char const *const *argv)
   {
     print_help() ;
     return 0 ;
+  }
+  if (what == 5)
+  {
+    what = 4 ; up = 1 ; prune = 0 ;
+  }
+  else if (what == 6)
+  {
+    what = 4 ; up = 0 ; prune = 0 ;
   }
 
   livelen = strlen(live) ;

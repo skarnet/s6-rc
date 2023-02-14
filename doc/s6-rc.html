@@ -220,6 +220,20 @@ a permanent failure - which means its
 stopped trying to bring it back up.
 </p>
 
+<h3> s6-rc start </h3>
+
+<p>
+ <tt>s6-rc start</tt> is equivalent to <tt>s6-rc -u change</tt>, see
+below. It will run the engine to start a set of services.
+</p>
+
+<h3> s6-rc stop </h3>
+
+<p>
+ <tt>s6-rc stop</tt> is equivalent to <tt>s6-rc -d change</tt>, see
+below. It will run the engine to stop a set of services.
+</p>
+
 <h3> s6-rc change </h3>
 
 <p>
@@ -235,7 +249,12 @@ machine to a state where:
 </ul>
 
 <p>
- To do so:
+ (Note that the <tt>-p</tt> option is inoperant when using the <tt>start</tt>
+or <tt>stop</tt> subcommands.)
+</p>
+
+<p>
+ To change the machine state, s6-rc does the following:
 </p>
 
 <ul>
@@ -388,13 +407,13 @@ oneshot service is in. </li>
 
 <h2> Usage examples </h2>
 
-<pre> s6-rc change <em>myservicebundle</em> </pre>
+<pre> s6-rc start <em>myservicebundle</em> </pre>
 <p>
  Brings up all the services represented by <em>myservicebundle</em>,
 bringing up all its dependencies first (recursively).
 </p>
 
-<pre> s6-rc -bad change </pre>
+<pre> s6-rc -ba down </pre>
 <p>
  Waits for any pending program of the s6-rc family to stop using
 the live database and current compiled service database, then
