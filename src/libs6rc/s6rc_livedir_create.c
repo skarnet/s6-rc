@@ -1,13 +1,16 @@
 /* ISC license. */
 
 #include <skalibs/nonposix.h>
+
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+
 #include <s6-rc/s6rc-utils.h>
 
 int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, char const *scdir, char const *prefix, char const *compiled, unsigned char const *state, unsigned int statelen, size_t *dirlen)
@@ -33,6 +36,8 @@ int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, cha
   if (!openwritenclose_unsafe(sa->s + sabase, prefix, strlen(prefix))) goto delerr ;
   strcpy(sa->s + newlen, "state") ;
   if (!openwritenclose_unsafe(sa->s + sabase, (char const *)state, statelen)) goto delerr ;
+  strcpy(sa->s + newlen, "lock") ;
+  if (!openwritenclose_unsafe(sa->s + sabase, "", 0)) goto delerr ;
   sa->len = newlen-1 ;
   sa->s[newlen-1] = 0 ;
   *dirlen = ddirlen ;
