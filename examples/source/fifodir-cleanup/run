@@ -6,7 +6,7 @@ if
   importas -u i i
   foreground
   {
-    if { s6-test -d /service/${i}/log }
+    if { eltest -d /service/${i}/log }
     s6-cleanfifodir /service/${i}/log/event
   }
   s6-cleanfifodir /service/${i}/event
