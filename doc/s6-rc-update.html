@@ -281,18 +281,18 @@ process in charge of it will still show up in the process list as
 <tt>s6-supervise <em>oldname</em></tt>. This is purely cosmetic and
 will have no impact on the service; nevertheless, if you wish to avoid that,
 simply force a restart on every longrun you rename. </li>
- <li> After a s6-rc-update invocation, the old compiled service database
+ <li> After an s6-rc-update invocation, the old compiled service database
 is left unchanged where it was, and the new compiled
 service database is used in-place. If the machine is rebooted, the
 <a href="s6-rc-init.html">s6-rc-init</a> invocation will still boot on the
 old compiled unless more work is performed. It is recommended to keep a
 <tt>current</tt> symbolic link to the current compiled, to always
 <a href="s6-rc-init.html">s6-rc-init</a> on <tt>current</tt>, and to
-make <tt>current</tt> a link to the new compiled right after a s6-rc-update
+make <tt>current</tt> a link to the new compiled right after an s6-rc-update
 invocation. </li>
  <li> s6-rc-update is the only way to "free" the old compiled database
 for displacement or deletion. A live compiled database must not be
-tampered with. After a s6-rc-update invocation, the old database isn't
+tampered with. After an s6-rc-update invocation, the old database isn't
 live anymore and can be moved or deleted; instead, <em>newdb</em> is
 live. </li>
 </ul>

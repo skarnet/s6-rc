@@ -363,7 +363,7 @@ that the pipes are not broken whenever one element in the chain dies.
 
 <p>
  A service can only be declared as a producer for <em>one</em> other
-services, but it can be declared as a consumer for several other
+service, but it can be declared as a consumer for several other
 services: the <em>consumer-for</em> can have several lines. This
 means that one service can only send its output to one consumer, but
 it can read its input from several producers. If there are several
@@ -404,7 +404,7 @@ can be moved around in the filesystem, provided the insides remain
 untouched. </li>
  <li> Once a compiled database is live (i.e. it has services running on it,
 following an invocation of <a href="s6-rc-init.html">s6-rc-init</a> or
-<a href="s6-rc-update.html">s6-rc-update</a>, it <em>must not move anymore</em>,
+<a href="s6-rc-update.html">s6-rc-update</a>), it <em>must not move anymore</em>,
 and it must not be deleted. The only way to "free" such a compiled database
 for displacement or deletion is to replace it as the live one via another
 call to <a href="s6-rc-update.html">s6-rc-update</a>. </li>

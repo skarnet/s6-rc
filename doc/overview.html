@@ -188,7 +188,7 @@ will always respect the dependency graph.
 </p>
 
 <p>
- The s6-rc command is the central for machine state changes, and it is
+ The s6-rc command is the engine for machine state changes, and it is
 also true for shutdown. When shutting a machine down, all the services
 managed by s6-rc should be brought down in the proper order (via the
 <tt>s6-rc -da change</tt> command). Once all those services have been
