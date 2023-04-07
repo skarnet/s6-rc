@@ -389,9 +389,9 @@ static inline int handle_signals (int h)
   }
 }
 
-static int doit (int spfd, int h)
+static int doit (int h)
 {
-  iopause_fd x = { .fd = spfd, .events = IOPAUSE_READ } ;
+  iopause_fd x = { .fd = selfpipe_fd(), .events = IOPAUSE_READ } ;
   int exitcode = 0 ;
   unsigned int i = n ;
   pidindex_t pidindexblob[n] ;
@@ -554,7 +554,6 @@ int main (int argc, char const *const *argv)
    /* Allocate enough stack for the db */
 
     {
-      int spfd ;
       s6rc_service_t serviceblob[n] ;
       char const *argvblob[dbblob.nargvs] ;
       uint32_t depsblob[dbblob.ndeps << 1] ;
@@ -658,8 +657,7 @@ int main (int argc, char const *const *argv)
 
      /* Perform a state change */
 
-      spfd = selfpipe_init() ;
-      if (spfd < 0) strerr_diefu1sys(111, "init selfpipe") ;
+      if (selfpipe_init() == -1) strerr_diefu1sys(111, "init selfpipe") ;
       {
         sigset_t set ;
         sigemptyset(&set) ;
@@ -674,12 +672,12 @@ int main (int argc, char const *const *argv)
       {
         int r ;
         if (up) invert_selection() ;
-        r = doit(spfd, 0) ;
+        r = doit(0) ;
         if (r) return r ;
         invert_selection() ;
-        return doit(spfd, 1) ;
+        return doit(1) ;
       }
-      else return doit(spfd, up) ;
+      else return doit(up) ;
     }
   }
 }
