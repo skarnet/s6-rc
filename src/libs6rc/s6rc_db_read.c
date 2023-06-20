@@ -10,13 +10,6 @@
 #include <skalibs/posixishard.h>
 #include <s6-rc/s6rc-db.h>
 
-#ifdef DEBUG
-#include <skalibs/lolstdio.h>
-#define DBG(...) LOLDEBUG(__VA_ARGS__)
-#else
-#define DBG(...)
-#endif
-
 static int s6rc_db_check_valid_string (char const *string, size_t stringlen, size_t pos)
 {
   if (pos >= stringlen) return 0 ;
@@ -56,38 +49,20 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
   for (; i < n ; i++)
   {
     s6rc_service_t *sv = db->services + i ;
-    DBG("service %u/%u", i, n) ;
     if (!s6rc_db_read_uint32(b, &sv->name)) return -1 ;
-    DBG("  name is %u: %s", sv->name, db->string + sv->name) ;
     if (sv->name >= db->stringlen) return 0 ;
     if (!s6rc_db_check_valid_string(db->string, db->stringlen, sv->name)) return 0 ;
     if (!s6rc_db_read_uint32(b, &sv->flags)) return -1 ;
-    DBG("  flags is %x", sv->flags) ;
     if (!s6rc_db_read_uint32(b, &sv->timeout[0])) return -1 ;
-    DBG("  timeout0 is %u", sv->timeout[0]) ;
     if (!s6rc_db_read_uint32(b, &sv->timeout[1])) return -1 ;
-    DBG("  timeout1 is %u", sv->timeout[1]) ;
     if (!s6rc_db_read_uint32(b, &sv->ndeps[0])) return -1 ;
-    DBG("  ndeps0 is %u", sv->ndeps[0]) ;
     if (!s6rc_db_read_uint32(b, &sv->ndeps[1])) return -1 ;
-    DBG("  ndeps1 is %u", sv->ndeps[1]) ;
     if (!s6rc_db_read_uint32(b, &sv->deps[0])) return -1 ;
-    DBG("  deps0 is %u", sv->deps[0]) ;
     if (sv->deps[0] > db->ndeps || sv->deps[0] + sv->ndeps[0] > db->ndeps)
       return 0 ;
     if (!s6rc_db_read_uint32(b, &sv->deps[1])) return -1 ;
-    DBG("  deps1 is %u", sv->deps[1]) ;
     if (sv->deps[1] > db->ndeps || sv->deps[1] + sv->ndeps[1] > db->ndeps)
       return 0 ;
-#ifdef DEBUG
-    {
-      unsigned int k = 0 ;
-      for (; k < sv->ndeps[0] ; k++)
-        DBG("   rev dep on %u", db->deps[sv->deps[0] + k]) ;
-      for (k = 0 ; k < sv->ndeps[1] ; k++)
-        DBG("   dep on %u", db->deps[db->ndeps + sv->deps[1] + k]) ;
-    }
-#endif
     if (i < db->nlong)
     {
       if (!s6rc_db_read_uint32(b, &sv->x.longrun.consumer)) return -1 ;
@@ -97,18 +72,14 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
     else
     {
       unsigned int j = 0 ;
-      DBG("  oneshot") ;
       for (; j < 2 ; j++)
       {
         uint32_t pos, argc ;
         if (!s6rc_db_read_uint32(b, &argc)) return -1 ;
-        DBG("    argc[%u] is %u, nargvs is %u", j, argc, nargvs) ;
         if (argc > nargvs) return 0 ;
         if (!s6rc_db_read_uint32(b, &pos)) return -1 ;
-        DBG("    pos[%u] is %u", j, pos) ;
         if (!s6rc_db_check_valid_strings(db->string, db->stringlen, pos, argc)) return 0 ;
         if (!env_make((char const **)db->argvs + argvpos, argc, db->string + pos, db->stringlen - pos)) return -1 ;
-        DBG("    first arg is %s", db->argvs[argvpos]) ;
         sv->x.oneshot.argv[j] = argvpos ;
         sv->x.oneshot.argc[j] = argc ;
         argvpos += argc ; nargvs -= argc ;
