@@ -24,7 +24,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     char lfn[llen + 6] ;
     memcpy(lfn, live, llen) ;
     memcpy(lfn + llen, "/lock", 6) ;
-    lfd = open(lfn, modefor(lwhat), 0644) ;
+    lfd = open3(lfn, modefor(lwhat), 0644) ;
     if (lfd < 0) return 0 ;
     r = fd_lock(lfd, lwhat > 1, !blocking) ;
     if (!r) errno = EBUSY ;
@@ -38,7 +38,7 @@ int s6rc_lock (char const *live, int lwhat, int *llfd, char const *compiled, int
     char cfn[clen + 6] ;
     memcpy(cfn, compiled, clen) ;
     memcpy(cfn + clen, "/lock", 6) ;
-    cfd = open(cfn, modefor(cwhat), 0644) ;
+    cfd = open3(cfn, modefor(cwhat), 0644) ;
     if (cfd < 0) goto lerr ;
     r = fd_lock(cfd, cwhat > 1, !blocking) ;
     if (!r) errno = EBUSY ;
