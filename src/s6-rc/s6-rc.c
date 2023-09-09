@@ -15,6 +15,7 @@
 #include <skalibs/strerr.h>
 #include <skalibs/tai.h>
 #include <skalibs/sig.h>
+#include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/selfpipe.h>
 #include <skalibs/iopause.h>
@@ -159,7 +160,7 @@ static inline pid_t start_oneshot (unsigned int i, int h)
     newargv[m++] = db->string + db->services[i].name ;
   }
   newargv[m++] = 0 ;
-  return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
+  return cspawn(newargv[0], newargv, (char const *const *)environ, CSPAWN_FLAGS_SELFPIPE_FINISH, 0, 0) ;
 }
 
 static inline pid_t start_longrun (unsigned int i, int h)
@@ -202,7 +203,7 @@ static inline pid_t start_longrun (unsigned int i, int h)
   newargv[m++] = "--" ;
   newargv[m++] = servicefn ;
   newargv[m++] = 0 ;
-  return child_spawn0(newargv[0], newargv, (char const *const *)environ) ;
+  return cspawn(newargv[0], newargv, (char const *const *)environ, CSPAWN_FLAGS_SELFPIPE_FINISH, 0, 0) ;
 }
 
 static inline void success_longrun (unsigned int i, int h)
@@ -243,7 +244,7 @@ static inline void failure_longrun (unsigned int i, int h)
     memcpy(fn, live, livelen) ;
     memcpy(fn + livelen, "/servicedirs/", 13) ;
     memcpy(fn + livelen + 13, db->string + db->services[i].name, svdlen + 1) ;
-    if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
+    if (!cspawn(newargv[0], newargv, (char const *const *)environ, CSPAWN_FLAGS_SELFPIPE_FINISH, 0, 0))
       strerr_warnwu2sys("spawn ", newargv[0]) ;
   }
 }
@@ -329,7 +330,7 @@ static inline void kill_oneshots (void)
   memcpy(fn, live, livelen) ;
   memcpy(fn + livelen, "/servicedirs/", 13) ;
   memcpy(fn + livelen + 13, S6RC_ONESHOT_RUNNER, S6RC_ONESHOT_RUNNER_LEN + 1) ;
-  if (!child_spawn0(newargv[0], newargv, (char const *const *)environ))
+  if (!cspawn(newargv[0], newargv, (char const *const *)environ, CSPAWN_FLAGS_SELFPIPE_FINISH, 0, 0))
     strerr_warnwu2sys("spawn ", newargv[0]) ;
 }
 */

@@ -19,6 +19,7 @@
 #include <skalibs/cdb.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/tai.h>
+#include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/exec.h>
 #include <skalibs/skamisc.h>
@@ -537,7 +538,7 @@ static inline void update_fdholder (s6rc_db_t const *olddb, unsigned char const 
     char const *newargv[7] = { S6_EXTBINPREFIX "s6-svc", "-T", tfmt, "-twR", "--", fnsocket, 0 } ;
     fill_tfmt(tfmt, deadline) ;
     fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER) - 1] = 0 ;
-    pid = child_spawn0(newargv[0], newargv, envp) ;
+    pid = cspawn(newargv[0], newargv, envp, 0, 0, 0) ;
     if (!pid) strerr_diefu2sys(111, "spawn ", newargv[0]) ;
     if (wait_pid(pid, &wstat) < 0) strerr_diefu1sys(111, "waitpid") ;
     tain_now_g() ;
@@ -740,7 +741,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = 0 ;
         if (verbosity >= 2)
           strerr_warni1x("stopping services in the old database") ;
-        pid = child_spawn0(newargv[0], newargv, envp) ;
+        pid = cspawn(newargv[0], newargv, envp, 0, 0, 0) ;
         if (!pid) strerr_diefu2sys(111, "spawn ", newargv[0]) ;
         if (wait_pid(pid, &wstat) < 0) strerr_diefu1sys(111, "waitpid") ;
         tain_now_g() ;
