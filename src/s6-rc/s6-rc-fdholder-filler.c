@@ -1,5 +1,6 @@
 /* ISC license. */
 
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
@@ -11,6 +12,7 @@
 #include <skalibs/tai.h>
 #include <skalibs/buffer.h>
 #include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
 
 #include <s6/fdholder.h>
 
@@ -18,9 +20,7 @@
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "stralloc_catb")
 
-#define N 16384
-
-static inline unsigned int cclass (char c)
+static inline uint8_t cclass (char c)
 {
   switch (c)
   {
@@ -42,7 +42,7 @@ static inline char cnext (void)
   return r ? c : 0 ;
 }
 
-static inline unsigned int parse_servicenames (stralloc *sa, size_t *indices)
+static inline void parse_servicenames (stralloc *sa, genalloc *g)
 {
   static uint8_t const table[3][5] =
   {
@@ -50,33 +50,27 @@ static inline unsigned int parse_servicenames (stralloc *sa, size_t *indices)
     { 3, 0, 1, 1, 1 },
     { 3, 8, 2, 2, 2 }
   } ;
-  size_t pos = sa->len ;
-  size_t n = 0 ;
-  unsigned int state = 0 ;
-  for (; state < 3 ; pos++)
+  uint8_t state = 0 ;
+  while (state < 3)
   {
     char cur = cnext() ;
     uint8_t c = table[state][cclass(cur)] ;
     state = c & 3 ;
-    if (c & 4)
-    {
-      if (n >= N) strerr_dief1x(1, "too many fds") ;
-      indices[n++] = pos ;
-    }
+    if (c & 4) if (!genalloc_append(size_t, g, &sa->len)) dienomem() ;
     if (c & 8) { if (!stralloc_0(sa)) dienomem() ; }
     else if (!stralloc_catb(sa, &cur, 1)) dienomem() ;
   }
-  return n ;
 }
 
 int main (int argc, char const *const *argv)
 {
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
   stralloc sa = STRALLOC_ZERO ;
+  genalloc ga = GENALLOC_ZERO ; /* size_t */
+  size_t n ;
+  size_t const *indices ;
   tain deadline ;
   int notif = 0 ;
-  size_t n ;
-  size_t indices[N] ;
   PROG = "s6-rc-fdholder-filler" ;
   {
     unsigned int t = 0 ;
@@ -97,7 +91,9 @@ int main (int argc, char const *const *argv)
     else deadline = tain_infinite_relative ;
   }
 
-  n = parse_servicenames(&sa, indices) ;
+  parse_servicenames(&sa, &ga) ;
+  n = genalloc_len(size_t, &ga) ;
+  indices = genalloc_s(size_t, &ga) ;
   if (n)
   {
     tain offset = { .sec = TAI_ZERO } ;
