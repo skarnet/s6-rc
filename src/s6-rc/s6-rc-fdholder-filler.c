@@ -15,7 +15,8 @@
 #define USAGE "s6-rc-fdholder-filler [ -1 ] [ -t timeout ] < autofilled-filename"
 #define dieusage() strerr_dieusage(100, USAGE)
 
-#define N 4096
+#define N 16384
+#define BUFSIZE 65536
 
 static inline unsigned int class (char c)
 {
@@ -31,7 +32,7 @@ static inline unsigned int class (char c)
   }
 }
 
-static inline unsigned int parse_servicenames (char *s, unsigned int *indices)
+static inline unsigned int parse_servicenames (char *s, size_t *indices)
 {
   static unsigned char const table[3][5] =
   {
@@ -39,14 +40,18 @@ static inline unsigned int parse_servicenames (char *s, unsigned int *indices)
     { 3, 0, 1, 1, 1 },
     { 3, 8, 2, 2, 2 }
   } ;
-  unsigned int pos = 0 ;
-  unsigned int n = 0 ;
+  size_t pos = 0 ;
+  size_t n = 0 ;
   unsigned int state = 0 ;
   for (; state < 3 ; pos++)
   {
     unsigned char c = table[state][class(s[pos])] ;
     state = c & 3 ;
-    if (c & 4) indices[n++] = pos ;
+    if (c & 4)
+    {
+      if (n >= N) strerr_dief1x(1, "too many fds") ;
+      indices[n++] = pos ;
+    }
     if (c & 8) s[pos] = 0 ;
   }
   return n ;
@@ -57,9 +62,9 @@ int main (int argc, char const *const *argv)
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
   tain deadline ;
   int notif = 0 ;
-  unsigned int n ;
-  unsigned int indices[N] ;
-  char buf[N<<1] ;
+  size_t n ;
+  size_t indices[N] ;
+  char buf[BUFSIZE] ;
   PROG = "s6-rc-fdholder-filler" ;
   {
     unsigned int t = 0 ;
@@ -81,8 +86,8 @@ int main (int argc, char const *const *argv)
   }
 
   {
-    size_t r = allread(0, buf, N<<1) ;
-    if (r >= N<<1) strerr_dief3x(100, "file ", argv[0], " is too big") ;
+    size_t r = allread(0, buf, BUFSIZE) ;
+    if (r >= BUFSIZE) strerr_dief3x(100, "file ", argv[0], " is too big") ;
     buf[r] = 0 ;
   }
   n = parse_servicenames(buf, indices) ;
@@ -90,7 +95,7 @@ int main (int argc, char const *const *argv)
   {
     tain offset = { .sec = TAI_ZERO } ;
     int p[2] ;
-    unsigned int i = 0 ;
+    size_t i = 0 ;
     s6_fdholder_fd_t dump[n<<1] ;
     close(0) ;
     s6_fdholder_init(&a, 6) ;
