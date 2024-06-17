@@ -1087,6 +1087,7 @@ static inline void write_oneshot_runner (char const *compiled, int blocking)
 
 static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, char const *fdhuser)
 {
+  unsigned int nfds = 0 ;
   size_t base = satmp.len ;
   char fn[61 + S6RC_FDHOLDER_LEN] = "servicedirs/" S6RC_FDHOLDER "/data/rules/uid/0/env" ;
   make_skel(compiled, S6RC_FDHOLDER, 1) ;
@@ -1106,8 +1107,12 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
 
   for (uint32_t j = 0 ; j < db->nlong ; j++)
     if (db->services[j].x.longrun.nproducers)
+    {
       if (!stralloc_cats(&satmp, db->string + db->services[j].name)
        || !stralloc_catb(&satmp, "\n", 1)) dienomem() ;
+      nfds += 2 ;
+    }
+  if (nfds < 240) nfds = 256 ; else nfds += (nfds >> 4) + 2 ;
 
   auto_file(compiled, "servicedirs/" S6RC_FDHOLDER "/data/autofilled", satmp.s + base, satmp.len - base) ;
   satmp.len = base ;
@@ -1129,7 +1134,13 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
      || !string_quote(&satmp, fdhuser, strlen(fdhuser))
      || !stralloc_catb(&satmp, "\n", 1)) dienomem() ;
   }
-  if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-daemon -1 ")) dienomem() ;
+  if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-daemon -1 -n ")) dienomem() ;
+  {
+    char fmt[UINT_FMT] ;
+    size_t len = uint_fmt(fmt, nfds) ;
+    fmt[len++] = ' ' ;
+    if (!stralloc_catb(&satmp, fmt, len)) dienomem() ;
+  }
   if (fdhuser)
   {
     if (!stralloc_cats(&satmp, "-U ")) dienomem() ;

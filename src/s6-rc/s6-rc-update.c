@@ -535,7 +535,7 @@ static inline void update_fdholder (s6rc_db_t const *olddb, unsigned char const 
     pid_t pid ;
     int wstat ;
     char tfmt[UINT_FMT] ;
-    char const *newargv[7] = { S6_EXTBINPREFIX "s6-svc", "-T", tfmt, "-twR", "--", fnsocket, 0 } ;
+    char const *newargv[7] = { S6_EXTBINPREFIX "s6-svc", "-T", tfmt, "-rwR", "--", fnsocket, 0 } ;
     fill_tfmt(tfmt, deadline) ;
     fnsocket[livelen + sizeof("/servicedirs/" S6RC_FDHOLDER) - 1] = 0 ;
     pid = cspawn(newargv[0], newargv, envp, 0, 0, 0) ;
