@@ -4,7 +4,9 @@
 #define S6RC_UTILS_H
 
 #include <sys/types.h>
+
 #include <skalibs/stralloc.h>
+
 #include <s6-rc/s6rc-db.h>
 
 extern void s6rc_graph_closure (s6rc_db_t const *, unsigned char *, unsigned int, int) ;
@@ -15,5 +17,6 @@ extern int s6rc_sanitize_dir (stralloc *, char const *, size_t *) ;
 extern int s6rc_livedir_prefixsize (char const *, size_t *) ;
 extern ssize_t s6rc_livedir_prefix (char const *, char *, size_t) ;
 extern int s6rc_livedir_create (stralloc *, char const *, char const *, char const *, char const *, char const *, unsigned char const *, unsigned int, size_t *) ;
+extern int s6rc_livedir_canon (char const **) ;
 
 #endif

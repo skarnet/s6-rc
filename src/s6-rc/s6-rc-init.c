@@ -73,6 +73,8 @@ int main (int argc, char const *const *argv)
   tain_now_set_stopwatch_g() ;
   tain_add_g(&deadline, &deadline) ;
 
+  if (!s6rc_livedir_canon(&live))
+    strerr_diefu1sys(111, "canonicalize livedir") ;
   if (deref)
   {
     char *x = realpath(compiled, 0) ;

@@ -1,5 +1,11 @@
 Changelog for s6-rc.
 
+In 0.5.5.0
+----------
+
+ - Bugfixes. These include a new API in libs6rc.
+
+
 In 0.5.4.3
 ----------
 

@@ -594,6 +594,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
     strerr_dief2x(100, live, " is not an absolute path") ;
   if (argv[0][0] != '/')
     strerr_dief2x(100, argv[0], " is not an absolute path") ;
+
+  if (!s6rc_livedir_canon(&live))
+    strerr_diefu1sys(111, "canonicalize livedir") ;
   livelen = strlen(live) ;
 
   {
