@@ -4,6 +4,7 @@ In 0.5.5.0
 ----------
 
  - Bugfixes. These include a new API in libs6rc.
+ - Install static libraries in /usr/lib by default.
 
 
 In 0.5.4.3
