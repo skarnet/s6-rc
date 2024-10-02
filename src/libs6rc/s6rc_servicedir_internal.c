@@ -83,6 +83,11 @@ int s6rc_servicedir_copy_one (char const *src, char const *dst, s6_servicedir_de
       {
         if (errno != ENOENT || p->options & S6_SVFILE_MANDATORY) return 0 ;
       }
+      if (!strcmp(p->name, "template"))
+      {
+        memcpy(dstfn + dstlen + 1, "instance", 9) ;
+        if (mkdir(dstfn, 0755) == -1 && errno != EEXIST) return 0 ;
+      }
       break ;
     default : return (errno = EDOM, 0) ;
   }
