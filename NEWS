@@ -3,7 +3,8 @@ Changelog for s6-rc.
 In 0.5.5.0
 ----------
 
- - Bugfixes. These include a new API in libs6rc.
+ - Bugfixes.
+ - New function: s6rc_livedir_canon().
  - Install static libraries in /usr/lib by default.
 
 
