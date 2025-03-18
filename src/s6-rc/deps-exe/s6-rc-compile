@@ -1,3 +1,4 @@
 ${LIBS6RC}
+-ls6
 -lexecline
 -lskarnet
