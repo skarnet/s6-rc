@@ -59,7 +59,8 @@ s6-rc-format-upgrade: EXTRA_LIBS := -lskarnet
 s6-rc-format-upgrade: src/s6-rc/s6-rc-format-upgrade.o ${LIBS6RC}
 s6-rc-init: EXTRA_LIBS := -ls6 -lskarnet ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
 s6-rc-init: src/s6-rc/s6-rc-init.o ${LIBS6RC}
-s6-rc-oneshot-run: EXTRA_LIBS := -lskarnet
+s6-rc-oneshot-run: EXTRA_LIBS := -ls6 -lskarnet
 s6-rc-oneshot-run: src/s6-rc/s6-rc-oneshot-run.o ${LIBS6RC}
 s6-rc-update: EXTRA_LIBS := -ls6 -lexecline -lskarnet ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
 s6-rc-update: src/s6-rc/s6-rc-update.o ${LIBS6RC}
+INTERNAL_LIBS :=
