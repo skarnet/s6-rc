@@ -1200,7 +1200,7 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
     }
   }
 
-  if (!cdbmake_finish(&c) || fsync(fd) < 0)
+  if (!cdbmake_finish(&c))
   {
     cleanup(compiled) ;
     strerr_diefu2sys(111, "write to ", fn) ;
@@ -1510,7 +1510,6 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
   if (buffer_putflush(&b, S6RC_DB_BANNER_END, S6RC_DB_BANNER_END_LEN) < 0)
     goto err ;
 
-  if (fsync(fd) < 0) goto err ;
   close(fd) ;
   return ;
  err:
