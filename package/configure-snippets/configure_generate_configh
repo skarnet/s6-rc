@@ -1,0 +1,1 @@
+echo "#define ${package_macro_name}_LIVE_BASE \"$livedir\""

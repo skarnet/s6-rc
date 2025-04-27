@@ -1,9 +1,10 @@
 Changelog for s6-rc.
 
-In 0.5.5.1
+In 0.5.6.0
 ----------
 
  - Bugfixes.
+ - pkg-config support.
 
 
 In 0.5.5.0

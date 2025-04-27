@@ -39,28 +39,29 @@ src/s6-rc/s6-rc.o src/s6-rc/s6-rc.lo: src/s6-rc/s6-rc.c src/include/s6-rc/config
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
 libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_check_pipelines.o src/libs6rc/s6rc_db_check_revdeps.o src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_graph_closure.o src/libs6rc/s6rc_livedir_canon.o src/libs6rc/s6rc_livedir_create.o src/libs6rc/s6rc_livedir_prefix.o src/libs6rc/s6rc_livedir_prefixsize.o src/libs6rc/s6rc_lock.o src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_online.o src/libs6rc/s6rc_servicedir_manage.o src/libs6rc/s6rc_servicedir_unsupervise.o
 else
-libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
+libs6rc.a.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
 endif
+libs6rc.pc: EXTRA_LIBS := -ls6 -lskarnet
 libs6rc.so.xyzzy: EXTRA_LIBS := -ls6 -lskarnet
-libs6rc.so.xyzzy: src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
-s6-rc: EXTRA_LIBS := -ls6 -lskarnet ${SYSCLOCK_LIB} ${SPAWN_LIB}
-s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC}
-s6-rc-bundle: EXTRA_LIBS := -ls6 -lexecline -lskarnet
-s6-rc-bundle: src/s6-rc/s6-rc-bundle.o ${LIBS6RC}
-s6-rc-compile: EXTRA_LIBS := -ls6 -lexecline -lskarnet
-s6-rc-compile: src/s6-rc/s6-rc-compile.o ${LIBS6RC}
-s6-rc-db: EXTRA_LIBS := -ls6 -lskarnet
-s6-rc-db: src/s6-rc/s6-rc-db.o ${LIBS6RC}
-s6-rc-dryrun: EXTRA_LIBS := -lskarnet ${SYSCLOCK_LIB}
-s6-rc-dryrun: src/s6-rc/s6-rc-dryrun.o
-s6-rc-fdholder-filler: EXTRA_LIBS := -ls6 -lskarnet ${SYSCLOCK_LIB} ${SOCKET_LIB}
-s6-rc-fdholder-filler: src/s6-rc/s6-rc-fdholder-filler.o
-s6-rc-format-upgrade: EXTRA_LIBS := -ls6 -lskarnet
-s6-rc-format-upgrade: src/s6-rc/s6-rc-format-upgrade.o ${LIBS6RC}
-s6-rc-init: EXTRA_LIBS := -ls6 -lskarnet ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
-s6-rc-init: src/s6-rc/s6-rc-init.o ${LIBS6RC}
-s6-rc-oneshot-run: EXTRA_LIBS := -ls6 -lskarnet
-s6-rc-oneshot-run: src/s6-rc/s6-rc-oneshot-run.o ${LIBS6RC}
-s6-rc-update: EXTRA_LIBS := -ls6 -lexecline -lskarnet ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
-s6-rc-update: src/s6-rc/s6-rc-update.o ${LIBS6RC}
+libs6rc.so.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
+s6-rc: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SPAWN_LIB}
+s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -ls6 -lskarnet
+s6-rc-bundle: EXTRA_LIBS :=
+s6-rc-bundle: src/s6-rc/s6-rc-bundle.o ${LIBS6RC} -ls6 -lexecline -lskarnet
+s6-rc-compile: EXTRA_LIBS :=
+s6-rc-compile: src/s6-rc/s6-rc-compile.o ${LIBS6RC} -ls6 -lexecline -lskarnet
+s6-rc-db: EXTRA_LIBS :=
+s6-rc-db: src/s6-rc/s6-rc-db.o ${LIBS6RC} -ls6 -lskarnet
+s6-rc-dryrun: EXTRA_LIBS := ${SYSCLOCK_LIB}
+s6-rc-dryrun: src/s6-rc/s6-rc-dryrun.o -lskarnet
+s6-rc-fdholder-filler: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB}
+s6-rc-fdholder-filler: src/s6-rc/s6-rc-fdholder-filler.o -ls6 -lskarnet
+s6-rc-format-upgrade: EXTRA_LIBS :=
+s6-rc-format-upgrade: src/s6-rc/s6-rc-format-upgrade.o ${LIBS6RC} -ls6 -lskarnet
+s6-rc-init: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
+s6-rc-init: src/s6-rc/s6-rc-init.o ${LIBS6RC} -ls6 -lskarnet
+s6-rc-oneshot-run: EXTRA_LIBS :=
+s6-rc-oneshot-run: src/s6-rc/s6-rc-oneshot-run.o ${LIBS6RC} -ls6 -lskarnet
+s6-rc-update: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SOCKET_LIB} ${SPAWN_LIB}
+s6-rc-update: src/s6-rc/s6-rc-update.o ${LIBS6RC} -ls6 -lexecline -lskarnet
 INTERNAL_LIBS :=

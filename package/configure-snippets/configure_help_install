@@ -1,0 +1,2 @@
+  --livedir=DIR                 default live directory [/run/s6-rc]
+
