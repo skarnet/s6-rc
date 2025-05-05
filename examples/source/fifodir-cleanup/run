@@ -2,14 +2,14 @@
 fdmove -c 2 1
 if
 {
-  forbacktickx -ep -0 i { s6-ls -0 /service }
+  forbacktickx -ep -0 i { s6-ls -0 /run/service }
   importas -u i i
   foreground
   {
-    if { eltest -d /service/${i}/log }
-    s6-cleanfifodir /service/${i}/log/event
+    if { eltest -d /run/service/${i}/log }
+    s6-cleanfifodir /run/service/${i}/log/event
   }
-  s6-cleanfifodir /service/${i}/event
+  s6-cleanfifodir /run/service/${i}/event
 }
 s6-setuidgid nobody
 s6-sleep 86400

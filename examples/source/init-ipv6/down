@@ -1,0 +1,3 @@
+forbacktickx -Ep i { s6-ls /run/service/udhcpc6-eth2/instance }
+if { s6-instance-delete -t 5000 /run/service/udhcpc6-eth2 $i }
+ip link del eth2_$i

@@ -1,0 +1,9 @@
+#!/command/execlineb -P
+fdmove -c 2 1
+s6-envdir /etc/env-network
+importas -uSi ETH0_IP6_BIS
+emptyenv -p
+fdmove 1 3
+s6-tcpserver -v -1 -- ${ETH0_IP6_BIS} 22
+s6-tcpserver-access -v2 -l0 -t 5000 -x /etc/tcprules/sshd.cdb --
+tinysshd -v /etc/tinyssh/keys

@@ -1,20 +1,56 @@
 #!/command/execlineb -P
 
 fdmove -c 2 1
-if
+
+
+# Get the IP addresses for some NTP servers.
+# Limit the DNS queries to 30 seconds: if the DNS is slower than
+# that, chances are the server isn't good for us anyway.
+# All the queries are parallelized, so it's fast.
+
+pipeline
 {
-  pipeline
-  {
-    s6-setuidgid ntp
-    backtick -n NTPSERVERIP
-    {
-      pipeline { s6-dnsip4 -t 16000 0.fr.pool.ntp.org }
-      s6-head -n 1
-    }
-    importas -u NTPSERVERIP NTPSERVERIP
-    s6-sntpclock -v 2 $NTPSERVERIP
-  }
-  s6-clockadd -e 120000
+  s6-setuidgid nobody
+  forx -p I { 0 1 2 }
+    importas -u I I
+    s6-dnsip4 -t 30000 -- ${I}.fr.pool.ntp.org
 }
+importas -u p1 !
+
+
+# Ask for a NTP exchange with the servers we get.
+# If the exchange can't be completed in 5 seconds, kill it.
+# All the queries are parallelized.
+
+pipeline
+{
+  s6-setuidgid ntp
+  forstdin -p -d"\n" NTPSERVERIP
+    importas -u NTPSERVERIP NTPSERVERIP
+    s6-sntpclock -T 5000 ${NTPSERVERIP}
+}
+importas -u p2 !
+
+
+# Take the first answer we get
+
+pipeline
+{
+  s6-setuidgid nobody
+  s6-head -Sc 12
+}
+importas -u p3 !
+
+
+# Update the system clock. Accept 10 minutes of discrepancy.
+
+if { s6-clockadd -e 600000 }
+
+
+# Success. Send a readiness notification, reap zombies,
+# and sleep for 4 hours.
+
 s6-setuidgid nobody
+if { fdmove 1 3 s6-echo }
+wait { ${p1} ${p2} ${p3} }
 s6-sleep 14400

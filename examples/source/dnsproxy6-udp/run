@@ -1,0 +1,13 @@
+#!/command/execlineb -S1
+fdmove -c 2 1
+s6-envdir /etc/env-network
+multisubstitute
+{
+  importas -uSi ETH0_IP6
+  importas -uSi ETH0_IP4
+}
+emptyenv -p
+if { redirfd -w 1 data/caches s6-echo ${ETH0_IP4} }
+s6-envuidgid dnscache
+fdmove 1 3
+dnsfunneld -1 -U -Rdata -t61000 -i ${ETH0_IP6}

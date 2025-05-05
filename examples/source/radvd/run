@@ -1,0 +1,3 @@
+#!/command/execlineb -S1
+fdmove -c 2 1
+radvd -n -m stderr -u radvd -p /var/run/radvd/radvd.pid

@@ -1,0 +1,3 @@
+mount-rwfs
+init-ipv6
+udhcpc6-eth2

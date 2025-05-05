@@ -1,4 +1,4 @@
-redirfd -r 0 /etc/sysctl.txt
+redirfd -r 0 /etc/sysctl.conf
 forstdin -nCd"\n" -- LINE
 importas -u LINE LINE
 multidefine -C $LINE { CTL VALUE }

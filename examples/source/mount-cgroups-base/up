@@ -1,0 +1,2 @@
+if { s6-mkdir -p -m 0755 /sys/fs/cgroup }
+s6-mount -wt tmpfs cgroup /sys/fs/cgroup

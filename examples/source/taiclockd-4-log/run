@@ -1,4 +1,0 @@
-#!/command/execlineb -P
-s6-setuidgid tailog
-exec -c
-s6-log -d3 -- t s1000000 n20 /var/log/taiclockd-4

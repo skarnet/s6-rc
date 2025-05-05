@@ -1,0 +1,13 @@
+#!/command/execlineb -P
+
+fdmove -c 2 1
+s6-envdir /etc/env-network
+importas -uSi ETH1_IP6_BIS
+emptyenv -p
+s6-envuidgid dnsserve
+cd /home/dns
+export AXFR ""
+fdmove 1 3
+s6-tcpserver -v -1 -U -- ${ETH1_IP6_BIS} 53
+s6-tcpserver-access -H -l0 -x rules.cdb --
+shibari-server-tcp -v2 -r5000 -w5000

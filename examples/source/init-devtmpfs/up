@@ -1,11 +1,11 @@
-if { mkdir -p -m 0755 -- /dev/pts }
+if { s6-mkdir -p -m 0755 -- /dev/pts /dev/shm }
 if { s6-mount -wt devpts -o noexec,nosuid,gid=0,mode=0600 devpts /dev/pts }
 if { s6-ln -s /proc/self/fd /dev/fd }
 if { s6-ln -s /proc/kcore /dev/core }
 if { s6-ln -s loop0 /dev/loop }
 if { s6-ln -s ram0 /dev/ram }
 if { s6-ln -s rtc0 /dev/rtc }
-if { s6-ln -s /run/shm /dev/shm }
+if { s6-mount -t tmpfs -o noexec,nosuid,nodev,mode=0755 tmpfs /dev/shm }
 if { s6-ln -s fd/0 /dev/stdin }
 if { s6-ln -s fd/1 /dev/stdout }
 if { s6-ln -s fd/2 /dev/stderr }

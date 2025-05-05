@@ -1,5 +1,0 @@
-#!/command/execlineb -P
-fdmove -c 2 1
-s6-envuidgid fdh
-fdmove 1 3
-s6-fdholder-daemon -v 2 -1 -T 20000 -U -i data/rules -- s

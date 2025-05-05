@@ -1,8 +1,0 @@
-#!/command/execlineb -P
-fdmove -c 2 1
-s6-softlimit -d 300000
-s6-envuidgid dnsserve
-importas -i ETH1_IP4 ETH1_IP4
-export IP ${ETH1_IP4}
-export ROOT /home/dns
-tinydns

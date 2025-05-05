@@ -1,0 +1,5 @@
+#!/command/execlineb -P
+fdmove -c 2 1
+s6-envdir /etc/env-network
+importas -ui ETH0_IP4 ETH0_IP4
+udhcpd -f -I ${ETH0_IP4} /etc/udhcpd-eth0.conf

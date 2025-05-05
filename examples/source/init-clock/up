@@ -1,0 +1,42 @@
+#!/command/execlineb -P
+
+# Get the IP addresses for some NTP servers.
+# Limit the DNS queries to 30 seconds: if the DNS is slower than
+# that, chances are the server isn't good for us anyway.
+# All the queries are parallelized, so it's fast.
+
+pipeline
+{
+  s6-setuidgid nobody
+  forx -p I { 0 1 2 }
+    importas -u I I
+    redirfd -w 2 /dev/null
+    s6-dnsip4 -t 30000 -- ${I}.fr.pool.ntp.org
+}
+
+
+# Ask for a NTP exchange with the servers we get. Accept anything.
+# If the exchange can't be completed in 5 seconds, kill it.
+# All the queries are parallelized.
+
+pipeline
+{
+  s6-setuidgid ntp
+  forstdin -p -d"\n" NTPSERVERIP
+    importas -u NTPSERVERIP NTPSERVERIP
+    redirfd -w 2 /dev/null
+    s6-sntpclock -f -T 5000 ${NTPSERVERIP}
+}
+
+
+# Take the first answer we get.
+
+pipeline
+{
+  s6-setuidgid nobody
+  s6-head -Sc 12
+}
+
+# Update the system clock. Accept anything.
+
+s6-clockadd -f

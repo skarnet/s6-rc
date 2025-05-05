@@ -1,5 +1,0 @@
-#!/command/execlineb -P
-fdmove -c 2 1
-s6-envdir -I env
-importas -uD 1.2.3.4 IP IP
-udhcpc -f -C -i eth3 -x lease:86400 -r $IP -s /etc/udhcpc/udhcpc-script

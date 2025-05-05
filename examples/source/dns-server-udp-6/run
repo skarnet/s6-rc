@@ -1,0 +1,9 @@
+#!/command/execlineb -P
+
+fdmove -c 2 1
+s6-envdir /etc/env-network
+importas -uSi ETH1_IP6
+emptyenv -p
+s6-envuidgid dnsserve
+cd /home/dns
+shibari-server-udp -U -v2 -d3 -x rules.cdb ${ETH1_IP6}

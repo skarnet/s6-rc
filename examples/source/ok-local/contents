@@ -1,9 +1,10 @@
 mdevd
 syslogd
 klogd
-fdholder
 mount-disks
 mount-cgroups
 init-coldplug
 init-sysctl
+init-urandom
+init-tmp
 fifodir-cleanup

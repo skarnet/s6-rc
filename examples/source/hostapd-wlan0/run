@@ -1,0 +1,3 @@
+#!/command/execlineb -P
+fdmove -c 2 1
+hostapd -1 /etc/hostapd/hostapd-wlan0.conf

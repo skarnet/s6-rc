@@ -1,0 +1,4 @@
+#!/command/execlineb -P
+s6-setuidgid log
+exec -c
+s6-log -bd3 -- t n10 s1000000 /var/log/udhcpc6-eth2

@@ -1,0 +1,11 @@
+#!/command/execlineb -P
+fdmove -c 2 1
+s6-envdir /etc/env-network
+s6-envuidgid qmailr
+export CADIR /etc/ssl/ca/hashed
+importas -uSi ETH0_IP6
+fdmove 1 3
+s6-tcpserver -v -1 -U -c 255 -- ${ETH0_IP6} 25
+s6-tcpserver-access -DHl0 -x /etc/tcprules/smtpproxy.cdb --
+s6-tcpclient -6 -v -- alyss.skarnet.org. 26
+s6-tlsc-io -k skarnet.org -- 6 7

@@ -1,0 +1,4 @@
+#!/command/execlineb -S1
+fdmove -c 2 1
+emptyenv -p
+udhcpc6 -f -d -m -r no -A 600 -s /etc/udhcpc6/run-script -i eth2_$1

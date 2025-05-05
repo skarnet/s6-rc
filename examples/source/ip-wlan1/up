@@ -1,0 +1,4 @@
+s6-envdir /etc/env-network
+importas -uSi WLAN1_IP4
+if { ip addr add ${WLAN1_IP4}/24 dev wlan1 }
+ip link set dev wlan1 up

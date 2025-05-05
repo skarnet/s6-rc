@@ -1,0 +1,5 @@
+#!/command/execlineb -S0
+
+fdmove -c 2 1
+if { s6-mkdir -p instance }
+s6-svscan -d3 -C64 -L11 -- instance

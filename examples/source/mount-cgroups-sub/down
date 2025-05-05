@@ -1,0 +1,4 @@
+elglob -v -0 CGROUPS /sys/fs/cgroup/*
+forx -p i { ${CGROUPS} }
+importas -u i i
+s6-umount $i

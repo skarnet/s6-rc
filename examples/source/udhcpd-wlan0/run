@@ -1,4 +1,5 @@
 #!/command/execlineb -P
 fdmove -c 2 1
+s6-envdir /etc/env-network
 importas -ui WLAN0_IP4 WLAN0_IP4
 udhcpd -f -I ${WLAN0_IP4} /etc/udhcpd-wlan0.conf

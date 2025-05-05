@@ -1,7 +1,9 @@
 #!/command/execlineb -P
 fdmove -c 2 1
-importas -ui ETH0_IP4 ETH0_IP4
+s6-envdir /etc/env-network
+importas -uSi ETH0_IP4
+emptyenv -p
 fdmove 1 3
-s6-tcpserver4 -v 2 -1 -- ${ETH0_IP4} 22
-s6-tcpserver-access -v 2 -DRl0 -t 5000 -i data/rules --
-dropbear -i -K 60
+s6-tcpserver -v -1 -- ${ETH0_IP4} 22
+s6-tcpserver-access -v2 -l0 -t 5000 -x /etc/tcprules/sshd.cdb --
+tinysshd -v /etc/tinyssh/keys

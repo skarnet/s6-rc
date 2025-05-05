@@ -1,4 +1,0 @@
-#!/command/execlineb -P
-
-s6-envuidgid nobody
-s6-socklog -d3 -U -t3000

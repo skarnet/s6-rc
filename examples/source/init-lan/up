@@ -1,11 +1,19 @@
+foreground { modprobe ppp_generic }
+foreground { ip addr add 127.0.0.1/8 dev lo }
+if { ip link set dev lo up }
+s6-envdir /etc/env-network
+if
+{
+  forx -Ep i { 0 1 2 3 }
+  importas -i ip4 ETH${i}_IP4
+  if { ip addr add ${ip4}/24 dev eth$i }
+  ip link set dev eth$i up
+}
+foreground { ip rule add fwmark 1 priority 32001 table 252 }
+foreground { ip rule del priority 32767 }
 multisubstitute
 {
-  importas -i ETH0_IP4 ETH0_IP4
-  importas -i ETH1_IP4 ETH1_IP4
-  importas -i ETH2_IP4 ETH2_IP4
+  importas -ui ETH2_IP4 ETH2_IP4
+  importas -ui ETH2_GW4 ETH2_GW4
 }
-
-if { ifconfig lo 127.0.0.1 netmask 255.0.0.0 }
-if { ifconfig eth0 ${ETH0_IP4} netmask 255.255.255.0 }
-if { ifconfig eth1 ${ETH1_IP4} netmask 255.255.255.0 }
-if { ifconfig eth2 ${ETH2_IP4} netmask 255.255.255.0 }
+ip route add default dev eth2 via ${ETH2_GW4} src ${ETH2_IP4}

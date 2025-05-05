@@ -1,2 +1,1 @@
-init-wlan0
-hostapd
+ip-wlan0

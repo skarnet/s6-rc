@@ -1,0 +1,2 @@
+forbacktickx -Ep i { s6-ls /run/service/udhcpc6-eth2/instance }
+s6-instance-control -dwD /run/service/udhcpc6-eth2 $i

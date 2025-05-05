@@ -1,4 +1,5 @@
-if { redirfd -w 1 /run/disk-devices/rofs s6-echo sda1 }
-if { redirfd -w 1 /run/disk-devices/rwfs s6-echo sda2 }
-if { redirfd -w 1 /run/disk-devices/syncfs s6-echo sda3 }
+if { s6-mkdir -p /run/disk-devices }
+if { redirfd -w 1 /run/disk-devices/rofs_sinay s6-echo sda1 }
+if { redirfd -w 1 /run/disk-devices/rwfs_sinay s6-echo sda2 }
+if { redirfd -w 1 /run/disk-devices/syncdata_sinay s6-echo sda3 }
 if { redirfd -w 1 /run/disk-devices/swap s6-echo sda5 }

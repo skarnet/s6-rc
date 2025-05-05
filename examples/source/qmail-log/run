@@ -1,4 +1,0 @@
-#!/command/execlineb -P
-s6-setuidgid qmaillog
-exec -c
-s6-log -d3 -- t s16777216 n64 /var/log/qmail

@@ -1,4 +1,1 @@
-# s6-linux-init needs /proc still mounted at shutdown time
-# (in order to read /proc/mounts, to know what order to unmount
-# all the disks in).
-# So, in this script we do nothing, we just leave /proc mounted.
+s6-umount /proc

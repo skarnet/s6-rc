@@ -1,0 +1,1 @@
+modprobe cfg80211 ieee80211_regdom=FR

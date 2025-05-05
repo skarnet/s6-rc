@@ -1,0 +1,10 @@
+redirfd -r 0 /proc/cgroups
+pipeline { s6-tail -n +2 }
+pipeline { s6-cut -d"\t" -f1 }
+pipeline { s6-grep -vF -- devices }
+forstdin -d"\n" -- i
+importas -u i i
+if { s6-mkdir -p /sys/fs/cgroup/${i} }
+foreground { s6-mount -t cgroup -o ${i} -- cgroup /sys/fs/cgroup/${i} }
+importas -u ? ?
+eltest $? -le 1

@@ -1,0 +1,35 @@
+if { modprobe ipv6 }
+if { redirfd -w 1 /proc/sys/net/ipv6/conf/all/forwarding s6-echo 1 }
+if { redirfd -w 1 /proc/sys/net/ipv6/conf/default/accept_ra s6-echo 0 }
+if { s6-mkdir -p /run/udhcpc6-eth2/by_interface }
+if { s6-mkdir -p /run/udhcpc6-eth2/by_prefix }
+
+if
+{
+  s6-envdir /etc/env-network
+  forx -pE i { eth0 eth1 eth2 eth3 wlan0 wlan1 }
+  backtick -E j { pipeline { s6-echo $i } tr [[:lower:]] [[:upper:]] }
+  multisubstitute
+  {
+    importas -uD "" ip6 ${j}_IP6
+    importas -ui ip6bis ${j}_IP6_BIS
+  }
+  if { if -t { eltest -n ${ip6} } ip -6 addr add ${ip6}/64 dev $i }
+  ip -6 addr add ${ip6bis}/64 dev $i preferred_lft 0
+}
+
+if
+{
+  forbacktickx -Ep i
+  {
+    if { s6-echo "00\n01\n02\n03\n04\n05\n06\n07\n08\n09\n0a\n0b\n0c\n0d\n0e\n0f" }
+    pipeline { if { s6-echo "obase=16" } seq 16 62 }
+    pipeline { bc }
+    tr [[:upper:]] [[:lower:]]
+  }
+  if { ip link add eth2_$i link eth2 type macvlan }
+  if { ip link set dev eth2_$i up }
+  s6-instance-create -d /run/service/udhcpc6-eth2 $i
+}
+
+redirfd -w 1 /proc/sys/net/ipv6/conf/eth2/accept_ra s6-echo 2

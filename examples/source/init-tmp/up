@@ -1,0 +1,2 @@
+foreground { s6-mount -t tmpfs -o noexec,nodev,mode=1777 tmpfs /tmp }
+exit 0
