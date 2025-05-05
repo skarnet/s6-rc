@@ -1,13 +1,20 @@
  An example set of service definition directories.
 
- ok-all is the bundle containing all the services used
-for normal operation of the machine this set has been taken
-out of; the stage 2 init script of this machine is basically
+ It is a real life example, used for the configuration of
+a router with 4 ethernet interfaces and 2 wifi ones, behind
+two ISPs (one fiber, one DSL), running a few services such
+as a DNS cache and a web server for a local network.
+ All the scripts are genuine, only specific values such as
+IP addresses are not present (machine-specific data is stored
+in /etc, not in the s6-rc source directories).
+ The scripts use standard POSIX tools, the whole suite of
+skarnet.org tools, and some specialized Linux tools such as
+iproute2, iw, etc.
+
+ ok-all is the entry point, the "top" bundle containing all
+the services used for normal operation of the machine.
+The stage 2 init script of this machine is basically
 "s6-rc-init && s6-rc change ok-all".
 
- ok-all contains ok-local, ok-lan and ok-wan, all bundles
-each containing their own services.
-
- "00" is the service at the bottom of the dependency graph.
-So 00/up is the first script that is run by the initial
-"s6-rc change ok-all" command.
+ Don't look too much into the weird ipv6 stuff, this is mostly
+a bunch of workarounds for a very broken ISP-provided device.
