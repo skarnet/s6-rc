@@ -4,6 +4,7 @@
 #define S6RC_UTILS_H
 
 #include <sys/types.h>
+#include <stdint.h>
 
 #include <skalibs/stralloc.h>
 
@@ -18,5 +19,8 @@ extern int s6rc_livedir_prefixsize (char const *, size_t *) ;
 extern ssize_t s6rc_livedir_prefix (char const *, char *, size_t) ;
 extern int s6rc_livedir_create (stralloc *, char const *, char const *, char const *, char const *, char const *, unsigned char const *, unsigned int, size_t *) ;
 extern int s6rc_livedir_canon (char const **) ;
+
+extern int s6rc_live_state_size (char const *, uint32_t *, uint32_t *) ;
+extern int s6rc_live_state_read (char const *, unsigned char *, uint32_t) ;
 
 #endif

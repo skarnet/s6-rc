@@ -5,6 +5,8 @@ s6rc_db_read.o
 s6rc_db_read_sizes.o
 s6rc_db_read_uint32.o
 s6rc_graph_closure.o
+s6rc_live_state_size.o
+s6rc_live_state_read.o
 s6rc_livedir_canon.o
 s6rc_livedir_create.o
 s6rc_livedir_prefix.o
