@@ -1,0 +1,11 @@
+
+/var/lib/s6-rc/repository: base
+
+compiled/$name-$stamp
+compiled/$name-current ->
+compiled/$name-previous ->
+
+source/.everything
+source/$name
+source/$name/active
+source/$name/masked

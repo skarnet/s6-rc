@@ -1,1 +1,3 @@
     --livedir=*) livedir=${arg#*=} ;;
+    --repodir=*) repodir=${arg#*=} ;;
+

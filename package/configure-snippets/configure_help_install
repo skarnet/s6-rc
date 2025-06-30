@@ -1,2 +1,3 @@
   --livedir=DIR                 default live directory [/run/s6-rc]
+  --repodir=DIR                 default repo directory [/var/lib/s6-rc/repository]
 

@@ -15,3 +15,5 @@
 /s6-rc-fdholder-filler
 /s6-rc-oneshot-run
 /s6-rc-format-upgrade
+/s6-rc-repo-init
+/s6-rc-repo-populate

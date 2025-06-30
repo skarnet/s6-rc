@@ -1,1 +1,2 @@
 livedir=/run/s6-rc
+repodir=/var/lib/s6-rc/repository

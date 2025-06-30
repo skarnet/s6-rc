@@ -6,7 +6,9 @@ s6-rc-bundle \
 s6-rc-init \
 s6-rc \
 s6-rc-update \
-s6-rc-format-upgrade
+s6-rc-format-upgrade \
+s6-rc-repo-init \
+s6-rc-repo-populate
 
 LIBEXEC_TARGETS := \
 s6-rc-fdholder-filler \

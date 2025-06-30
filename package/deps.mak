@@ -27,6 +27,8 @@ src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_internal.lo: 
 src/libs6rc/s6rc_servicedir_manage.o src/libs6rc/s6rc_servicedir_manage.lo: src/libs6rc/s6rc_servicedir_manage.c src/include/s6-rc/s6rc-servicedir.h
 src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_unblock.lo: src/libs6rc/s6rc_servicedir_unblock.c src/include/s6-rc/s6rc-servicedir.h
 src/libs6rc/s6rc_servicedir_unsupervise.o src/libs6rc/s6rc_servicedir_unsupervise.lo: src/libs6rc/s6rc_servicedir_unsupervise.c src/include/s6-rc/s6rc-servicedir.h
+src/repo/s6-rc-repo-init.o src/repo/s6-rc-repo-init.lo: src/repo/s6-rc-repo-init.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
+src/repo/s6-rc-repo-populate.o src/repo/s6-rc-repo-populate.lo: src/repo/s6-rc-repo-populate.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-bundle.o src/s6-rc/s6-rc-bundle.lo: src/s6-rc/s6-rc-bundle.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-compile.o src/s6-rc/s6-rc-compile.lo: src/s6-rc/s6-rc-compile.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-db.o src/s6-rc/s6-rc-db.lo: src/s6-rc/s6-rc-db.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
@@ -48,6 +50,10 @@ libs6rc.so.xyzzy: EXTRA_LIBS := -ls6 -lskarnet
 libs6rc.so.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
 libs6rc.dylib.xyzzy: EXTRA_LIBS := -ls6 -lskarnet
 libs6rc.dylib.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
+s6-rc-repo-init: EXTRA_LIBS :=
+s6-rc-repo-init: src/repo/s6-rc-repo-init.o -lskarnet
+s6-rc-repo-populate: EXTRA_LIBS :=
+s6-rc-repo-populate: src/repo/s6-rc-repo-populate.o -lskarnet
 s6-rc: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SPAWN_LIB}
 s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-bundle: EXTRA_LIBS :=
