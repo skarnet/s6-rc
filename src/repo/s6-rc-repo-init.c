@@ -41,22 +41,35 @@ static gol_bool const rgolb[1] =
   { .so = 'f', .lo = "force", .clear = 0, .set = 1 << GOLB_FORCE }
 } ;
 
-static gol_arg const rgola[1] =
+enum gola_e
 {
-  { .so = 'r', .lo = "repodir", .i = 0 }
+  GOLA_VERBOSITY,
+  GOLA_REPODIR,
+  GOLA_N
+} ;
+
+static gol_arg const rgola[2] =
+{
+  { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+  { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR }
 } ;
 
 int main (int argc, char const *const *argv)
 {
   size_t repolen ;
   char const *repo = S6RC_REPO_BASE ;
+  unsigned int verbosity = 1 ;
+  mode_t m ;
+  char const *wgola[2] = { 0 } ;
   uint64_t wgolb = 0 ;
   unsigned int golc ;
-  mode_t m ;
 
   PROG = "s6-rc-repo-init" ;
-  golc = gol_main(argc, argv, rgolb, 1, rgola, 1, &wgolb, &repo) ;
+  golc = gol_main(argc, argv, rgolb, 1, rgola, 2, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
+  if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
+    strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
+  if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
   if (repo[0] != '/')
     strerr_dief2x(100, repo, " is not an absolute path") ;
   for (unsigned int i = 0 ; i < argc ; i++)
@@ -103,7 +116,7 @@ int main (int argc, char const *const *argv)
 
   umask(m) ;
 
-  if (!s6rc_repo_sync(repotmp, argv, argc))
+  if (!s6rc_repo_sync(repotmp, argv, argc, verbosity))
   {
     cleanup(repotmp) ;
     strerr_diefu2sys(111, "sync ", repotmp) ;
