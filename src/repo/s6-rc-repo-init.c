@@ -20,7 +20,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-repo-init [ -r repo ] sources..."
+#define USAGE "s6-rc-repo-init [ -v verbosity ] [ -r repo ] sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static void cleanup (char const *fn)
