@@ -57,16 +57,16 @@ int main (int argc, char const *const *argv)
   PROG = "s6-rc-repo-init" ;
   golc = gol_main(argc, argv, rgolb, 1, rgola, 1, &wgolb, &repo) ;
   argc -= golc ; argv += golc ;
-  if (!argc) dieusage() ;
   if (repo[0] != '/')
     strerr_dief2x(100, repo, " is not an absolute path") ;
   for (unsigned int i = 0 ; i < argc ; i++)
     if (argv[i][0] != '/')
       strerr_dief2x(100, argv[i], " is not an absolute path") ;
+  if (!argc) strerr_warnw1x("no source directories given, creating an empty repository") ;
 
   repolen = strlen(repo) ;
   char repotmp[repolen + 12] ;
-  char tmp[repolen + 39] ;
+  char tmp[repolen + 21] ;
   memcpy(repotmp, repo, repolen) ;
   memcpy(repotmp + repolen, "-tmp.XXXXXX", 12) ;
   m = umask(0) ;
@@ -101,20 +101,6 @@ int main (int argc, char const *const *argv)
     strerr_diefu2sys(111, "mkdir ", tmp) ;
   }
 
-  memcpy(tmp + repolen + 18, "/.everything:initial", 21) ;
-  if (mkdir(tmp, 02755) == -1)
-  {
-    cleanup(repotmp) ;
-    strerr_diefu2sys(111, "mkdir ", tmp) ;
-  }
-
-  tmp[repolen + 30] = 0 ;
-  if (symlink(".everything:initial", tmp) == -1)
-  {
-    cleanup(repotmp) ;
-    strerr_diefu4sys(111, "symlink ", ".everything:initial", " to ", tmp) ;
-  }
-
   umask(m) ;
 
   if (!s6rc_repo_sync(repotmp, argv, argc))
@@ -134,20 +120,20 @@ int main (int argc, char const *const *argv)
     }
     else
     {
-      char oldrepo[repolen + 22] ;
-      memcpy(oldrepo, repo, repolen) ;
-      memcpy(oldrepo + repolen, ":old:", 5) ;
-      random_name(oldrepo + repolen + 5, 16) ;
-      if (rename(repo, oldrepo) == -1)
+      memcpy(tmp, repo, repolen) ;
+      memcpy(tmp + repolen, ":old:", 5) ;
+      random_name(tmp + repolen + 5, 15) ;
+      tmp[repolen + 20] = 0 ;
+      if (rename(repo, tmp) == -1)
       {
         cleanup(repotmp) ;
-        strerr_diefu4sys(111, "rename ", repo, " to ", oldrepo) ;
+        strerr_diefu4sys(111, "rename ", repo, " to ", tmp) ;
       }
       if (rename(repotmp, repo) == -1)
       {
         int e = errno ;
-        if (rename(oldrepo, repo) == -1)
-          strerr_diefu7sys(111, "rename directories to ", repo, ": weird race happened. Old repository is at ", repotmp, " and new repository is at ", oldrepo, " - reported error was") ;
+        if (rename(tmp, repo) == -1)
+          strerr_diefu7sys(111, "rename directories to ", repo, ": weird race happened. New repository is at ", repotmp, " and old repository is at ", tmp, " - reported error was") ;
         errno = e ;
         cleanup(repotmp) ;
         strerr_diefu4sys(111, "rename ", repotmp, " to ", repo) ;
