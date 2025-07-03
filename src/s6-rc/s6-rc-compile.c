@@ -527,21 +527,15 @@ static inline void add_bundle (before_t *be, int dfd, char const *srcdir, char c
 
 static inline void add_source (before_t *be, int dfd, char const *srcdir, char const *name)
 {
-  char typestr[8] = "" ;
-  ssize_t r ;
   if (verbosity >= 2) strerr_warni4x("parsing ", srcdir, "/", name) ;
-  r = openreadnclose_at(dfd, "type", typestr, 8) ;
-  if (r == -1)
+  switch (s6rc_type_check(dfd, 0))
   {
-    if (!errno) errno = EINVAL ;
-    strerr_diefu5sys(111, "read ", srcdir, "/", name, "/type") ;
+    case 0 : strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
+    case 1 : add_longrun(be, dfd, srcdir, name) ; break ;
+    case 2 : add_oneshot(be, dfd, srcdir, name) ; break ;
+    case 3 : add_bundle(be, dfd, srcdir, name) ; break ;
+    default : strerr_diefu5sys(111, "read ", srcdir, "/", name, "/type") ;
   }
-  if (typestr[r-1] == '\n') r-- ;
-  typestr[r++] = 0 ;
-  if (!strcmp(typestr, "oneshot")) add_oneshot(be, dfd, srcdir, name) ;
-  else if (!strcmp(typestr, "longrun")) add_longrun(be, dfd, srcdir, name) ;
-  else if (!strcmp(typestr, "bundle")) add_bundle(be, dfd, srcdir, name) ;
-  else strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
 }
 
 static int qsort_cannot_use_strcmp_directly (void const *a, void const *b)

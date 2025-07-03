@@ -1,6 +1,5 @@
 /* ISC license. */
 
-#include <skalibs/bsdsnowflake.h>  /* stat */
 #include <skalibs/nonposix.h>  /* mkdtemp */
 
 #include <string.h>
@@ -8,7 +7,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include <skalibs/stat.h>
 #include <skalibs/direntry.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/strerr.h>
@@ -16,6 +14,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
 
+#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 static inline void cleanup (char const *fn)
@@ -57,25 +56,27 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
       if (d->d_name[0] == '.') continue ;
       len = strlen(d->d_name) ;
       {
-        struct stat st ;
         char dst[repolen + 25 + len] ;
         char src[srclen + len + 2] ;
         memcpy(dst, newdir, repolen + 23) ;
         dst[repolen + 23] = '/' ;
-        memcpy(dst + repolen + 24, d->d_name, len + 1) ;
+        memcpy(dst + repolen + 24, d->d_name, len+1) ;
         memcpy(src, sources[i], srclen) ;
         src[srclen] = '/' ;
-        memcpy(src + srclen + 1, d->d_name, len + 1) ;
-        if (stat(src, &st) == -1)
+        memcpy(src + srclen + 1, d->d_name, len+1) ;
+        switch (s6rc_type_check(-1, src))
         {
-          if (verbosity) strerr_warnwu2sys("stat ", src) ;
-          continue ;
-        }
-        if (!S_ISDIR(st.st_mode))
-        {
-          errno = ENOTDIR ;
-          if (verbosity) strerr_warnwu2sys("link ", src) ;
-          continue ;
+          case 1 :
+          case 2 :
+          case 3 : break ;
+          case 0 :
+            strerr_warnf2x("invalid service type for ", src) ;
+            dir_close(dir) ;
+            goto err ;
+          default :
+            strerr_warnfu2sys("check service type of ", src) ;
+            dir_close(dir) ;
+            goto err ;
         }
         if (symlink(src, dst) == -1)
         {
@@ -110,6 +111,7 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
 
   if (chmod(newdir, 02755) == -1)
   {
+    strerr_warnfu2sys("chmod ", newdir) ;
     goto err ;
   }
 

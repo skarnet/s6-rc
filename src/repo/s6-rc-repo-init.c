@@ -70,8 +70,6 @@ int main (int argc, char const *const *argv)
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
   if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
-  if (repo[0] != '/')
-    strerr_dief2x(100, repo, " is not an absolute path") ;
   for (unsigned int i = 0 ; i < argc ; i++)
     if (argv[i][0] != '/')
       strerr_dief2x(100, argv[i], " is not an absolute path") ;
@@ -107,7 +105,7 @@ int main (int argc, char const *const *argv)
     strerr_diefu2sys(111, "mkdir ", tmp) ;
   }
 
-  memcpy(tmp + repolen + 12, "source", 7) ;
+  memcpy(tmp + repolen + 12, "sources", 8) ;
   if (mkdir(tmp, 02755) == -1)
   {
     cleanup(repotmp) ;
@@ -115,6 +113,13 @@ int main (int argc, char const *const *argv)
   }
 
   umask(m) ;
+
+  memcpy(tmp + repolen + 12, "lock", 5) ;
+  if (!openwritenclose_unsafe5(tmp, "", 0, 0, 0))
+  {
+    cleanup(repotmp) ;
+    strerr_diefu2sys(111, "create ", tmp) ;
+  }
 
   if (!s6rc_repo_sync(repotmp, argv, argc, verbosity))
   {

@@ -51,8 +51,12 @@ static inline int sub_cleanup (char const *subdir)
 
 int s6rc_repo_cleanup (char const *repo)
 {
+  DIR *dir ;
   size_t repolen = strlen(repo) ;
-  DIR *dir = opendir(repo) ;
+  char sources[repolen + 9] ;
+  memcpy(sources, repo, repolen) ;
+  memcpy(sources + repolen, "/sources", 9) ;
+  dir = opendir(sources) ;
   if (!dir) return 0 ;
   for (;;)
   {
@@ -64,10 +68,10 @@ int s6rc_repo_cleanup (char const *repo)
     if (d->d_name[0] == '.') continue ;
     len = strlen(d->d_name) ;
     {
-      char fn[repolen + len + 2] ;
-      memcpy(fn, repo, repolen) ;
-      fn[repolen] = '/' ;
-      memcpy(fn + repolen + 1, d->d_name, len + 1) ;
+      char fn[repolen + len + 10] ;
+      memcpy(fn, sources, repolen + 8) ;
+      fn[repolen + 8] = '/' ;
+      memcpy(fn + repolen + 9, d->d_name, len + 1) ;
       if (!sub_cleanup(fn)) break ;
     }
   }
