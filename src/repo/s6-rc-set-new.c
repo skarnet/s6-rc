@@ -33,7 +33,6 @@ static void cleanup (char const *fn)
 static inline void newset (char const *repo, size_t repolen, char const *everything, char const *setname)
 {
   size_t setlen = strlen(setname) ;
-  DIR *dir ;
   char fn[repolen + 10 + setlen] ;
   char tmp[repolen + 21 + setlen] ;
   memcpy(fn, repo, repolen) ;
@@ -47,7 +46,19 @@ static inline void newset (char const *repo, size_t repolen, char const *everyth
   memcpy(tmp, fn, repolen + 9 + setlen) ;
   memcpy(tmp + repolen + 9 + setlen, ":tmp:XXXXXX", 12) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
-  dir = opendir(everything) ;
+
+  {
+    char lock[repolen + 28 + setlen] ;
+    memcpy(lock, tmp, repolen + 21 + setlen) ;
+    memcpy(lock + repolen + 21 + setlen, "/.lock", 7) ;
+    if (!openwritenclose_unsafe(lock, "", 0))
+    {
+      cleanup(tmp) ;
+      strerr_diefu2sys(111, "create ", lock) ;
+    }
+  }
+
+  DIR *dir = opendir(everything) ;
   for (;;)
   {
     size_t len ;
@@ -89,17 +100,6 @@ static inline void newset (char const *repo, size_t repolen, char const *everyth
   }
 }
 
-enum golb_e
-{
-  GOLB_FORCE,
-  GOLB_N
-} ;
-
-static gol_bool const rgolb[1] =
-{
-  { .so = 'f', .lo = "force", .clear = 0, .set = 1 << GOLB_FORCE }
-} ;
-
 enum gola_e
 {
   GOLA_VERBOSITY,
@@ -120,11 +120,10 @@ int main (int argc, char const *const *argv)
   int fdlock ;
   unsigned int verbosity = 1 ;
   char const *wgola[2] = { 0 } ;
-  uint64_t wgolb = 0 ;
   unsigned int golc ;
 
   PROG = "s6-rc-set-new" ;
-  golc = gol_main(argc, argv, rgolb, 1, rgola, 2, &wgolb, wgola) ;
+  golc = gol_main(argc, argv, 0, 0, rgola, 2, 0, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;

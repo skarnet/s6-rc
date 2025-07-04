@@ -21,7 +21,7 @@ src/libs6rc/s6rc_lock.o src/libs6rc/s6rc_lock.lo: src/libs6rc/s6rc_lock.c src/in
 src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_read_uint.lo: src/libs6rc/s6rc_read_uint.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_repo_cleanup.o src/libs6rc/s6rc_repo_cleanup.lo: src/libs6rc/s6rc_repo_cleanup.c src/include/s6-rc/repo.h
 src/libs6rc/s6rc_repo_lock.o src/libs6rc/s6rc_repo_lock.lo: src/libs6rc/s6rc_repo_lock.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_sync.o src/libs6rc/s6rc_repo_sync.lo: src/libs6rc/s6rc_repo_sync.c src/include/s6-rc/repo.h
+src/libs6rc/s6rc_repo_sync.o src/libs6rc/s6rc_repo_sync.lo: src/libs6rc/s6rc_repo_sync.c src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_sanitize_dir.lo: src/libs6rc/s6rc_sanitize_dir.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_block.lo: src/libs6rc/s6rc_servicedir_block.c src/include/s6-rc/s6rc-servicedir.h
 src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_offline.lo: src/libs6rc/s6rc_servicedir_copy_offline.c src/include/s6-rc/s6rc-servicedir.h src/libs6rc/s6rc-servicedir-internal.h
@@ -32,6 +32,8 @@ src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_unblock.lo: sr
 src/libs6rc/s6rc_servicedir_unsupervise.o src/libs6rc/s6rc_servicedir_unsupervise.lo: src/libs6rc/s6rc_servicedir_unsupervise.c src/include/s6-rc/s6rc-servicedir.h
 src/libs6rc/s6rc_type_check.o src/libs6rc/s6rc_type_check.lo: src/libs6rc/s6rc_type_check.c src/include/s6-rc/s6rc-utils.h
 src/repo/s6-rc-repo-init.o src/repo/s6-rc-repo-init.lo: src/repo/s6-rc-repo-init.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
+src/repo/s6-rc-set-copy.o src/repo/s6-rc-set-copy.lo: src/repo/s6-rc-set-copy.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
+src/repo/s6-rc-set-delete.o src/repo/s6-rc-set-delete.lo: src/repo/s6-rc-set-delete.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-new.o src/repo/s6-rc-set-new.lo: src/repo/s6-rc-set-new.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-bundle.o src/s6-rc/s6-rc-bundle.lo: src/s6-rc/s6-rc-bundle.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-compile.o src/s6-rc/s6-rc-compile.lo: src/s6-rc/s6-rc-compile.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
@@ -56,6 +58,10 @@ libs6rc.dylib.xyzzy: EXTRA_LIBS := -ls6 -lskarnet
 libs6rc.dylib.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_repo_cleanup.lo src/libs6rc/s6rc_repo_lock.lo src/libs6rc/s6rc_repo_sync.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo src/libs6rc/s6rc_type_check.lo
 s6-rc-repo-init: EXTRA_LIBS :=
 s6-rc-repo-init: src/repo/s6-rc-repo-init.o ${LIBS6RC} -lskarnet
+s6-rc-set-copy: EXTRA_LIBS :=
+s6-rc-set-copy: src/repo/s6-rc-set-copy.o ${LIBS6RC} -lskarnet
+s6-rc-set-delete: EXTRA_LIBS :=
+s6-rc-set-delete: src/repo/s6-rc-set-delete.o ${LIBS6RC} -lskarnet
 s6-rc-set-new: EXTRA_LIBS :=
 s6-rc-set-new: src/repo/s6-rc-set-new.o ${LIBS6RC} -lskarnet
 s6-rc: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SPAWN_LIB}
