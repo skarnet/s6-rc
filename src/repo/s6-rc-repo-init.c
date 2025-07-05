@@ -124,7 +124,7 @@ int main (int argc, char const *const *argv)
   if (!s6rc_repo_sync(repotmp, argv, argc, verbosity))
   {
     cleanup(repotmp) ;
-    strerr_diefu2sys(111, "sync ", repotmp) ;
+    return 111 ;
   }
 
   if (chmod(repotmp, 02755) == -1)

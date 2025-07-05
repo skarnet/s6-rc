@@ -30,11 +30,16 @@ static void cleanup (char const *fn)
   errno = e ;
 }
 
-static inline void newset (char const *repo, size_t repolen, char const *everything, char const *setname)
+static inline void newset (char const *repo, char const *setname)
 {
+  size_t repolen = strlen(repo) ;
   size_t setlen = strlen(setname) ;
+  char everything[repolen + 13] ;
   char fn[repolen + 10 + setlen] ;
   char tmp[repolen + 21 + setlen] ;
+  char cur[repolen + 28 + setlen] ;
+  memcpy(everything, repo, repolen) ;
+  memcpy(everything + repolen, "/.everything", 13) ;
   memcpy(fn, repo, repolen) ;
   memcpy(fn + repolen, "/sources/", 9) ;
   memcpy(fn + repolen + 9, setname, setlen + 1) ;
@@ -47,15 +52,26 @@ static inline void newset (char const *repo, size_t repolen, char const *everyth
   memcpy(tmp + repolen + 9 + setlen, ":tmp:XXXXXX", 12) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
 
+  memcpy(cur, tmp, repolen + 20 + setlen) ;
+  memcpy(cur + repolen + 20 + setlen, "/lock", 6) ;
+  if (!openwritenclose_unsafe(cur, "", 0))
   {
-    char lock[repolen + 28 + setlen] ;
-    memcpy(lock, tmp, repolen + 21 + setlen) ;
-    memcpy(lock + repolen + 21 + setlen, "/.lock", 7) ;
-    if (!openwritenclose_unsafe(lock, "", 0))
-    {
-      cleanup(tmp) ;
-      strerr_diefu2sys(111, "create ", lock) ;
-    }
+    cleanup(tmp) ;
+    strerr_diefu2sys(111, "create ", cur) ;
+  }
+
+  memcpy(cur + repolen + 21 + setlen, "masked", 7) ;
+  if (mkdir(cur, 02755) == -1)
+  {
+    cleanup(tmp) ;
+    strerr_diefu2sys(111, "mkdir ", cur) ;
+  }
+
+  memcpy(cur + repolen + 21 + setlen, "active", 7) ;
+  if (mkdir(cur, 02755) == -1)
+  {
+    cleanup(tmp) ;
+    strerr_diefu2sys(111, "mkdir ", cur) ;
   }
 
   DIR *dir = opendir(everything) ;
@@ -68,13 +84,13 @@ static inline void newset (char const *repo, size_t repolen, char const *everyth
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
     len = strlen(d->d_name) ;
-    char src[16 + len] ;
-    char dst[repolen + 22 + setlen + len] ;
-    memcpy(src, "../.everything/", 15) ;
-    memcpy(src + 15, d->d_name, len+1) ;
-    memcpy(dst, tmp, repolen + 20 + setlen) ;
-    dst[repolen + 20 + setlen] = '/' ;
-    memcpy(dst + repolen + 21 + setlen, d->d_name, len+1) ;
+    char src[19 + len] ;
+    char dst[repolen + 29 + setlen + len] ;
+    memcpy(src, "../../.everything/", 18) ;
+    memcpy(src + 18, d->d_name, len+1) ;
+    memcpy(dst, cur, repolen + 27 + setlen) ;
+    dst[repolen + 27 + setlen] = '/' ;
+    memcpy(dst + repolen + 28 + setlen, d->d_name, len+1) ;
     if (symlink(src, dst) == -1)
     {
       cleanup(tmp) ;
@@ -115,7 +131,6 @@ static gol_arg const rgola[2] =
 
 int main (int argc, char const *const *argv)
 {
-  size_t repolen ;
   char const *repo = S6RC_REPO_BASE ;
   int fdlock ;
   unsigned int verbosity = 1 ;
@@ -136,12 +151,8 @@ int main (int argc, char const *const *argv)
   fdlock = s6rc_repo_lock(repo, 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;
 
-  repolen = strlen(repo) ;
-  char fn[repolen + 13] ;
-  memcpy(fn, repo, repolen) ;
-  memcpy(fn + repolen, "/.everything", 13) ;
   for (unsigned int i = 0 ; i < argc ; i++)
-    newset(repo, repolen, fn, argv[i]) ;
+    newset(repo, argv[i]) ;
 
   return 0 ;
 }
