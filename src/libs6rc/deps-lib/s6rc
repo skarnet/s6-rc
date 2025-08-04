@@ -15,6 +15,7 @@ s6rc_lock.o
 s6rc_read_uint.o
 s6rc_repo_cleanup.o
 s6rc_repo_lock.o
+s6rc_repo_set_compile.o
 s6rc_repo_sync.o
 s6rc_sanitize_dir.o
 s6rc_servicedir_internal.o
@@ -27,3 +28,4 @@ s6rc_servicedir_unsupervise.o
 s6rc_type_check.o
 -ls6
 -lskarnet
+${SPAWN_LIB}

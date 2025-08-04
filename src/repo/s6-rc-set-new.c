@@ -34,63 +34,88 @@ static inline void newset (char const *repo, char const *setname)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(setname) ;
-  char everything[repolen + 13] ;
+  char everything[repolen + 21] ;
   char fn[repolen + 10 + setlen] ;
-  char tmp[repolen + 21 + setlen] ;
-  char cur[repolen + 28 + setlen] ;
+  char tmp[repolen + 18 + setlen] ;
+  char act[repolen + 25 + setlen] ;
+  char onb[repolen + 25 + setlen] ;
   memcpy(everything, repo, repolen) ;
-  memcpy(everything + repolen, "/.everything", 13) ;
-  memcpy(fn, repo, repolen) ;
-  memcpy(fn + repolen, "/sources/", 9) ;
+  memcpy(everything + repolen, "/sources/.everything", 21) ;
+  memcpy(fn, everything, repolen + 9) ;
   memcpy(fn + repolen + 9, setname, setlen + 1) ;
   if (access(fn, F_OK) == -1)
   {
     if (errno != ENOENT) strerr_diefu2sys(111, "access ", fn) ;
   }
   else strerr_dief4x(100, "set ", setname, " already exists in repository ", repo) ;
-  memcpy(tmp, fn, repolen + 9 + setlen) ;
-  memcpy(tmp + repolen + 9 + setlen, ":tmp:XXXXXX", 12) ;
+  memcpy(tmp, fn, repolen + 9) ;
+  tmp[repolen + 9] = '.' ;
+  memcpy(tmp + repolen + 10, setname, setlen) ;
+  memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
 
-  memcpy(cur, tmp, repolen + 20 + setlen) ;
-  memcpy(cur + repolen + 20 + setlen, "/lock", 6) ;
-  if (!openwritenclose_unsafe(cur, "", 0))
+  memcpy(act, tmp, repolen + 17 + setlen) ;
+  memcpy(act + repolen + 17 + setlen, "/lock", 6) ;
+  if (!openwritenclose_unsafe(act, "", 0))
   {
     cleanup(tmp) ;
-    strerr_diefu2sys(111, "create ", cur) ;
+    strerr_diefu2sys(111, "create ", act) ;
   }
 
-  memcpy(cur + repolen + 21 + setlen, "masked", 7) ;
-  if (mkdir(cur, 02755) == -1)
+  memcpy(act + repolen + 18 + setlen, "masked", 7) ;
+  if (mkdir(act, 02755) == -1)
   {
     cleanup(tmp) ;
-    strerr_diefu2sys(111, "mkdir ", cur) ;
+    strerr_diefu2sys(111, "mkdir ", act) ;
   }
 
-  memcpy(cur + repolen + 21 + setlen, "active", 7) ;
-  if (mkdir(cur, 02755) == -1)
+  memcpy(act + repolen + 18 + setlen, "onboot", 7) ;
+  if (mkdir(act, 02755) == -1)
   {
     cleanup(tmp) ;
-    strerr_diefu2sys(111, "mkdir ", cur) ;
+    strerr_diefu2sys(111, "mkdir ", act) ;
+  }
+  memcpy(onb, act, repolen + 25 + setlen) ;
+
+  memcpy(act + repolen + 18 + setlen, "active", 7) ;
+  if (mkdir(act, 02755) == -1)
+  {
+    cleanup(tmp) ;
+    strerr_diefu2sys(111, "mkdir ", act) ;
   }
 
   DIR *dir = opendir(everything) ;
   for (;;)
   {
+    char *cur = act ;
     size_t len ;
     direntry *d ;
     errno = 0 ;
     d = readdir(dir) ;
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
+
     len = strlen(d->d_name) ;
-    char src[19 + len] ;
-    char dst[repolen + 29 + setlen + len] ;
-    memcpy(src, "../../.everything/", 18) ;
-    memcpy(src + 18, d->d_name, len+1) ;
-    memcpy(dst, cur, repolen + 27 + setlen) ;
-    dst[repolen + 27 + setlen] = '/' ;
-    memcpy(dst + repolen + 28 + setlen, d->d_name, len+1) ;
+    char src[len + 33] ;
+    char dst[repolen + 26 + setlen + len] ;
+    memcpy(src, "../.everything/", 15) ;
+    memcpy(src + 15, d->d_name, len) ;
+    memcpy(src + 15 + len, "/flag-essential", 16) ;
+    if (access(src, F_OK) == -1)
+    {
+      if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
+    }
+    else cur = onb ;
+    memcpy(src + 21 + len, "recommended", 12) ;
+    if (access(src, F_OK) == -1)
+    {
+      if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
+    }
+    else cur = onb ;
+    src[15 + len] = 0 ;
+    memcpy(dst, cur, repolen + 24 + setlen) ;
+    dst[repolen + 24 + setlen] = '/' ;
+    memcpy(dst + repolen + 25 + setlen, d->d_name, len+1) ;
     if (symlink(src, dst) == -1)
     {
       cleanup(tmp) ;
@@ -109,7 +134,7 @@ static inline void newset (char const *repo, char const *setname)
     cleanup(tmp) ;
     strerr_diefu2sys(111, "chmod ", tmp) ;
   }
-  if (rename(tmp, fn) == -1)
+  if (symlink(tmp, fn) == -1)
   {
     cleanup(tmp) ;
     strerr_diefu4sys(111, "rename ", tmp, " to ", fn) ;
@@ -145,8 +170,12 @@ int main (int argc, char const *const *argv)
   if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
   if (!argc) dieusage() ;
   for (unsigned int i = 0 ; i < argc ; i++)
+  {
+    if (!argv[i][0]) strerr_dief1x(100, "set names cannot be empty") ;
+    if (argv[i][0] == '.') strerr_dief1x(100, "set names cannot start with a dot") ;
     if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
       strerr_dief1x(100, "set names cannot contain / or newlines") ;
+  }
 
   fdlock = s6rc_repo_lock(repo, 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;

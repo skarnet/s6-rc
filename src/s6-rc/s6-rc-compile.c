@@ -387,6 +387,7 @@ static uint32_t read_flags (int dfd, char const *srcdir, char const *name)
   static char const *files[32] =
   {
     "flag-essential",
+    "flag-recommended",
     0
   } ;
   uint32_t flags = 0 ;

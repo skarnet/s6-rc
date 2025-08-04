@@ -24,13 +24,13 @@ static inline void cleanup (char const *fn)
   errno = e ;
 }
 
-int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sourceslen, unsigned int verbosity)
+int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sourceslen, unsigned int verbosity, char const *fdhuser)
 {
   stralloc sa = STRALLOC_ZERO ;
   size_t repolen = strlen(repo) ;
-  char newdir[repolen + 24] ;
+  char newdir[repolen + 29] ;
   memcpy(newdir, repo, repolen) ;
-  memcpy(newdir + repolen, "/.everything:cur:XXXXXX", 24) ;
+  memcpy(newdir + repolen, "/sources/..everything:XXXXXX", 29) ;
   if (!mkdtemp(newdir))
   {
     strerr_warnfu2sys("mkdtemp ", newdir) ;
@@ -56,11 +56,11 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
       if (d->d_name[0] == '.') continue ;
       len = strlen(d->d_name) ;
       {
-        char dst[repolen + 25 + len] ;
+        char dst[repolen + 30 + len] ;
         char src[srclen + len + 2] ;
-        memcpy(dst, newdir, repolen + 23) ;
-        dst[repolen + 23] = '/' ;
-        memcpy(dst + repolen + 24, d->d_name, len+1) ;
+        memcpy(dst, newdir, repolen + 28) ;
+        dst[repolen + 28] = '/' ;
+        memcpy(dst + repolen + 29, d->d_name, len+1) ;
         memcpy(src, sources[i], srclen) ;
         src[srclen] = '/' ;
         memcpy(src + srclen + 1, d->d_name, len+1) ;
@@ -116,17 +116,28 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
   }
 
   {
-    char curdir[repolen + 13] ;
+    char curdir[repolen + 21] ;
     memcpy(curdir, repo, repolen) ;
-    memcpy(curdir + repolen, "/.everything", 13) ;
-    if (!atomic_symlink(newdir + repolen + 1, curdir, "tmp")) goto err ;
+    memcpy(curdir + repolen, "/sources/.everything", 21) ;
+    if (!atomic_symlink4(newdir + repolen + 1, curdir, 0, 0)) goto err ;
   }
 
   stralloc_free(&sa) ;
-  return s6rc_repo_cleanup(repo) ;
+  if (!s6rc_repo_cleanup(repo)) return 0 ;
+
+  {
+    size_t buflen = S6RC_REPO_SET_COMPILE_BUFLEN(repolen, sizeof(".everything") - 1) ;
+    char oldc[buflen] ;
+    int r = s6rc_repo_set_compile(repo, ".everything", 0, 0, oldc, verbosity, fdhuser) ;
+    if (r <= 0) goto err0 ;
+    if (r == 2) rm_rf(oldc) ;
+  }
+
+  return 1 ;
 
  err:
   stralloc_free(&sa) ;
+ err0:
   cleanup(newdir) ;
   return 0 ;
 }

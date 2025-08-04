@@ -376,7 +376,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
   sa->s[sa->len] = 0 ;
 
    /* The point of no return is here */
-  if (!atomic_symlink(sa->s + dirlen, live, "s6-rc-update_atomic_symlink")) goto rollback ;
+  if (!atomic_symlink4(sa->s + dirlen, live, 0, 0)) goto rollback ;
   if (verbosity >= 2) strerr_warni1x("successfully switched to new database") ;
 
  /* scandir cleanup, then old livedir cleanup */

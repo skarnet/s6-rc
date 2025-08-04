@@ -20,7 +20,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-repo-init [ -v verbosity ] [ -r repo ] sources..."
+#define USAGE "s6-rc-repo-init [ -v verbosity ] [ -r repo ] [ -h fdhuser ] sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static void cleanup (char const *fn)
@@ -45,13 +45,15 @@ enum gola_e
 {
   GOLA_VERBOSITY,
   GOLA_REPODIR,
+  GOLA_FDHUSER,
   GOLA_N
 } ;
 
-static gol_arg const rgola[2] =
+static gol_arg const rgola[3] =
 {
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
-  { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR }
+  { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
+  { .so = 'h', .lo = "fdhuser", .i = GOLA_FDHUSER }
 } ;
 
 int main (int argc, char const *const *argv)
@@ -60,12 +62,12 @@ int main (int argc, char const *const *argv)
   char const *repo = S6RC_REPO_BASE ;
   unsigned int verbosity = 1 ;
   mode_t m ;
-  char const *wgola[2] = { 0 } ;
+  char const *wgola[3] = { 0 } ;
   uint64_t wgolb = 0 ;
   unsigned int golc ;
 
   PROG = "s6-rc-repo-init" ;
-  golc = gol_main(argc, argv, rgolb, 1, rgola, 2, &wgolb, wgola) ;
+  golc = gol_main(argc, argv, rgolb, 1, rgola, 3, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
@@ -121,7 +123,7 @@ int main (int argc, char const *const *argv)
     strerr_diefu2sys(111, "create ", tmp) ;
   }
 
-  if (!s6rc_repo_sync(repotmp, argv, argc, verbosity))
+  if (!s6rc_repo_sync(repotmp, argv, argc, verbosity, wgola[GOLA_FDHUSER]))
   {
     cleanup(repotmp) ;
     return 111 ;

@@ -29,7 +29,19 @@ static inline void dodelete (char const *repo, char const *setname)
     if (errno != ENOENT) strerr_diefu2sys(111, "access ", fn) ;
     else strerr_warnwu2sys("delete set ", setname) ;
   }
-  else rm_rf(fn) ;
+  else
+  {
+    ssize_t r ;
+    char real[repolen + setlen + 18] ;
+    memcpy(real, repo, repolen) ;
+    memcpy(real + repolen, "/sources/", 9) ;
+    r = readlink(fn, real + repolen + 9, setlen + 9) ;
+    if (r == -1) strerr_diefu2sys(111, "readlink ", fn) ;
+    else if (r != 8) strerr_dief3x(102, "symlink ", fn, " points to an invalid name") ;
+    real[repolen + setlen + 17] = 0 ;
+    if (unlink(fn) == -1) strerr_diefu2sys(111, "unlink ", fn) ;
+    rm_rf(real) ;
+  }
 }
 
 enum gola_e

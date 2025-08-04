@@ -25,8 +25,8 @@ static inline void update_livedir (char const *live, char const *newcompiled, ta
   char cfn[livelen + 10] ;
   memcpy(cfn, live, livelen) ;
   memcpy(cfn + livelen, "/compiled", 10) ;
-  if (!atomic_symlink(newcompiled, cfn, PROG))
-    strerr_diefu4sys(111, "atomic_symlink ", cfn, " to ", newcompiled) ;
+  if (!atomic_symlink4(newcompiled, cfn, 0, 0))
+    strerr_diefu4sys(111, "atomic_symlink4 ", cfn, " to ", newcompiled) ;
 }
 
 

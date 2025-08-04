@@ -5,7 +5,8 @@ compiled/$name-$stamp
 compiled/$name-current ->
 compiled/$name-previous ->
 
-source/.everything
-source/$name
-source/$name/active
-source/$name/masked
+sources/.everything
+sources/$name -> sources/.$name:XXXXXX
+sources/$name/active
+sources/$name/masked
+sources/$name/onboot

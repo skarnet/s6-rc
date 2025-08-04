@@ -115,7 +115,7 @@ int main (int argc, char const *const *argv)
       strerr_diefu4sys(111, "recursively copy ", cfn, " to ", lfn) ;
     }
   }
-  if (!atomic_symlink(sa.s + dirlen, live, PROG))
+  if (!atomic_symlink4(sa.s + dirlen, live, 0, 0))
   {
     cleanup(&sa) ;
     strerr_diefu4sys(111, "symlink ", sa.s + dirlen, " to ", live) ;
