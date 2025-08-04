@@ -33,6 +33,7 @@ static void cleanup (char const *fn)
 
 static inline void newset (char const *repo, char const *setname)
 {
+  static char const sublist[4][7] = { "masked", "onboot", "bundle", "active" } ;
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(setname) ;
   char everything[repolen + 21] ;
@@ -63,26 +64,14 @@ static inline void newset (char const *repo, char const *setname)
     strerr_diefu2sys(111, "create ", act) ;
   }
 
-  memcpy(act + repolen + 18 + setlen, "masked", 7) ;
-  if (mkdir(act, 02755) == -1)
+  for (size_t i = 0 ; i < 4 ; i++)
   {
-    cleanup(tmp) ;
-    strerr_diefu2sys(111, "mkdir ", act) ;
-  }
-
-  memcpy(act + repolen + 18 + setlen, "onboot", 7) ;
-  if (mkdir(act, 02755) == -1)
-  {
-    cleanup(tmp) ;
-    strerr_diefu2sys(111, "mkdir ", act) ;
-  }
-  memcpy(onb, act, repolen + 25 + setlen) ;
-
-  memcpy(act + repolen + 18 + setlen, "active", 7) ;
-  if (mkdir(act, 02755) == -1)
-  {
-    cleanup(tmp) ;
-    strerr_diefu2sys(111, "mkdir ", act) ;
+    memcpy(act + repolen + 18 + setlen, sublist[i], 7) ;
+    if (mkdir(act, 02755) == -1)
+    {
+      cleanup(tmp) ;
+      strerr_diefu2sys(111, "mkdir ", act) ;
+    }
   }
 
   DIR *dir = opendir(everything) ;
