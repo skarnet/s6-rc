@@ -1,77 +1,8 @@
 /* ISC license. */
 
-#include <sys/wait.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-
-#include <skalibs/posixplz.h>
-#include <skalibs/types.h>
-#include <skalibs/strerr.h>
-#include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
-#include <skalibs/cspawn.h>
-#include <skalibs/djbunix.h>
-
-#include <s6-rc/config.h>
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_set_listdeps (char const *repo, char const *service, uint32_t options, stralloc *storage, genalloc *indices)
+int s6rc_repo_set_listdeps (char const *repo, char const *service, stralloc *storage, genalloc *indices, int up)
 {
-  int swasnull = !storage->s ;
-  int gwasnull = !indices->s ;
-  size_t sstart = storage->len ;
-
-  {
-    size_t m = 0 ;
-    size_t repolen = strlen(repo) ;
-    char const *argv[9] ;
-    pid_t pid ;
-    int fd ;
-    int wstat ;
-    char refdb[repolen + 22] ;
-    memcpy(refdb, repo, repolen) ;
-    memcpy(refdb + repolen, "/compiled/.everything", 22) ;
-    argv[m++] = S6RC_BINPREFIX "s6-rc-db" ;
-    argv[m++] = "-c";
-    argv[m++] = refdb ;
-    argv[m++] = "-b" ;
-    argv[m++] = options & 1 ? "-u" : "-d" ;
-    argv[m++] = "--" ;
-    argv[m++] = "dependencies" ;
-    argv[m++] = service ;
-    argv[m++] = 0 ;
-    pid = child_spawn1_pipe(argv[0], argv, (char const *const *)environ, &fd, 1) ;
-    if (!pid) { strerr_warnfu2sys("spawn ", argv[0]) ; return -1 ; }
-    if (!slurpn(fd, storage, 0)) { strerr_warnfu2sys("read output from ", argv[0]) ; return -1 ; }
-    fd_close(fd) ;
-    if (wait_pid(pid, &wstat) == -1)
-    {
-      strerr_warnfu2sys("wait for ", argv[0]) ;
-      return -1 ;
-    }
-    if (WIFSIGNALED(wstat))
-    {
-      char fmt[UINT_FMT] ;
-      fmt[uint_fmt(fmt, WTERMSIG(wstat))] = 0 ;
-      strerr_warnf3x(argv[0], " crashed with signal ", fmt) ;
-      return -1 ;
-    }
-    if (WEXITSTATUS(wstat))
-    {
-      char fmt[UINT_FMT] ;
-      fmt[uint_fmt(fmt, WEXITSTATUS(wstat))] = 0 ;
-      strerr_warnf3x(argv[0], " exited with code ", fmt) ;
-      return (WEXITSTATUS(wstat) < 99) - 1 ;
-    }
-  }
-
- if (!s6rc_nlto0(storage->s + sstart, sstart, storage->len, indices)) goto err ;
- return 1 ;
-
- err:
-  if (gwasnull) genalloc_free(size_t, indices) ;
-  if (swasnull) stralloc_free(storage) ;
-  return -1 ;
+  return s6rc_repo_set_listdeps_internal(repo, &service, 1, storage, indices, !!up) ;
 }

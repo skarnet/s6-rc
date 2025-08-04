@@ -17,7 +17,9 @@ s6rc_read_uint.o
 s6rc_repo_cleanup.o
 s6rc_repo_lock.o
 s6rc_repo_set_compile.o
+s6rc_repo_set_listalldeps.o
 s6rc_repo_set_listdeps.o
+s6rc_repo_set_listdeps_internal.o
 s6rc_repo_sync.o
 s6rc_sanitize_dir.o
 s6rc_servicedir_internal.o
