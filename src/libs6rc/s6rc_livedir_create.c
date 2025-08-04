@@ -1,13 +1,14 @@
 /* ISC license. */
 
-#include <skalibs/nonposix.h>
+#include <skalibs/bsdsnowflake.h> /* stat.h */
+#include <skalibs/nonposix.h>  /* mkdtemp */
 
-#include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <skalibs/stat.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 

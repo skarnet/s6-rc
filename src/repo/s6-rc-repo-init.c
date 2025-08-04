@@ -12,6 +12,7 @@
 #include <skalibs/stat.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/gol.h>
+#include <skalibs/tai.h>
 #include <skalibs/prog.h>
 #include <skalibs/strerr.h>
 #include <skalibs/djbunix.h>
@@ -76,7 +77,7 @@ int main (int argc, char const *const *argv)
     if (argv[i][0] != '/')
       strerr_dief2x(100, argv[i], " is not an absolute path") ;
   if (!argc) strerr_warnw1x("no source directories given, creating an empty repository") ;
-
+  tain_now_g() ;
   repolen = strlen(repo) ;
   char repotmp[repolen + 12] ;
   char tmp[repolen + 21] ;

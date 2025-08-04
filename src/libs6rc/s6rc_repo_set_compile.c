@@ -1,7 +1,5 @@
 /* ISC license. */
 
-#include <skalibs/bsdsnowflake.h>
-
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -21,7 +19,7 @@
 int s6rc_repo_set_compile (char const *repo, char const *set, char const *const *subs, size_t nsubs, char *oldc, unsigned int verbosity, char const *fdhuser)
 {
   size_t repolen = strlen(repo) ;
-  size_t setlen = strlen(repo) ;
+  size_t setlen = strlen(set) ;
   size_t totsublen = 0 ;
   char newc[S6RC_REPO_SET_COMPILE_BUFLEN(repolen, setlen)] ;
   memcpy(newc, repo, repolen) ;

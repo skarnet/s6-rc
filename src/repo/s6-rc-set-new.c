@@ -12,6 +12,7 @@
 #include <skalibs/stat.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/gol.h>
+#include <skalibs/tai.h>
 #include <skalibs/prog.h>
 #include <skalibs/strerr.h>
 #include <skalibs/direntry.h>
@@ -179,6 +180,7 @@ int main (int argc, char const *const *argv)
 
   fdlock = s6rc_repo_lock(repo, 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;
+  tain_now_g() ;
 
   for (unsigned int i = 0 ; i < argc ; i++)
     newset(repo, argv[i]) ;
