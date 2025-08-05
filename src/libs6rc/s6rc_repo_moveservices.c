@@ -1,6 +1,7 @@
 /* ISC license. */
 
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 
@@ -8,7 +9,7 @@
 
 #include <s6-rc/repo.h>
 
-int s6rc_repo_set_moveservices (char const *repo, char const *set, char const *const *services, size_t n, char const *fromsub, char const *tosub)
+int s6rc_repo_moveservices (char const *repo, char const *set, char const *const *services, size_t n, char const *fromsub, char const *tosub, unsigned int verbosity)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
@@ -37,21 +38,25 @@ int s6rc_repo_set_moveservices (char const *repo, char const *set, char const *c
     size_t len = strlen(services[i]) ;
     memcpy(from + repolen + setlen + fromsublen + 11, services[i], len + 1) ;
     memcpy(to + repolen + setlen + tosublen + 11, services[i], len + 1) ;
-    if (rename(from, to) == -1) goto rollback ;
+    if (access(to, F_OK) == 0)
+    {
+      if (verbosity >= 2)
+        strerr_warni8x("service ", services[i], " already existed in subset ", tosub, " of set ", set, " in repository ", repo) ;
+    }
+    else if (errno != ENOENT)
+    {
+      strerr_warnfu2sys("access ", to) ;
+      return 0 ;
+    }
+    if (rename(from, to) == -1)
+    {
+      strerr_warnfu4sys("rename ", from, " to ", to) ;
+      return 0 ;
+    }
+    if (verbosity >= 3)
+    {
+      strerr_warnt10x("repository ", repo, ", set ", set, ", from subset ", fromsub, " to subset ", tosub, ": successfully moved service ", services[i]) ;
+    }
   }
   return 1 ;
-
- rollback:
-  int e = errno ;
-  strerr_warnfu4sys("rename ", from, " to ", to) ;
-  while (i--)
-  {
-    size_t len = strlen(services[i]) ;
-    memcpy(from + repolen + setlen + fromsublen + 11, services[i], len + 1) ;
-    memcpy(to + repolen + setlen + tosublen + 11, services[i], len + 1) ;
-    if (rename(to, from) == -1)
-      strerr_warnwu4sys("rollback ", to, " to ", from) ;
-  }
-  errno = e ;
-  return 0 ;
 }

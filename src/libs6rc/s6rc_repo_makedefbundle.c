@@ -1,42 +1,66 @@
 /* ISC license. */
 
 #include <skalibs/bsdsnowflake.h>
-#include <skalibs/nonposix.h>
 
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include <skalibs/stat.h>
 #include <skalibs/direntry.h>
 #include <skalibs/strerr.h>
+#include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 
 #include <s6-rc/repo.h>
 
-int s6rc_repo_set_makebundle (char const *repo, char const *set, char const *sub, char const *bundle)
+int s6rc_repo_makedefbundle (char const *repo, char const *set, char const *bundle)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
-  size_t sublen = strlen(sub) ;
   size_t bundlelen = strlen(bundle) ;
   size_t bfnlen = repolen + setlen + bundlelen + 28 ;
   DIR *dir ;
   char bfn[bfnlen + 1] ;
-  char subfn[repolen + setlen + sublen + 11] ;
+  char subfn[repolen + setlen + 17] ;
 
   memcpy(bfn, repo, repolen) ;
-  memcpy(bfn + repolen, "/sources/", 9) ;
-  memcpy(bfn + repolen + 9, set, setlen) ;
-  memcpy(bfn + repolen + 9 + setlen, "/bundle/", 8) ;
-  memcpy(bfn + repolen + 17 + setlen, bundle, bundlelen + 1) ;
-  if (rm_rf(bfn) == -1)
+  memcpy(bfn + repolen, "/sources/.everything/", 21) ;
+  memcpy(bfn + repolen + 21, bundle, bundlelen + 1) ;
+  if (access(bfn, F_OK) == -1)
   {
-    strerr_warnfu2sys("delete previous directory at ", bfn) ;
-    return 0 ;
+    if (errno != ENOENT)
+    {
+      strerr_warnfu2sys("check existence of ", bfn) ;
+      return 0 ;
+    }
   }
+  else
+  {
+    stralloc sa = STRALLOC_ZERO ;
+    if (sareadlink(&sa, bfn) == -1)
+    {
+      strerr_warnfu2sys("readlink ", bfn) ;
+      return 0 ;
+    }
+    if (!stralloc_0(&sa))
+    {
+      strerr_warnfu1sys("stralloc_catb ") ;
+      stralloc_free(&sa) ;
+      return 0 ;
+    }
+    strerr_warnf4x("bundle ", bundle, " is already defined at ", sa.s) ;
+    stralloc_free(&sa) ;
+    return (errno = EINVAL, 0) ;
+  }
+
+  memcpy(bfn + repolen + 9, set, setlen) ;
+  memcpy(bfn + repolen + 9 + setlen, "/bbuild/", 8) ;
+  memcpy(bfn + repolen + 17 + setlen, bundle, bundlelen + 1) ;
   if (mkdir(bfn, 02755) == -1)
   {
-    strerr_warnfu2sys("mkdir ", bfn) ;
+    if (errno != EEXIST) strerr_warnfu2sys("mkdir ", bfn) ;
+    else strerr_warnf6x("bundle ", bundle, " is already defined in set ", set, " of repository ", repo) ;
     return 0 ;
   }
   memcpy(bfn + repolen + setlen + 17 + bundlelen, "/type", 6) ;
@@ -54,7 +78,7 @@ int s6rc_repo_set_makebundle (char const *repo, char const *set, char const *sub
   bfn[bfnlen] = '/' ;
 
   memcpy(subfn, bfn, repolen + 10 + setlen) ;
-  memcpy(subfn + repolen + 10 + setlen, sub, sublen + 1) ;
+  memcpy(subfn + repolen + 10 + setlen, "onboot", 7) ;
   dir = opendir(subfn) ;
   if (!dir)
   {

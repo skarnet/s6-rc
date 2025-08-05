@@ -17,7 +17,7 @@
 #include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_set_listdeps_internal (char const *repo, char const *const *services, size_t n, stralloc *storage, genalloc *indices, uint32_t options)
+int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, size_t n, stralloc *storage, genalloc *indices, uint32_t options)
 {
   int swasnull = !storage->s ;
   int gwasnull = !indices->s ;

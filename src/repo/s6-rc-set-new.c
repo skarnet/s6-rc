@@ -33,14 +33,13 @@ static void cleanup (char const *fn)
 
 static inline void newset (char const *repo, char const *setname)
 {
-  static char const sublist[4][7] = { "masked", "onboot", "bundle", "active" } ;
+  static char const sublist[5][7] = { "masked", "active", "onboot", "bundle", "bbuild" } ;
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(setname) ;
   char everything[repolen + 21] ;
   char fn[repolen + 10 + setlen] ;
   char tmp[repolen + 18 + setlen] ;
-  char act[repolen + 25 + setlen] ;
-  char onb[repolen + 25 + setlen] ;
+  char sub[repolen + 25 + setlen] ;
   memcpy(everything, repo, repolen) ;
   memcpy(everything + repolen, "/sources/.everything", 21) ;
   memcpy(fn, everything, repolen + 9) ;
@@ -56,29 +55,29 @@ static inline void newset (char const *repo, char const *setname)
   memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
 
-  memcpy(act, tmp, repolen + 17 + setlen) ;
-  memcpy(act + repolen + 17 + setlen, "/lock", 6) ;
-  if (!openwritenclose_unsafe(act, "", 0))
+  memcpy(sub, tmp, repolen + 17 + setlen) ;
+  memcpy(sub + repolen + 17 + setlen, "/lock", 6) ;
+  if (!openwritenclose_unsafe(sub, "", 0))
   {
     cleanup(tmp) ;
-    strerr_diefu2sys(111, "create ", act) ;
+    strerr_diefu2sys(111, "create ", sub) ;
   }
 
   for (size_t i = 0 ; i < 4 ; i++)
   {
-    memcpy(act + repolen + 18 + setlen, sublist[i], 7) ;
-    if (mkdir(act, 02755) == -1)
+    memcpy(sub + repolen + 18 + setlen, sublist[i], 7) ;
+    if (mkdir(sub, 02755) == -1)
     {
       cleanup(tmp) ;
-      strerr_diefu2sys(111, "mkdir ", act) ;
+      strerr_diefu2sys(111, "mkdir ", sub) ;
     }
   }
 
   DIR *dir = opendir(everything) ;
   for (;;)
   {
-    char *cur = act ;
     size_t len ;
+    unsigned int subi = 1 ;
     direntry *d ;
     errno = 0 ;
     d = readdir(dir) ;
@@ -89,21 +88,32 @@ static inline void newset (char const *repo, char const *setname)
     char src[len + 33] ;
     char dst[repolen + 26 + setlen + len] ;
     memcpy(src, "../.everything/", 15) ;
-    memcpy(src + 15, d->d_name, len) ;
-    memcpy(src + 15 + len, "/flag-essential", 16) ;
-    if (access(src, F_OK) == -1)
+    memcpy(src + 15, d->d_name, len+1) ;
+    switch (s6rc_type_check(-1, src))
     {
-      if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
+      case -1 : strerr_diefu3sys(111, "check ", src, "/type") ;
+      case 0 : strerr_dief3x(102, "invalid ", src, "/type") ;
+      case 3 : subi = 3 ; break ;
+      default :
+      {
+        memcpy(src + 15 + len, "/flag-essential", 16) ;
+        if (access(src, F_OK) == -1)
+        {
+          if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
+        }
+        else subi = 2 ;
+        memcpy(src + 21 + len, "recommended", 12) ;
+        if (access(src, F_OK) == -1)
+        {
+          if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
+        }
+        else subi = 2 ;
+        src[15 + len] = 0 ;
+        break ;
+      }
     }
-    else cur = onb ;
-    memcpy(src + 21 + len, "recommended", 12) ;
-    if (access(src, F_OK) == -1)
-    {
-      if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
-    }
-    else cur = onb ;
-    src[15 + len] = 0 ;
-    memcpy(dst, cur, repolen + 24 + setlen) ;
+    memcpy(dst, sub, repolen + 18 + setlen) ;
+    memcpy(dst + repolen + 18 + setlen, sublist[subi], 6) ;
     dst[repolen + 24 + setlen] = '/' ;
     memcpy(dst + repolen + 25 + setlen, d->d_name, len+1) ;
     if (symlink(src, dst) == -1)

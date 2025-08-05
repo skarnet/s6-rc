@@ -126,9 +126,9 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
   if (!s6rc_repo_cleanup(repo)) return 0 ;
 
   {
-    size_t buflen = S6RC_REPO_SET_COMPILE_BUFLEN(repolen, sizeof(".everything") - 1) ;
+    size_t buflen = S6RC_REPO_COMPILE_BUFLEN(repolen, sizeof(".everything") - 1) ;
     char oldc[buflen] ;
-    int r = s6rc_repo_set_compile(repo, ".everything", 0, 0, oldc, verbosity, fdhuser) ;
+    int r = s6rc_repo_compile(repo, ".everything", 0, 0, oldc, verbosity, fdhuser) ;
     if (r <= 0) goto err0 ;
     if (r == 2) rm_rf(oldc) ;
   }
