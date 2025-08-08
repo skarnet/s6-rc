@@ -21,7 +21,8 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
   size_t totsublen = 0 ;
-  char newc[S6RC_REPO_COMPILE_BUFLEN(repolen, setlen)] ;
+  int needprefix = strcmp(set, ".ref") ;
+  char newc[repolen + setlen + 45] ;
   memcpy(newc, repo, repolen) ;
   memcpy(newc + repolen, "/compiled/.", 11) ;
   memcpy(newc + repolen + 11, set, setlen) ;
@@ -36,9 +37,9 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
     pid_t pid ;
     size_t m = 0 ;
     int wstat ;
-    char const *argv[9 + nsubs + !nsubs] ;
+    char const *argv[9 + nsubs] ;
     char fmtv[UINT_FMT] ;
-    char src[(nsubs + !nsubs) * (repolen + 10 + setlen) + totsublen] ;
+    char src[nsubs * (repolen + 10 + (needprefix ? setlen + 1 : 0)) + totsublen] ;
     char *w = src ;
     fmtv[uint_fmt(fmtv, verbosity)] = 0 ;
     argv[m++] = S6RC_BINPREFIX "s6-rc-compile" ;
@@ -52,25 +53,18 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
     }
     argv[m++] = "--" ;
     argv[m++] = newc ;
-    if (nsubs)
+    for (size_t i = 0 ; i < nsubs ; i++)
     {
-      for (size_t i = 0 ; i < nsubs ; i++)
-      {
-        size_t sublen = strlen(subs[i]) ;
-        argv[m++] = w ;
-        memcpy(w, repo, repolen) ; w += repolen ;
-        memcpy(w, "/sources/", 9) ; w += 9 ;
-        memcpy(w, set, setlen) ; w += setlen ;
-        *w++ = '/' ;
-        memcpy(w, subs[i], sublen+1) ; w += sublen + 1 ;
-      }
-    }
-    else
-    {
+      size_t sublen = strlen(subs[i]) ;
       argv[m++] = w ;
       memcpy(w, repo, repolen) ; w += repolen ;
       memcpy(w, "/sources/", 9) ; w += 9 ;
-      memcpy(w, set, setlen+1) ; w += setlen+1 ;
+      if (needprefix)
+      {
+        memcpy(w, set, setlen) ; w += setlen ;
+        *w++ = '/' ;
+      }
+      memcpy(w, subs[i], sublen+1) ; w += sublen + 1 ;
     }
     argv[m++] = 0 ;
     pid = cspawn(argv[0], argv, (char const *const *)environ, 0, 0, 0) ;

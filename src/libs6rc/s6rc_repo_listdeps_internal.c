@@ -21,7 +21,8 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
 {
   int swasnull = !storage->s ;
   int gwasnull = !indices->s ;
-  size_t sstart = storage->len ;
+  size_t sabase = storage->len ;
+  size_t gabase = genalloc_len(size_t, indices) ;
 
   {
     size_t m = 0 ;
@@ -30,9 +31,9 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
     int fd ;
     int wstat ;
     char const *argv[8 + n] ;
-    char refdb[repolen + 22] ;
+    char refdb[repolen + 15] ;
     memcpy(refdb, repo, repolen) ;
-    memcpy(refdb + repolen, "/compiled/.everything", 22) ;
+    memcpy(refdb + repolen, "/compiled/.ref", 15) ;
     argv[m++] = S6RC_BINPREFIX "s6-rc-db" ;
     argv[m++] = "-c";
     argv[m++] = refdb ;
@@ -67,11 +68,13 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
     }
   }
 
- if (!s6rc_nlto0(storage->s + sstart, sstart, storage->len, indices)) goto err ;
+ if (!s6rc_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
  return 1 ;
 
  err:
   if (gwasnull) genalloc_free(size_t, indices) ;
+  else genalloc_setlen(size_t, indices, gabase) ;
   if (swasnull) stralloc_free(storage) ;
+  else storage->len = sabase ;
   return -1 ;
 }

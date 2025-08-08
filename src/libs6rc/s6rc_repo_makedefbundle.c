@@ -11,6 +11,7 @@
 #include <skalibs/strerr.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/skamisc.h>
 
 #include <s6-rc/repo.h>
 
@@ -25,37 +26,25 @@ int s6rc_repo_makedefbundle (char const *repo, char const *set, char const *bund
   char subfn[repolen + setlen + 17] ;
 
   memcpy(bfn, repo, repolen) ;
-  memcpy(bfn + repolen, "/sources/.everything/", 21) ;
-  memcpy(bfn + repolen + 21, bundle, bundlelen + 1) ;
-  if (access(bfn, F_OK) == -1)
+  memcpy(bfn + repolen, "/sources/.atomics/", 18) ;
+  memcpy(bfn + repolen + 18, bundle, bundlelen + 1) ;
+  
+  if (access(bfn, F_OK) == 0) goto errexists ;
+  if (errno != ENOENT)
   {
-    if (errno != ENOENT)
-    {
-      strerr_warnfu2sys("check existence of ", bfn) ;
-      return 0 ;
-    }
+    strerr_warnfu2sys("check existence of ", bfn) ;
+    return 0 ;
   }
-  else
+  memcpy(bfn + repolen + 10, "bundle", 6) ;
+  if (access(bfn, F_OK) == 0) goto errexists ;
+  if (errno != ENOENT)
   {
-    stralloc sa = STRALLOC_ZERO ;
-    if (sareadlink(&sa, bfn) == -1)
-    {
-      strerr_warnfu2sys("readlink ", bfn) ;
-      return 0 ;
-    }
-    if (!stralloc_0(&sa))
-    {
-      strerr_warnfu1sys("stralloc_catb ") ;
-      stralloc_free(&sa) ;
-      return 0 ;
-    }
-    strerr_warnf4x("bundle ", bundle, " is already defined at ", sa.s) ;
-    stralloc_free(&sa) ;
-    return (errno = EINVAL, 0) ;
+    strerr_warnfu2sys("check existence of ", bfn) ;
+    return 0 ;
   }
 
   memcpy(bfn + repolen + 9, set, setlen) ;
-  memcpy(bfn + repolen + 9 + setlen, "/bbuild/", 8) ;
+  memcpy(bfn + repolen + 9 + setlen, "/bundle/", 8) ;
   memcpy(bfn + repolen + 17 + setlen, bundle, bundlelen + 1) ;
   if (mkdir(bfn, 02755) == -1)
   {
@@ -113,4 +102,20 @@ int s6rc_repo_makedefbundle (char const *repo, char const *set, char const *bund
   }
 
   return 1 ;
+
+ errexists:
+  if (sareadlink(&satmp, bfn) == -1)
+  {
+    strerr_warnfu2sys("readlink ", bfn) ;
+    return 0 ;
+  }
+  if (!stralloc_0(&satmp))
+  {
+    strerr_warnfu1sys("stralloc_catb ") ;
+    satmp.len = 0 ;
+    return 0 ;
+  }
+  strerr_warnf4x("bundle ", bundle, " is already defined at ", satmp.s) ;
+  satmp.len = 0 ;
+  return (errno = EINVAL, 0) ;
 }

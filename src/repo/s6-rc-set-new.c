@@ -33,16 +33,16 @@ static void cleanup (char const *fn)
 
 static inline void newset (char const *repo, char const *setname)
 {
-  static char const sublist[5][7] = { "masked", "active", "onboot", "bundle", "bbuild" } ;
+  static char const sublist[3][7] = { "masked", "active", "onboot" } ;
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(setname) ;
-  char everything[repolen + 21] ;
+  char atomics[repolen + 18] ;
   char fn[repolen + 10 + setlen] ;
   char tmp[repolen + 18 + setlen] ;
   char sub[repolen + 25 + setlen] ;
-  memcpy(everything, repo, repolen) ;
-  memcpy(everything + repolen, "/sources/.everything", 21) ;
-  memcpy(fn, everything, repolen + 9) ;
+  memcpy(atomics, repo, repolen) ;
+  memcpy(atomics + repolen, "/sources/.atomics", 18) ;
+  memcpy(fn, atomics, repolen + 9) ;
   memcpy(fn + repolen + 9, setname, setlen + 1) ;
   if (access(fn, F_OK) == -1)
   {
@@ -55,15 +55,7 @@ static inline void newset (char const *repo, char const *setname)
   memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
 
-  memcpy(sub, tmp, repolen + 17 + setlen) ;
-  memcpy(sub + repolen + 17 + setlen, "/lock", 6) ;
-  if (!openwritenclose_unsafe(sub, "", 0))
-  {
-    cleanup(tmp) ;
-    strerr_diefu2sys(111, "create ", sub) ;
-  }
-
-  for (size_t i = 0 ; i < 4 ; i++)
+  for (size_t i = 0 ; i < 3 ; i++)
   {
     memcpy(sub + repolen + 18 + setlen, sublist[i], 7) ;
     if (mkdir(sub, 02755) == -1)
@@ -73,60 +65,10 @@ static inline void newset (char const *repo, char const *setname)
     }
   }
 
-  DIR *dir = opendir(everything) ;
-  for (;;)
-  {
-    size_t len ;
-    unsigned int subi = 1 ;
-    direntry *d ;
-    errno = 0 ;
-    d = readdir(dir) ;
-    if (!d) break ;
-    if (d->d_name[0] == '.') continue ;
-
-    len = strlen(d->d_name) ;
-    char src[len + 33] ;
-    char dst[repolen + 26 + setlen + len] ;
-    memcpy(src, "../.everything/", 15) ;
-    memcpy(src + 15, d->d_name, len+1) ;
-    switch (s6rc_type_check(-1, src))
-    {
-      case -1 : strerr_diefu3sys(111, "check ", src, "/type") ;
-      case 0 : strerr_dief3x(102, "invalid ", src, "/type") ;
-      case 3 : subi = 3 ; break ;
-      default :
-      {
-        memcpy(src + 15 + len, "/flag-essential", 16) ;
-        if (access(src, F_OK) == -1)
-        {
-          if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
-        }
-        else subi = 2 ;
-        memcpy(src + 21 + len, "recommended", 12) ;
-        if (access(src, F_OK) == -1)
-        {
-          if (errno != ENOENT) strerr_diefu2sys(111, "access ", src) ;
-        }
-        else subi = 2 ;
-        src[15 + len] = 0 ;
-        break ;
-      }
-    }
-    memcpy(dst, sub, repolen + 18 + setlen) ;
-    memcpy(dst + repolen + 18 + setlen, sublist[subi], 6) ;
-    dst[repolen + 24 + setlen] = '/' ;
-    memcpy(dst + repolen + 25 + setlen, d->d_name, len+1) ;
-    if (symlink(src, dst) == -1)
-    {
-      cleanup(tmp) ;
-      strerr_diefu4sys(111, "symlink ", src, " to ", dst) ;
-    }
-  }
-  dir_close(dir) ;
-  if (errno)
+  if (s6rc_repo_fillset(repo, tmp + repolen + 9))
   {
     cleanup(tmp) ;
-    strerr_diefu2sys(111, "readdir ", tmp) ;
+    _exit(111) ;
   }
 
   if (chmod(tmp, 02755) == -1)
@@ -171,12 +113,13 @@ int main (int argc, char const *const *argv)
   if (!argc) dieusage() ;
   for (unsigned int i = 0 ; i < argc ; i++)
   {
-    if (!argv[i][0]) strerr_dief1x(100, "set names cannot be empty") ;
-    if (argv[i][0] == '.') strerr_dief1x(100, "set names cannot start with a dot") ;
+    if (!argv[i][0])
+      strerr_dief2x(100, "set names cannot ", "be empty") ;
+    if (argv[i][0] == '.')
+      strerr_dief2x(100, "set names cannot ", "start with a dot") ;
     if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
-      strerr_dief1x(100, "set names cannot contain / or newlines") ;
+      strerr_dief2x(100, "set names cannot ", "contain / or newlines") ;
   }
-
   fdlock = s6rc_repo_lock(repo, 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;
   tain_now_g() ;
