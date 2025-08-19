@@ -27,7 +27,7 @@ static inline void cleanup (char const *ato, char const *bun)
   errno = e ;
 }
 
-static int s6rc_repo_syncsub (char const *repo, char const *set, char const *sub, uint32_t where, stralloc *sa, genalloc *ga, unsigned int verbosity)
+static int unlink_stales_in_sub (char const *repo, char const *set, char const *sub, uint32_t where, stralloc *sa, genalloc *ga, unsigned int verbosity)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
@@ -91,14 +91,14 @@ static int s6rc_repo_syncsub (char const *repo, char const *set, char const *sub
 
 static inline int s6rc_repo_syncset (char const *repo, size_t repolen, char const *set, stralloc *sa, genalloc *ga, unsigned int verbosity)
 {
-  static char const subs[3][7] = { "masked", "active", "onboot" } ;
   for (unsigned int i = 0 ; i < 3 ; i++)
-    if (s6rc_repo_syncsub(repo, set, subs[i], i, sa, ga, verbosity)) goto err ;
+    if (unlink_stales_in_sub(repo, set, s6rc_repo_sublist[i], i, sa, ga, verbosity)) goto err ;
 
-  size_t n = genalloc_len(size_t, ga) ;
-  if (!n)
   {
-    if (!s6rc_repo_fillset(repo, set)) goto err ;
+    size_t n = genalloc_len(size_t, ga) ;
+    char const *stillhere[n + !n] ;
+    for (size_t i = 0 ; i < n ; i++) stillhere[i] = sa->s + genalloc_s(size_t, ga)[i] ;
+    if (!s6rc_repo_fillset(repo, set, stillhere, n)) goto err ;
   }
 
   sa->len = 0 ;

@@ -38,6 +38,7 @@ s6rc_servicedir_copy_offline.o
 s6rc_servicedir_copy_online.o
 s6rc_servicedir_manage.o
 s6rc_servicedir_unsupervise.o
+s6rc_strrefcmp.o
 s6rc_type_check.o
 -ls6
 -lskarnet

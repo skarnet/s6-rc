@@ -10,7 +10,7 @@
 #include <skalibs/genalloc.h>
 
 extern char const s6rc_repo_sublist[3][7] ;
-extern int s6rc_repo_fillset (char const *, char const *) ;
+extern int s6rc_repo_fillset (char const *, char const *, char const *const *, size_t) ;
 
 extern int s6rc_repo_cleanup (char const *) ;
 extern int s6rc_repo_sync (char const *, char const *const *, size_t, unsigned int, char const *) ;

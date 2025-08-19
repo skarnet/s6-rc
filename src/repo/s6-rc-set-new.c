@@ -65,7 +65,7 @@ static inline void newset (char const *repo, char const *setname)
     }
   }
 
-  if (s6rc_repo_fillset(repo, tmp + repolen + 9))
+  if (s6rc_repo_fillset(repo, tmp + repolen + 9, 0, 0))
   {
     cleanup(tmp) ;
     _exit(111) ;
