@@ -47,25 +47,22 @@ int s6rc_repo_fillset (char const *repo, char const *set, char const *const *exi
     memcpy(src + 12, d->d_name, len+1) ;
     if (n && bsearch(&d->d_name, existing, n, sizeof(char const *), &s6rc_strrefcmp)) continue ;
     memcpy(src + 12 + len, "/flag-essential", 16) ;
-    if (access(src, F_OK) == -1)
+    if (access(src, F_OK) == 0) subi = 3 ;
+    else
     {
       if (errno != ENOENT)
       {
         strerr_warnfu2sys("access ", src) ;
         break ;
       }
-    }
-    else subi = 2 ;
-    memcpy(src + 18 + len, "recommended", 12) ;
-    if (access(src, F_OK) == -1)
-    {
-      if (errno != ENOENT)
+      memcpy(src + 18 + len, "recommended", 12) ;
+      if (access(src, F_OK) == 0) subi = 2 ;
+      else if (errno != ENOENT)
       {
         strerr_warnfu2sys("access ", src) ;
         break ;
       }
     }
-    else subi = 2 ;
     src[12 + len] = 0 ;
     memcpy(dst, setfn, repolen + 10 + setlen) ;
     memcpy(dst + repolen + 10 + setlen, s6rc_repo_sublist[subi], 6) ;

@@ -33,7 +33,6 @@ static void cleanup (char const *fn)
 
 static inline void newset (char const *repo, char const *setname)
 {
-  static char const sublist[3][7] = { "masked", "active", "onboot" } ;
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(setname) ;
   char atomics[repolen + 18] ;
@@ -55,9 +54,9 @@ static inline void newset (char const *repo, char const *setname)
   memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
 
-  for (size_t i = 0 ; i < 3 ; i++)
+  for (size_t i = 0 ; i < 4 ; i++)
   {
-    memcpy(sub + repolen + 18 + setlen, sublist[i], 7) ;
+    memcpy(sub + repolen + 18 + setlen, s6rc_repo_sublist[i], 7) ;
     if (mkdir(sub, 02755) == -1)
     {
       cleanup(tmp) ;

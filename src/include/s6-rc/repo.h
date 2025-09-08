@@ -9,7 +9,17 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 
-extern char const s6rc_repo_sublist[3][7] ;
+typedef struct s6rc_repo_sv_s s6rc_repo_sv, *s6rc_repo_sv_ref ;
+struct s6rc_repo_sv_s
+{
+  uint32_t pos ;
+  uint8_t sub ;
+} ;
+
+extern int s6rc_repo_sv_cmp (void const *, void const *, void *) ;
+
+extern char const s6rc_repo_sublist[4][7] ;
+
 extern int s6rc_repo_fillset (char const *, char const *, char const *const *, size_t) ;
 
 extern int s6rc_repo_cleanup (char const *) ;

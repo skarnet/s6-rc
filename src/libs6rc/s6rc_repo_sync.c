@@ -91,7 +91,7 @@ static int unlink_stales_in_sub (char const *repo, char const *set, char const *
 
 static inline int s6rc_repo_syncset (char const *repo, size_t repolen, char const *set, stralloc *sa, genalloc *ga, unsigned int verbosity)
 {
-  for (unsigned int i = 0 ; i < 3 ; i++)
+  for (unsigned int i = 0 ; i < 4 ; i++)
     if (unlink_stales_in_sub(repo, set, s6rc_repo_sublist[i], i, sa, ga, verbosity)) goto err ;
 
   {
