@@ -51,7 +51,7 @@ int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genal
   subfn[repolen + 9 + setlen] = '/' ;
   for (uint8_t i = 0 ; i < 4 ; i++)
   {
-    memcpy(subfn + repolen + setlen + 10, s6rc_repo_sublist[i], 7) ;
+    memcpy(subfn + repolen + setlen + 10, s6rc_repo_subnames[i], 7) ;
     if (!s6rc_repo_addsub(subfn, i, sa, ga)) goto err ;
   }
   qsortr(genalloc_s(s6rc_repo_sv, ga), genalloc_len(s6rc_repo_sv, ga), sizeof(s6rc_repo_sv), &s6rc_repo_sv_cmp, sa) ;

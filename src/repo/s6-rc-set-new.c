@@ -56,7 +56,7 @@ static inline void newset (char const *repo, char const *setname)
 
   for (size_t i = 0 ; i < 4 ; i++)
   {
-    memcpy(sub + repolen + 18 + setlen, s6rc_repo_sublist[i], 7) ;
+    memcpy(sub + repolen + 18 + setlen, s6rc_repo_subnames[i], 7) ;
     if (mkdir(sub, 02755) == -1)
     {
       cleanup(tmp) ;

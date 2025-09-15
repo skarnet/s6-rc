@@ -65,7 +65,7 @@ int s6rc_repo_fillset (char const *repo, char const *set, char const *const *exi
     }
     src[12 + len] = 0 ;
     memcpy(dst, setfn, repolen + 10 + setlen) ;
-    memcpy(dst + repolen + 10 + setlen, s6rc_repo_sublist[subi], 6) ;
+    memcpy(dst + repolen + 10 + setlen, s6rc_repo_subnames[subi], 6) ;
     dst[repolen + setlen + 16] = '/' ;
     memcpy(dst + repolen + setlen + 17, d->d_name, len+1) ;
     if (symlink(src, dst) == -1)

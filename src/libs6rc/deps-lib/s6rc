@@ -14,6 +14,7 @@ s6rc_livedir_prefixsize.o
 s6rc_lock.o
 s6rc_nlto0.o
 s6rc_read_uint.o
+s6rc_repo_badsub.o
 s6rc_repo_cleanup.o
 s6rc_repo_compile.o
 s6rc_repo_fillset.o
@@ -25,11 +26,11 @@ s6rc_repo_listsub.o
 s6rc_repo_lock.o
 s6rc_repo_makedefbundle.o
 s6rc_repo_makesetbundles.o
-s6rc_repo_moveservices.o
 s6rc_repo_makesvlist.o
+s6rc_repo_moveservices.o
 s6rc_repo_refcompile.o
 s6rc_repo_setcompile.o
-s6rc_repo_sublist.o
+s6rc_repo_subnames.o
 s6rc_repo_sv_cmp.o
 s6rc_repo_sync.o
 s6rc_sanitize_dir.o
