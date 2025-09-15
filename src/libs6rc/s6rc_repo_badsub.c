@@ -13,22 +13,12 @@
 
 #include <s6-rc/repo.h>
 
-static int s6rc_repo_sv_bcmpr (void const *a, void const *b, void *aux)
-{
-  char const *key = a ;
-  s6rc_repo_sv const *elem = b ;
-  stralloc *sa = aux ;
-  return strcmp(key, sa->s + elem->pos) ;
-}
-
 static int strqcmp (void const *a, void const *b)
 {
-  char const *const *aa = a ;
-  char const *const *bb = b ;
-  return strcmp(*aa, *bb) ;
+  return strcmp(*(char const *const *)a, *(char const *const *)b) ;
 }
 
-int s6rc_repo_badsub (char const *repo, char const *set, char const **services, size_t n, uint8_t newsub, s6rc_repo_sv const *svlist, size_t nlist, stralloc *sa, genalloc *badga)
+int s6rc_repo_badsub (char const *repo, char const *set, char const **services, uint32_t n, uint8_t newsub, s6rc_repo_sv const *svlist, uint32_t ntot, stralloc *sa, genalloc *badga)
 {
   int sawasnull = !!sa->s ;
   size_t sabase = sa->len ;
@@ -43,12 +33,12 @@ int s6rc_repo_badsub (char const *repo, char const *set, char const **services, 
   fulln = genalloc_len(size_t, &fulldeps) ;
   ind = genalloc_s(size_t, &fulldeps) ;
 
-  for (size_t i = 0 ; i < fulln ; i++)
+  for (uint32_t i = 0 ; i < fulln ; i++)
   {
     s6rc_repo_sv *p ;
     char const *cur = sa->s + ind[i] ;
     if (bsearch(&cur, services, n, sizeof(char const *), &strqcmp)) continue ;
-    p = bsearchr(cur, svlist, nlist, sizeof(s6rc_repo_sv), &s6rc_repo_sv_bcmpr, sa) ;
+    p = bsearchr(cur, svlist, ntot, sizeof(s6rc_repo_sv), &s6rc_repo_sv_bcmpr, sa->s) ;
     if (!p)
     {
       strerr_warnfu6x("find service ", cur, " in set ", set, " of repository ", repo) ;
@@ -56,8 +46,8 @@ int s6rc_repo_badsub (char const *repo, char const *set, char const **services, 
     }
     if (newsub >= 2 ? p->sub < newsub : p->sub > newsub)
     {
-      uint32_t n = p - svlist ;
-      if (!genalloc_append(uint32_t, badga, &n))
+      uint32_t k = p - svlist ;
+      if (!genalloc_append(uint32_t, badga, &k))
       {
         strerr_warnfu1sys("make bad sub list") ;
         goto err ;

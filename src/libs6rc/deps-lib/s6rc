@@ -31,7 +31,8 @@ s6rc_repo_moveservices.o
 s6rc_repo_refcompile.o
 s6rc_repo_setcompile.o
 s6rc_repo_subnames.o
-s6rc_repo_sv_cmp.o
+s6rc_repo_sv_bcmpr.o
+s6rc_repo_sv_cmpr.o
 s6rc_repo_sync.o
 s6rc_sanitize_dir.o
 s6rc_servicedir_internal.o

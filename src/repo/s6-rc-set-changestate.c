@@ -1,0 +1,204 @@
+/* ISC license. */
+
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
+
+#include <skalibs/uint64.h>
+#include <skalibs/posixplz.h>
+#include <skalibs/prog.h>
+#include <skalibs/strerr.h>
+#include <skalibs/gol.h>
+#include <skalibs/tai.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
+#include <skalibs/djbunix.h>
+
+#include <s6-rc/config.h>
+#include <s6-rc/s6rc.h>
+
+#define USAGE "s6-rc-set-changestate [ -v verbosity ] [ -F forcelevel ] [ -r repo ] [ -3 ] set newstate services..."
+#define dieusage() strerr_dieusage(100, USAGE)
+
+enum golb_e
+{
+  GOLB_FORCE_ESSENTIAL = 0x01,
+  GOLB_IGNORE_DEPENDENCIES = 0x02,
+  GOLB_DRYRUN = 0x04
+} ;
+
+enum gola_e
+{
+  GOLA_VERBOSITY,
+  GOLA_REPODIR,
+  GOLA_FORCELEVEL,
+  GOLA_N
+} ;
+
+struct subname_s
+{
+  char const *name ;
+  uint8_t sub ;
+} ;
+
+static gol_bool const rgolb[] =
+{
+  { .so = '3', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
+  { .so = 'f', .lo = "ignore-dependencies", .clear = 0, .set = GOLB_IGNORE_DEPENDENCIES },
+  { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN }
+} ;
+
+static gol_arg const rgola[] =
+{
+  { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+  { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
+  { .so = 'I', .lo = "if-dependencies-found", .i = GOLA_FORCELEVEL }
+} ;
+
+static struct subname_s const accepted_forcelevels[] =
+{
+  { .name = "fail", .sub = 0 },
+  { .name = "pull", .sub = 2 },
+  { .name = "warn", .sub = 1 }
+} ;
+
+static uint64_t wgolb = 0 ;
+
+static struct subname_s const accepted_subs[] =
+{
+  { .name = "active", .sub = 1 },
+  { .name = "always", .sub = 3 },
+  { .name = "disable", .sub = 1 },
+  { .name = "disabled", .sub = 1 },
+  { .name = "enable", .sub = 2 },
+  { .name = "enabled", .sub = 2 },
+  { .name = "essential", .sub = 3 },
+  { .name = "mask", .sub = 0 },
+  { .name = "masked", .sub = 0 },
+  { .name = "onboot", .sub = 2 },
+  { .name = "unmask", .sub = 1 },
+  { .name = "unmasked", .sub = 1 }
+} ;
+
+static int subname_cmp (void const *a, void const *b)
+{
+  return strcmp((char const *)a, ((struct subname_s const *)b)->name) ;
+}
+
+int main (int argc, char const *const *argv)
+{
+  stralloc storage = STRALLOC_ZERO ;
+  genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
+  char const *repo = S6RC_REPO_BASE ;
+  int fdlock ;
+  unsigned int verbosity = 1 ;
+  unsigned int forcelevel = 1 ;
+  char const *wgola[3] = { 0 } ;
+  unsigned int golc ;
+  struct subname_s *newsub ;
+  size_t max = 0, m = 0 ;
+  s6rc_repo_sv *list ;
+  uint32_t listn ;
+
+  PROG = "s6-rc-set-changestate" ;
+  golc = gol_main(argc, argv, rgolb, 1, rgola, 2, &wgolb, wgola) ;
+  argc -= golc ; argv += golc ;
+  if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
+    strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
+  if (wgola[GOLA_FORCELEVEL])
+  {
+    struct subname_s *p = bsearch(wgola[GOLA_FORCELEVEL], accepted_forcelevels, sizeof(accepted_forcelevels)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
+    if (!p) strerr_dief1x(100, "if-dependencies-found needs to be fail, warn or pull") ;
+    forcelevel = p->sub ;
+  }
+  if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
+  if (argc < 3) dieusage() ;
+  if (strchr(argv[0], '/') || strchr(argv[0], '\n'))
+    strerr_dief1x(100, "set names cannot contain / or newlines") ;
+
+  newsub = bsearch(argv[1], accepted_subs, sizeof(accepted_subs)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
+  if (!newsub) strerr_dief2x(100, "unrecognized state change directive:", argv[1]) ;
+  if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
+    strerr_dief1x(100, " artificially mark a service as essential without --force-essential") ;
+
+  fdlock = s6rc_repo_lock(repo, 1) ;
+  if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;
+  tain_now_g() ;
+
+  if (!s6rc_repo_makesvlist(repo, argv[0], &storage, &svlist)) _exit(111) ;
+  list = genalloc_s(s6rc_repo_sv, &svlist) ;
+  listn = genalloc_len(s6rc_repo_sv, &svlist) ;
+
+  s6rc_repo_sv starting[argc - 2] ;
+  uint32_t ind[argc - 2] ;
+
+  for (unsigned int i = 0 ; i < argc - 2 ; i++)
+  {
+    s6rc_repo_sv *p = bsearchr(argv[2+i], list, listn, sizeof(s6rc_repo_sv), &s6rc_repo_sv_bcmpr, storage.s) ;
+    if (!p) strerr_dief6x(100, "unknown service ", argv[2+i], " in set ", argv[0], " of repository ", repo) ;
+    starting[i] = *p ;
+    ind[i] = p - list ;
+    max += strlen(argv[2+i]) + 1 ;
+  }
+
+  if (!(wgolb & GOLB_IGNORE_DEPENDENCIES))
+  {
+    genalloc badga = GENALLOC_ZERO ;  /* uint32_t */
+    char const *tmpstart[argc - 2] ;
+    char tmpstore[max] ;
+
+    for (unsigned int i = 0 ; i < argc - 2 ; i++)
+    {
+      size_t len ;
+      list[ind[i]].sub = newsub->sub ;
+      tmpstart[i] = tmpstore + m ;
+      len = strlen(storage.s + list[ind[i]].pos) + 1 ;
+      memcpy(tmpstore + m, storage.s + list[ind[i]].pos, len) ;
+      m += len ;
+    }
+
+    if (!s6rc_repo_badsub(repo, argv[0], tmpstart, argc - 2, newsub->sub, list, listn, &storage, &badga)) _exit(111) ;
+    if (genalloc_len(uint32_t, &badga))
+    {
+      uint32_t const *bads = genalloc_s(uint32_t, &badga) ;
+      unsigned int badn = genalloc_len(uint32_t, &badga) ;
+      if (verbosity)
+      {
+        char const *arg[10 + (badn << 1)] ;
+        arg[0] = PROG ;
+        arg[1] = ": " ;
+        arg[2] = !forcelevel ? "fatal" : "warning" ;
+        arg[3] = ": the following services (" ;
+        arg[4] = newsub->sub >= 2 ? "dependencies of" : "depending on" ;
+        arg[5] = " the ones given as arguments) " ;
+        arg[6] = forcelevel == 2 ? "are also being" : "also need to be" ;
+        arg[7] = " changed to \"" ;
+        arg[8] = s6rc_repo_subnames[newsub->sub] ;
+        arg[9] = "\": " ;
+        for (unsigned int i = 0 ; i < badn ; i++)
+        {
+          arg[10 + (i << 1)] = storage.s + list[bads[i]].pos ;
+          arg[11 + (i << 1)] = i < badn ? " " : "" ;
+        }
+        strerr_warnv(arg, 10 + (badn << 1)) ;
+      }
+      if (!forcelevel) _exit(1) ;
+      if (wgolb & GOLB_DRYRUN) _exit(0) ;
+      if (forcelevel == 2)
+      {
+        s6rc_repo_sv full[argc - 2 + badn] ;
+        for (unsigned int i = 0 ; i < argc - 2 ; i++) full[i] = starting[i] ;
+        for (unsigned int i = 0 ; i < badn ; i++) full[argc - 2 + i] = list[bads[i]] ;
+        if (!s6rc_repo_moveservices(repo, argv[0], full, argc - 2 + badn, newsub->sub, storage.s, verbosity)) _exit(111) ;
+        _exit(0) ;
+      }
+    }
+  }
+
+  if (!(wgolb & GOLB_DRYRUN))
+  {
+    if (!s6rc_repo_moveservices(repo, argv[0], starting, argc - 2, newsub->sub, storage.s, verbosity)) _exit(111) ;
+  }
+  _exit(0) ;
+}

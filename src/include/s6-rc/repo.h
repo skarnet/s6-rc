@@ -16,7 +16,8 @@ struct s6rc_repo_sv_s
   uint8_t sub ;
 } ;
 
-extern int s6rc_repo_sv_cmp (void const *, void const *, void *) ;
+extern int s6rc_repo_sv_cmpr (void const *, void const *, void *) ;
+extern int s6rc_repo_sv_bcmpr (void const *a, void const *b, void *aux) ;
 
 extern char const s6rc_repo_subnames[4][7] ;
 
@@ -41,7 +42,7 @@ extern int s6rc_repo_listalldeps (char const *, char const *const *, size_t, str
 extern int s6rc_repo_listdeps_internal (char const *, char const *const *, size_t, stralloc *, genalloc *, uint32_t) ;
 
 extern int s6rc_repo_makesvlist (char const *, char const *, stralloc *, genalloc *) ;
-extern int s6rc_repo_badsub (char const *, char const *, char const **, size_t, uint8_t, s6rc_repo_sv const *, size_t, stralloc *, genalloc *) ;
-extern int s6rc_repo_moveservices (char const *, char const *, char const *const *, size_t, uint8_t, uint8_t, unsigned int) ;
+extern int s6rc_repo_badsub (char const *, char const *, char const **, uint32_t, uint8_t, s6rc_repo_sv const *, uint32_t, stralloc *, genalloc *) ;
+extern int s6rc_repo_moveservices (char const *, char const *, s6rc_repo_sv const *, uint32_t, uint8_t, char const *, unsigned int) ;
 
 #endif

@@ -12,8 +12,6 @@
 
 #include <s6-rc/repo.h>
 
-#define dienomem() strerr_diefu1sys(111, "stralloc_catb")
-
 static inline int s6rc_repo_addsub (char const *sub, uint8_t i, stralloc *sa, genalloc *ga)
 {
   DIR *dir = opendir(sub) ;
@@ -27,12 +25,16 @@ static inline int s6rc_repo_addsub (char const *sub, uint8_t i, stralloc *sa, ge
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
 
-    if (!stralloc_cats(sa, d->d_name) || !stralloc_0(sa)) dienomem() ;
-    if (!genalloc_append(s6rc_repo_sv, ga, &sv)) dienomem() ;
+    if (!stralloc_cats(sa, d->d_name) || !stralloc_0(sa)
+     || !genalloc_append(s6rc_repo_sv, ga, &sv)) goto nomem ;
   }
   dir_close(dir) ;
   if (errno) { strerr_warnfu2sys("readdir ", sub) ; return 0 ; }
   return 1 ;
+
+ nomem:
+  strerr_warnfu1sys("stralloc_catb") ;
+  return 0 ;
 }
 
 int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genalloc *ga)
@@ -54,7 +56,7 @@ int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genal
     memcpy(subfn + repolen + setlen + 10, s6rc_repo_subnames[i], 7) ;
     if (!s6rc_repo_addsub(subfn, i, sa, ga)) goto err ;
   }
-  qsortr(genalloc_s(s6rc_repo_sv, ga), genalloc_len(s6rc_repo_sv, ga), sizeof(s6rc_repo_sv), &s6rc_repo_sv_cmp, sa) ;
+  qsortr(genalloc_s(s6rc_repo_sv, ga), genalloc_len(s6rc_repo_sv, ga), sizeof(s6rc_repo_sv), &s6rc_repo_sv_cmpr, sa->s) ;
   return 1 ;
 
  err:
