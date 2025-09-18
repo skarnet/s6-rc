@@ -17,7 +17,7 @@
 #include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, uint32_t n, stralloc *storage, genalloc *indices, uint32_t options)
+int s6rc_repo_flattenservices (char const *repo, char const *const *services, uint32_t n, stralloc *storage, genalloc *indices)
 {
   int swasnull = !storage->s ;
   int gwasnull = !indices->s ;
@@ -30,7 +30,7 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
     pid_t pid ;
     int fd ;
     int wstat ;
-    char const *argv[8 + n] ;
+    char const *argv[7 + n] ;
     char refdb[repolen + 15] ;
     memcpy(refdb, repo, repolen) ;
     memcpy(refdb + repolen, "/compiled/.ref", 15) ;
@@ -38,10 +38,9 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
     argv[m++] = "-c";
     argv[m++] = refdb ;
     argv[m++] = "-b" ;
-    argv[m++] = options & 1 ? "-u" : "-d" ;
     argv[m++] = "--" ;
-    argv[m++] = options & 2 ? "all-dependencies" : "dependencies" ;
-    for (uint32_t i = 0 ; i < n ; i++) argv[m++] = services[i] ;
+    argv[m++] = "atomics" ;
+    for (size_t i = 0 ; i < n ; i++) argv[m++] = services[i] ;
     argv[m++] = 0 ;
     pid = child_spawn1_pipe(argv[0], argv, (char const *const *)environ, &fd, 1) ;
     if (!pid) { strerr_warnfu2sys("spawn ", argv[0]) ; return 111 ; }
@@ -59,11 +58,11 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
       strerr_warnf3x(argv[0], " crashed with signal ", fmt) ;
       goto err ;
     }
-    if (WEXITSTATUS(wstat)) return wait_estatus(wstat) ;
+    if (WEXITSTATUS(wstat)) return WEXITSTATUS(wstat) ;
   }
 
- if (!s6rc_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
- return 0 ;
+  if (!s6rc_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
+  return 0 ;
 
  err:
   if (gwasnull) genalloc_free(size_t, indices) ;

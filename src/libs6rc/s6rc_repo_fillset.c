@@ -11,7 +11,7 @@
 #include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_fillset (char const *repo, char const *set, char const *const *existing, size_t n)
+int s6rc_repo_fillset (char const *repo, char const *set, char const *const *existing, uint32_t n)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;

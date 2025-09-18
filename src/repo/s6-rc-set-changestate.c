@@ -90,6 +90,7 @@ int main (int argc, char const *const *argv)
 {
   stralloc storage = STRALLOC_ZERO ;
   genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
+  genalloc indices = GENALLOC_ZERO ;  /* size_t then uint32_t */
   char const *repo = S6RC_REPO_BASE ;
   int fdlock ;
   unsigned int verbosity = 1 ;
@@ -97,9 +98,9 @@ int main (int argc, char const *const *argv)
   char const *wgola[3] = { 0 } ;
   unsigned int golc ;
   struct subname_s *newsub ;
-  size_t max = 0, m = 0 ;
+  size_t max = 0, sabase ;
   s6rc_repo_sv *list ;
-  uint32_t listn ;
+  uint32_t listn, n ;
 
   PROG = "s6-rc-set-changestate" ;
   golc = gol_main(argc, argv, rgolb, 1, rgola, 2, &wgolb, wgola) ;
@@ -129,26 +130,37 @@ int main (int argc, char const *const *argv)
   if (!s6rc_repo_makesvlist(repo, argv[0], &storage, &svlist)) _exit(111) ;
   list = genalloc_s(s6rc_repo_sv, &svlist) ;
   listn = genalloc_len(s6rc_repo_sv, &svlist) ;
-
-  s6rc_repo_sv starting[argc - 2] ;
-  uint32_t ind[argc - 2] ;
-
-  for (unsigned int i = 0 ; i < argc - 2 ; i++)
+  sabase = storage.len ;
   {
-    s6rc_repo_sv *p = bsearchr(argv[2+i], list, listn, sizeof(s6rc_repo_sv), &s6rc_repo_sv_bcmpr, storage.s) ;
-    if (!p) strerr_dief6x(100, "unknown service ", argv[2+i], " in set ", argv[0], " of repository ", repo) ;
+    int r = s6rc_repo_flattenservices(repo, argv + 2, argc - 2, &storage, &indices) ;
+    if (r) _exit(r) ;
+  }
+  n = genalloc_len(size_t, &indices) ;
+  if (!n) strerr_dief1x(101, "can't happen: 0 services in flattened list!") ;
+
+  s6rc_repo_sv starting[n] ;
+  uint32_t ind[n] ;
+
+  for (uint32_t i = 0 ; i < n ; i++)
+  {
+    char const *s = storage.s + genalloc_s(size_t, &indices)[i] ;
+    s6rc_repo_sv *p = bsearchr(s, list, listn, sizeof(s6rc_repo_sv), &s6rc_repo_sv_bcmpr, storage.s) ;
+    if (!p) strerr_dief7x(102, "inconsistent view in set ", argv[0], " of repository ", repo, ": service ", s, " is defined in the reference database but not in the textual representation of the set") ;
     starting[i] = *p ;
     ind[i] = p - list ;
-    max += strlen(argv[2+i]) + 1 ;
+    max += strlen(s) + 1 ;
   }
+
+  storage.len = sabase ;
+  genalloc_setlen(size_t, &indices, 0) ;
 
   if (!(wgolb & GOLB_IGNORE_DEPENDENCIES))
   {
-    genalloc badga = GENALLOC_ZERO ;  /* uint32_t */
-    char const *tmpstart[argc - 2] ;
+    size_t m = 0 ;
+    char const *tmpstart[n] ;
     char tmpstore[max] ;
 
-    for (unsigned int i = 0 ; i < argc - 2 ; i++)
+    for (uint32_t i = 0 ; i < n ; i++)
     {
       size_t len ;
       list[ind[i]].sub = newsub->sub ;
@@ -158,11 +170,11 @@ int main (int argc, char const *const *argv)
       m += len ;
     }
 
-    if (!s6rc_repo_badsub(repo, argv[0], tmpstart, argc - 2, newsub->sub, list, listn, &storage, &badga)) _exit(111) ;
-    if (genalloc_len(uint32_t, &badga))
+    if (!s6rc_repo_badsub(repo, argv[0], tmpstart, n, newsub->sub, list, listn, &storage, &indices)) _exit(111) ;
+    if (genalloc_len(uint32_t, &indices))
     {
-      uint32_t const *bads = genalloc_s(uint32_t, &badga) ;
-      unsigned int badn = genalloc_len(uint32_t, &badga) ;
+      uint32_t const *bads = genalloc_s(uint32_t, &indices) ;
+      uint32_t badn = genalloc_len(uint32_t, &indices) ;
       if (verbosity)
       {
         char const *arg[10 + (badn << 1)] ;
@@ -176,7 +188,7 @@ int main (int argc, char const *const *argv)
         arg[7] = " changed to \"" ;
         arg[8] = s6rc_repo_subnames[newsub->sub] ;
         arg[9] = "\": " ;
-        for (unsigned int i = 0 ; i < badn ; i++)
+        for (uint32_t i = 0 ; i < badn ; i++)
         {
           arg[10 + (i << 1)] = storage.s + list[bads[i]].pos ;
           arg[11 + (i << 1)] = i < badn ? " " : "" ;
@@ -187,18 +199,20 @@ int main (int argc, char const *const *argv)
       if (wgolb & GOLB_DRYRUN) _exit(0) ;
       if (forcelevel == 2)
       {
-        s6rc_repo_sv full[argc - 2 + badn] ;
-        for (unsigned int i = 0 ; i < argc - 2 ; i++) full[i] = starting[i] ;
-        for (unsigned int i = 0 ; i < badn ; i++) full[argc - 2 + i] = list[bads[i]] ;
-        if (!s6rc_repo_moveservices(repo, argv[0], full, argc - 2 + badn, newsub->sub, storage.s, verbosity)) _exit(111) ;
+        s6rc_repo_sv full[n + badn] ;
+        for (unsigned int i = 0 ; i < n ; i++) full[i] = starting[i] ;
+        for (unsigned int i = 0 ; i < badn ; i++) full[n + i] = list[bads[i]] ;
+        if (!s6rc_repo_moveservices(repo, argv[0], full, n + badn, newsub->sub, storage.s, verbosity)) _exit(111) ;
         _exit(0) ;
       }
     }
   }
+  genalloc_free(uint32_t, &indices) ;
+  stralloc_free(&storage) ;
 
   if (!(wgolb & GOLB_DRYRUN))
   {
-    if (!s6rc_repo_moveservices(repo, argv[0], starting, argc - 2, newsub->sub, storage.s, verbosity)) _exit(111) ;
+    if (!s6rc_repo_moveservices(repo, argv[0], starting, n, newsub->sub, storage.s, verbosity)) _exit(111) ;
   }
   _exit(0) ;
 }

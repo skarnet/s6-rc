@@ -16,7 +16,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_compile (char const *repo, char const *set, char const *const *subs, size_t nsubs, char *oldc, unsigned int verbosity, char const *fdhuser)
+int s6rc_repo_compile (char const *repo, char const *set, char const *const *subs, uint8_t nsubs, char *oldc, unsigned int verbosity, char const *fdhuser)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
@@ -31,7 +31,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
   memcpy(newc + repolen + 37 + setlen, ":XXXXXX", 8) ;
   memcpy(oldc, newc, repolen + 10) ;
   if (mkntemp(newc) == -1) { strerr_warnfu2sys("mkntemp ", newc) ; return -1 ; }
-  for (size_t i = 0 ; i < nsubs ; i++) totsublen += strlen(subs[i]) + 1 ;
+  for (uint8_t i = 0 ; i < nsubs ; i++) totsublen += strlen(subs[i]) + 1 ;
 
   {
     pid_t pid ;
@@ -53,7 +53,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
     }
     argv[m++] = "--" ;
     argv[m++] = newc ;
-    for (size_t i = 0 ; i < nsubs ; i++)
+    for (uint8_t i = 0 ; i < nsubs ; i++)
     {
       size_t sublen = strlen(subs[i]) ;
       argv[m++] = w ;

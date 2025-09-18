@@ -8,6 +8,7 @@
 
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
+#include <skalibs/avltree.h>
 
 #include <s6-rc/s6rc-db.h>
 

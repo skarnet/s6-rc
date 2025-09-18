@@ -21,14 +21,18 @@ static int strqcmp (void const *a, void const *b)
 int s6rc_repo_badsub (char const *repo, char const *set, char const **services, uint32_t n, uint8_t newsub, s6rc_repo_sv const *svlist, uint32_t ntot, stralloc *sa, genalloc *badga)
 {
   int sawasnull = !!sa->s ;
-  size_t sabase = sa->len ;
   int gawasnull = !!genalloc_s(uint32_t, badga) ;
+  size_t sabase = sa->len ;
   size_t gabase = genalloc_len(uint32_t, badga) ;
   genalloc fulldeps = GENALLOC_ZERO ;
   size_t fulln ;
   size_t const *ind ;
+  uint32_t mid ;
 
-  if (s6rc_repo_listalldeps(repo, services, n, sa, &fulldeps, newsub >= 2) <= 0) return 0 ;
+  if (newsub < 3 && s6rc_repo_listalldeps(repo, services, n, sa, &fulldeps, 0)) return 0 ;
+  mid = genalloc_len(size_t, &fulldeps) ;
+  if (newsub > 0 && s6rc_repo_listalldeps(repo, services, n, sa, &fulldeps, 1)) goto err ;
+
   qsort(services, n, sizeof(char const *), &strqcmp) ;
   fulln = genalloc_len(size_t, &fulldeps) ;
   ind = genalloc_s(size_t, &fulldeps) ;
@@ -44,7 +48,7 @@ int s6rc_repo_badsub (char const *repo, char const *set, char const **services, 
       strerr_warnfu6x("find service ", cur, " in set ", set, " of repository ", repo) ;
       goto err ;
     }
-    if (newsub >= 2 ? p->sub < newsub : p->sub > newsub)
+    if (i >= mid ? p->sub < newsub : p->sub > newsub)
     {
       uint32_t k = p - svlist ;
       if (!genalloc_append(uint32_t, badga, &k))
