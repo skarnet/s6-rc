@@ -21,8 +21,7 @@
 
 enum golb_e
 {
-  GOLB_FORCE,
-  GOLB_N
+  GOLB_FORCE = 0x01
 } ;
 
 enum gola_e
@@ -32,12 +31,12 @@ enum gola_e
   GOLA_N
 } ;
 
-static gol_bool const rgolb[1] =
+static gol_bool const rgolb[] =
 {
-  { .so = 'f', .lo = "force", .clear = 0, .set = 1 << GOLB_FORCE }
+  { .so = 'f', .lo = "force", .clear = 0, .set = GOLB_FORCE }
 } ;
 
-static gol_arg const rgola[2] =
+static gol_arg const rgola[] =
 {
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
   { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR }
@@ -74,7 +73,7 @@ static inline void docopy (char const *repo, char const *srcname, char const *ds
   {
     if (errno != ENOENT) strerr_diefu2sys(111, "access ", dst) ;
   }
-  else if (wgolb & (1 << GOLB_FORCE))
+  else if (wgolb & GOLB_FORCE)
   {
     memcpy(olddst, dst, repolen + 9) ;
     r = readlink(dst, olddst + repolen + 9, dstlen + 9) ;
@@ -107,26 +106,26 @@ static inline void docopy (char const *repo, char const *srcname, char const *ds
 
 int main (int argc, char const *const *argv)
 {
-  char const *repo = S6RC_REPO_BASE ;
   int fdlock ;
   unsigned int verbosity = 1 ;
-  char const *wgola[2] = { 0 } ;
+  char const *wgola[GOLA_N] = { 0 } ;
   unsigned int golc ;
 
   PROG = "s6-rc-set-copy" ;
-  golc = gol_main(argc, argv, rgolb, 1, rgola, 2, &wgolb, wgola) ;
+  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+
+  golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
-  if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
   if (argc < 2) dieusage() ;
   for (unsigned int i = 0 ; i < 2 ; i++)
     if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
       strerr_dief1x(100, "set names cannot contain / or newlines") ;
 
-  fdlock = s6rc_repo_lock(repo, 1) ;
-  if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;
+  fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
+  if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
   tain_now_g() ;
-  docopy(repo, argv[0], argv[1]) ;
-  return 0 ;
+  docopy(wgola[GOLA_REPODIR], argv[0], argv[1]) ;
+  _exit(0) ;
 }

@@ -18,7 +18,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-changestate [ -v verbosity ] [ -F forcelevel ] [ -r repo ] [ -3 ] set newstate services..."
+#define USAGE "s6-rc-set-changestate [ -v verbosity ] [ -r repo ] [ -E ] [ -f | -I fail|pull|warn ] [ -n ] set newstate services..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -44,7 +44,7 @@ struct subname_s
 
 static gol_bool const rgolb[] =
 {
-  { .so = '3', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
+  { .so = 'E', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
   { .so = 'f', .lo = "ignore-dependencies", .clear = 0, .set = GOLB_IGNORE_DEPENDENCIES },
   { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN }
 } ;
@@ -74,6 +74,7 @@ static struct subname_s const accepted_subs[] =
   { .name = "enable", .sub = 2 },
   { .name = "enabled", .sub = 2 },
   { .name = "essential", .sub = 3 },
+  { .name = "make-essential", .sub = 3 },
   { .name = "mask", .sub = 0 },
   { .name = "masked", .sub = 0 },
   { .name = "onboot", .sub = 2 },
@@ -91,11 +92,10 @@ int main (int argc, char const *const *argv)
   stralloc storage = STRALLOC_ZERO ;
   genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
   genalloc indices = GENALLOC_ZERO ;  /* size_t then uint32_t */
-  char const *repo = S6RC_REPO_BASE ;
   int fdlock ;
   unsigned int verbosity = 1 ;
   unsigned int forcelevel = 1 ;
-  char const *wgola[3] = { 0 } ;
+  char const *wgola[GOLA_N] = { 0 } ;
   unsigned int golc ;
   struct subname_s *newsub ;
   size_t max = 0, sabase ;
@@ -103,7 +103,9 @@ int main (int argc, char const *const *argv)
   uint32_t listn, n ;
 
   PROG = "s6-rc-set-changestate" ;
-  golc = gol_main(argc, argv, rgolb, 1, rgola, 2, &wgolb, wgola) ;
+  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+
+  golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
@@ -113,7 +115,6 @@ int main (int argc, char const *const *argv)
     if (!p) strerr_dief1x(100, "if-dependencies-found needs to be fail, warn or pull") ;
     forcelevel = p->sub ;
   }
-  if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
   if (argc < 3) dieusage() ;
   if (strchr(argv[0], '/') || strchr(argv[0], '\n'))
     strerr_dief1x(100, "set names cannot contain / or newlines") ;
@@ -123,16 +124,16 @@ int main (int argc, char const *const *argv)
   if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
     strerr_dief1x(100, " artificially mark a service as essential without --force-essential") ;
 
-  fdlock = s6rc_repo_lock(repo, 1) ;
-  if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;
+  fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
+  if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
   tain_now_g() ;
 
-  if (!s6rc_repo_makesvlist(repo, argv[0], &storage, &svlist)) _exit(111) ;
+  if (!s6rc_repo_makesvlist(wgola[GOLA_REPODIR], argv[0], &storage, &svlist)) _exit(111) ;
   list = genalloc_s(s6rc_repo_sv, &svlist) ;
   listn = genalloc_len(s6rc_repo_sv, &svlist) ;
   sabase = storage.len ;
   {
-    int r = s6rc_repo_flattenservices(repo, argv + 2, argc - 2, &storage, &indices) ;
+    int r = s6rc_repo_flattenservices(wgola[GOLA_REPODIR], argv + 2, argc - 2, &storage, &indices) ;
     if (r) _exit(r) ;
   }
   n = genalloc_len(size_t, &indices) ;
@@ -145,7 +146,7 @@ int main (int argc, char const *const *argv)
   {
     char const *s = storage.s + genalloc_s(size_t, &indices)[i] ;
     s6rc_repo_sv *p = bsearchr(s, list, listn, sizeof(s6rc_repo_sv), &s6rc_repo_sv_bcmpr, storage.s) ;
-    if (!p) strerr_dief7x(102, "inconsistent view in set ", argv[0], " of repository ", repo, ": service ", s, " is defined in the reference database but not in the textual representation of the set") ;
+    if (!p) strerr_dief7x(102, "inconsistent view in set ", argv[0], " of repository ", wgola[GOLA_REPODIR], ": service ", s, " is defined in the reference database but not in the textual representation of the set") ;
     starting[i] = *p ;
     ind[i] = p - list ;
     max += strlen(s) + 1 ;
@@ -170,7 +171,7 @@ int main (int argc, char const *const *argv)
       m += len ;
     }
 
-    if (!s6rc_repo_badsub(repo, argv[0], tmpstart, n, newsub->sub, list, listn, &storage, &indices)) _exit(111) ;
+    if (!s6rc_repo_badsub(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newsub->sub, list, listn, &storage, &indices)) _exit(111) ;
     if (genalloc_len(uint32_t, &indices))
     {
       uint32_t const *bads = genalloc_s(uint32_t, &indices) ;
@@ -200,9 +201,9 @@ int main (int argc, char const *const *argv)
       if (forcelevel == 2)
       {
         s6rc_repo_sv full[n + badn] ;
-        for (unsigned int i = 0 ; i < n ; i++) full[i] = starting[i] ;
-        for (unsigned int i = 0 ; i < badn ; i++) full[n + i] = list[bads[i]] ;
-        if (!s6rc_repo_moveservices(repo, argv[0], full, n + badn, newsub->sub, storage.s, verbosity)) _exit(111) ;
+        for (uint32_t i = 0 ; i < n ; i++) full[i] = starting[i] ;
+        for (uint32_t i = 0 ; i < badn ; i++) full[n + i] = list[bads[i]] ;
+        if (!s6rc_repo_moveservices(wgola[GOLA_REPODIR], argv[0], full, n + badn, newsub->sub, storage.s, verbosity)) _exit(111) ;
         _exit(0) ;
       }
     }
@@ -212,7 +213,7 @@ int main (int argc, char const *const *argv)
 
   if (!(wgolb & GOLB_DRYRUN))
   {
-    if (!s6rc_repo_moveservices(repo, argv[0], starting, n, newsub->sub, storage.s, verbosity)) _exit(111) ;
+    if (!s6rc_repo_moveservices(wgola[GOLA_REPODIR], argv[0], starting, n, newsub->sub, storage.s, verbosity)) _exit(111) ;
   }
   _exit(0) ;
 }

@@ -13,3 +13,4 @@ s6-rc-set-new		0755
 s6-rc-set-copy		0755
 s6-rc-set-delete	0755
 s6-rc-set-changestate	0755
+s6-rc-set-commit	0755

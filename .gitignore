@@ -21,3 +21,4 @@
 /s6-rc-set-copy
 /s6-rc-set-delete
 /s6-rc-set-changestate
+/s6-rc-set-commit

@@ -53,6 +53,7 @@ src/libs6rc/s6rc_strrefcmp.o src/libs6rc/s6rc_strrefcmp.lo: src/libs6rc/s6rc_str
 src/libs6rc/s6rc_type_check.o src/libs6rc/s6rc_type_check.lo: src/libs6rc/s6rc_type_check.c src/include/s6-rc/s6rc-utils.h
 src/repo/s6-rc-repo-init.o src/repo/s6-rc-repo-init.lo: src/repo/s6-rc-repo-init.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-changestate.o src/repo/s6-rc-set-changestate.lo: src/repo/s6-rc-set-changestate.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
+src/repo/s6-rc-set-commit.o src/repo/s6-rc-set-commit.lo: src/repo/s6-rc-set-commit.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-copy.o src/repo/s6-rc-set-copy.lo: src/repo/s6-rc-set-copy.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-delete.o src/repo/s6-rc-set-delete.lo: src/repo/s6-rc-set-delete.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-new.o src/repo/s6-rc-set-new.lo: src/repo/s6-rc-set-new.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
@@ -81,6 +82,8 @@ s6-rc-repo-init: EXTRA_LIBS := ${SYSCLOCK_LIB}
 s6-rc-repo-init: src/repo/s6-rc-repo-init.o ${LIBS6RC} -lskarnet
 s6-rc-set-changestate: EXTRA_LIBS := ${SYSCLOCK_LIB}
 s6-rc-set-changestate: src/repo/s6-rc-set-changestate.o ${LIBS6RC} -lskarnet
+s6-rc-set-commit: EXTRA_LIBS := ${SYSCLOCK_LIB}
+s6-rc-set-commit: src/repo/s6-rc-set-commit.o ${LIBS6RC} -lskarnet
 s6-rc-set-copy: EXTRA_LIBS := ${SYSCLOCK_LIB}
 s6-rc-set-copy: src/repo/s6-rc-set-copy.o ${LIBS6RC} -lskarnet
 s6-rc-set-delete: EXTRA_LIBS := ${SYSCLOCK_LIB}

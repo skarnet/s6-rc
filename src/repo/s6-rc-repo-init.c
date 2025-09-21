@@ -33,13 +33,12 @@ static void cleanup (char const *fn)
 
 enum golb_e
 {
-  GOLB_FORCE,
-  GOLB_N
+  GOLB_FORCE = 0x01
 } ;
 
-static gol_bool const rgolb[1] =
+static gol_bool const rgolb[] =
 {
-  { .so = 'f', .lo = "force", .clear = 0, .set = 1 << GOLB_FORCE }
+  { .so = 'f', .lo = "force", .clear = 0, .set = GOLB_FORCE }
 } ;
 
 enum gola_e
@@ -50,38 +49,38 @@ enum gola_e
   GOLA_N
 } ;
 
-static gol_arg const rgola[3] =
+static gol_arg const rgola[] =
 {
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
   { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
-  { .so = 'h', .lo = "fdhuser", .i = GOLA_FDHUSER }
+  { .so = 'h', .lo = "fd-holder-user", .i = GOLA_FDHUSER }
 } ;
 
 int main (int argc, char const *const *argv)
 {
   size_t repolen ;
-  char const *repo = S6RC_REPO_BASE ;
   unsigned int verbosity = 1 ;
   mode_t m ;
-  char const *wgola[3] = { 0 } ;
+  char const *wgola[GOLA_N] = { 0 } ;
   uint64_t wgolb = 0 ;
   unsigned int golc ;
 
   PROG = "s6-rc-repo-init" ;
-  golc = gol_main(argc, argv, rgolb, 1, rgola, 3, &wgolb, wgola) ;
+  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+
+  golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
-  if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
   for (unsigned int i = 0 ; i < argc ; i++)
     if (argv[i][0] != '/')
       strerr_dief2x(100, argv[i], " is not an absolute path") ;
   if (!argc) strerr_warnw1x("no source directories given, creating an empty repository") ;
   tain_now_g() ;
-  repolen = strlen(repo) ;
+  repolen = strlen(wgola[GOLA_REPODIR]) ;
   char repotmp[repolen + 12] ;
   char tmp[repolen + 21] ;
-  memcpy(repotmp, repo, repolen) ;
+  memcpy(repotmp, wgola[GOLA_REPODIR], repolen) ;
   memcpy(repotmp + repolen, "-tmp.XXXXXX", 12) ;
   m = umask(0) ;
   if (!mkdtemp(repotmp))
@@ -132,32 +131,32 @@ int main (int argc, char const *const *argv)
 
   if (chmod(repotmp, 02755) == -1)
     strerr_diefu2sys(111, "chmod ", repotmp) ;
-  if (rename(repotmp, repo) == -1)
+  if (rename(repotmp, wgola[GOLA_REPODIR]) == -1)
   {
-    if (errno != EEXIST || !(wgolb & 1 << GOLB_FORCE))
+    if (errno != EEXIST || !(wgolb & GOLB_FORCE))
     {
       cleanup(repotmp) ;
-      strerr_diefu4sys(111, "rename ", repotmp, " to ", repo) ;
+      strerr_diefu4sys(111, "rename ", repotmp, " to ", wgola[GOLA_REPODIR]) ;
     }
     else
     {
-      memcpy(tmp, repo, repolen) ;
+      memcpy(tmp, wgola[GOLA_REPODIR], repolen) ;
       memcpy(tmp + repolen, ":old:", 5) ;
       random_name(tmp + repolen + 5, 15) ;
       tmp[repolen + 20] = 0 ;
-      if (rename(repo, tmp) == -1)
+      if (rename(wgola[GOLA_REPODIR], tmp) == -1)
       {
         cleanup(repotmp) ;
-        strerr_diefu4sys(111, "rename ", repo, " to ", tmp) ;
+        strerr_diefu4sys(111, "rename ", wgola[GOLA_REPODIR], " to ", tmp) ;
       }
-      if (rename(repotmp, repo) == -1)
+      if (rename(repotmp, wgola[GOLA_REPODIR]) == -1)
       {
         int e = errno ;
-        if (rename(tmp, repo) == -1)
-          strerr_diefu7sys(111, "rename directories to ", repo, ": weird race happened. New repository is at ", repotmp, " and old repository is at ", tmp, " - reported error was") ;
+        if (rename(tmp, wgola[GOLA_REPODIR]) == -1)
+          strerr_diefu7sys(111, "rename directories to ", wgola[GOLA_REPODIR], ": weird race happened. New repository is at ", repotmp, " and old repository is at ", tmp, " - reported error was") ;
         errno = e ;
         cleanup(repotmp) ;
-        strerr_diefu4sys(111, "rename ", repotmp, " to ", repo) ;
+        strerr_diefu4sys(111, "rename ", repotmp, " to ", wgola[GOLA_REPODIR]) ;
       }
     }
   }

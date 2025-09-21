@@ -89,7 +89,7 @@ enum gola_e
   GOLA_N
 } ;
 
-static gol_arg const rgola[2] =
+static gol_arg const rgola[] =
 {
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
   { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR }
@@ -97,18 +97,18 @@ static gol_arg const rgola[2] =
 
 int main (int argc, char const *const *argv)
 {
-  char const *repo = S6RC_REPO_BASE ;
   int fdlock ;
   unsigned int verbosity = 1 ;
-  char const *wgola[2] = { 0 } ;
+  char const *wgola[GOLA_N] = { 0 } ;
   unsigned int golc ;
 
   PROG = "s6-rc-set-new" ;
+  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+
   golc = gol_main(argc, argv, 0, 0, rgola, 2, 0, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
-  if (wgola[GOLA_REPODIR]) repo = wgola[GOLA_REPODIR] ;
   if (!argc) dieusage() ;
   for (unsigned int i = 0 ; i < argc ; i++)
   {
@@ -119,12 +119,12 @@ int main (int argc, char const *const *argv)
     if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
       strerr_dief2x(100, "set names cannot ", "contain / or newlines") ;
   }
-  fdlock = s6rc_repo_lock(repo, 1) ;
-  if (fdlock == -1) strerr_diefu2sys(111, "lock ", repo) ;
+  fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
+  if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
   tain_now_g() ;
 
   for (unsigned int i = 0 ; i < argc ; i++)
-    newset(repo, argv[i]) ;
+    newset(wgola[GOLA_REPODIR], argv[i]) ;
 
-  return 0 ;
+  _exit(0) ;
 }
