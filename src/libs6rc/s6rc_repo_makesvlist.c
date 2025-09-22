@@ -37,7 +37,7 @@ static inline int s6rc_repo_addsub (char const *sub, uint8_t i, stralloc *sa, ge
   return 0 ;
 }
 
-int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genalloc *ga)
+int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genalloc *ga, uint32_t *tab)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
@@ -53,10 +53,10 @@ int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genal
   subfn[repolen + 9 + setlen] = '/' ;
   for (uint8_t i = 0 ; i < 4 ; i++)
   {
+    if (tab) tab[i] = genalloc_len(s6rc_repo_sv, ga) ;
     memcpy(subfn + repolen + setlen + 10, s6rc_repo_subnames[i], 7) ;
     if (!s6rc_repo_addsub(subfn, i, sa, ga)) goto err ;
   }
-  qsortr(genalloc_s(s6rc_repo_sv, ga), genalloc_len(s6rc_repo_sv, ga), sizeof(s6rc_repo_sv), &s6rc_repo_sv_cmpr, sa->s) ;
   return 1 ;
 
  err:

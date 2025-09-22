@@ -128,7 +128,7 @@ int main (int argc, char const *const *argv)
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
   tain_now_g() ;
 
-  if (!s6rc_repo_makesvlist(wgola[GOLA_REPODIR], argv[0], &storage, &svlist)) _exit(111) ;
+  if (!s6rc_repo_makesvlist_byname(wgola[GOLA_REPODIR], argv[0], &storage, &svlist)) _exit(111) ;
   list = genalloc_s(s6rc_repo_sv, &svlist) ;
   listn = genalloc_len(s6rc_repo_sv, &svlist) ;
   sabase = storage.len ;
@@ -171,7 +171,7 @@ int main (int argc, char const *const *argv)
       m += len ;
     }
 
-    if (!s6rc_repo_badsub(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newsub->sub, list, listn, &storage, &indices)) _exit(111) ;
+    if (!s6rc_repo_badsub(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newsub->sub, 3, list, listn, &storage, &indices)) _exit(111) ;
     if (genalloc_len(uint32_t, &indices))
     {
       uint32_t const *bads = genalloc_s(uint32_t, &indices) ;

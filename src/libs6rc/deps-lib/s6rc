@@ -18,6 +18,7 @@ s6rc_repo_badsub.o
 s6rc_repo_cleanup.o
 s6rc_repo_compile.o
 s6rc_repo_fillset.o
+s6rc_repo_fixset.o
 s6rc_repo_flattenservices.o
 s6rc_repo_listalldeps.o
 s6rc_repo_listcontents.o
@@ -28,6 +29,7 @@ s6rc_repo_lock.o
 s6rc_repo_makedefbundle.o
 s6rc_repo_makesetbundles.o
 s6rc_repo_makesvlist.o
+s6rc_repo_makesvlist_byname.o
 s6rc_repo_moveservices.o
 s6rc_repo_refcompile.o
 s6rc_repo_setcompile.o
