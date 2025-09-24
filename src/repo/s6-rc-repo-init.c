@@ -9,6 +9,7 @@
 #include <stdio.h>  /* rename */
 #include <errno.h>
 
+#include <skalibs/uint32.h>
 #include <skalibs/stat.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/gol.h>
@@ -21,7 +22,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-repo-init [ -v verbosity ] [ -r repo ] [ -h fdhuser ] sources..."
+#define USAGE "s6-rc-repo-init [ -v verbosity ] [ -r repo ] [ -h fdhuser ] [ -B ] [ -f ] stores..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 static void cleanup (char const *fn)
@@ -33,12 +34,14 @@ static void cleanup (char const *fn)
 
 enum golb_e
 {
-  GOLB_FORCE = 0x01
+  GOLB_FORCE = 0x01,
+  GOLB_BARE = 0x02
 } ;
 
 static gol_bool const rgolb[] =
 {
-  { .so = 'f', .lo = "force", .clear = 0, .set = GOLB_FORCE }
+  { .so = 'f', .lo = "force", .clear = 0, .set = GOLB_FORCE },
+  { .so = 'S', .lo = "bare", .clear = 0, .set = GOLB_BARE }
 } ;
 
 enum gola_e
@@ -70,18 +73,22 @@ int main (int argc, char const *const *argv)
 
   golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
+  if (!argc) dieusage() ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
   for (unsigned int i = 0 ; i < argc ; i++)
+  {
     if (argv[i][0] != '/')
       strerr_dief2x(100, argv[i], " is not an absolute path") ;
-  if (!argc) strerr_warnw1x("no source directories given, creating an empty repository") ;
+    if (strchr(argv[i], '\n'))
+      strerr_dief1x(100, "stores cannot contain newlines in their path") ;
+  }
   tain_now_g() ;
   repolen = strlen(wgola[GOLA_REPODIR]) ;
   char repotmp[repolen + 12] ;
-  char tmp[repolen + 21] ;
+  char tmp[repolen + 29] ;
   memcpy(repotmp, wgola[GOLA_REPODIR], repolen) ;
-  memcpy(repotmp + repolen, "-tmp.XXXXXX", 12) ;
+  memcpy(repotmp + repolen, ":new:XXXXXX", 12) ;
   m = umask(0) ;
   if (!mkdtemp(repotmp))
   {
@@ -114,7 +121,24 @@ int main (int argc, char const *const *argv)
     strerr_diefu2sys(111, "mkdir ", tmp) ;
   }
 
+  memcpy(tmp + repolen + 12, "stores", 7) ;
+  if (mkdir(tmp, 02755) == -1)
+  {
+    cleanup(repotmp) ;
+    strerr_diefu2sys(111, "mkdir ", tmp) ;
+  }
   umask(m) ;
+  tmp[repolen + 19] = '/' ;
+  for (unsigned int i = 0 ; i < argc ; i++)
+  {
+    uint320_xfmt(tmp + repolen + 20, i, 8) ;
+    tmp[repolen + 28] = 0 ;
+    if (symlink(argv[i], tmp) == -1)
+    {
+      cleanup(repotmp) ;
+      strerr_diefu4sys(111, "make a symlink from ", tmp, " to ", argv[i]) ;
+    }
+  }
 
   memcpy(tmp + repolen + 12, "lock", 5) ;
   if (!openwritenclose_unsafe5(tmp, "", 0, 0, 0))
@@ -123,10 +147,10 @@ int main (int argc, char const *const *argv)
     strerr_diefu2sys(111, "create ", tmp) ;
   }
 
-  if (!s6rc_repo_sync(repotmp, argv, argc, verbosity, wgola[GOLA_FDHUSER]))
+  if (!(wgolb & GOLB_BARE) && !s6rc_repo_sync(repotmp, verbosity, wgola[GOLA_FDHUSER]))
   {
     cleanup(repotmp) ;
-    return 111 ;
+    _exit(111) ;
   }
 
   if (chmod(repotmp, 02755) == -1)
@@ -161,5 +185,5 @@ int main (int argc, char const *const *argv)
     }
   }
 
-  return 0 ;
+  _exit(0) ;
 }

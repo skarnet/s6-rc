@@ -27,6 +27,7 @@ extern int s6rc_livedir_canon (char const **) ;
 extern int s6rc_live_state_size (char const *, uint32_t *, uint32_t *) ;
 extern int s6rc_live_state_read (char const *, unsigned char *, uint32_t) ;
 
+extern int s6rc_ls (char const *, stralloc *, genalloc *) ;
 extern int s6rc_type_check (int, char const *) ;
 extern int s6rc_nlto0 (char *, size_t, size_t, genalloc *) ;
 

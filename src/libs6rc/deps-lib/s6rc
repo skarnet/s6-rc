@@ -12,6 +12,7 @@ s6rc_livedir_create.o
 s6rc_livedir_prefix.o
 s6rc_livedir_prefixsize.o
 s6rc_lock.o
+s6rc_ls.o
 s6rc_nlto0.o
 s6rc_read_uint.o
 s6rc_repo_badsub.o
@@ -20,6 +21,7 @@ s6rc_repo_compile.o
 s6rc_repo_fillset.o
 s6rc_repo_fixset.o
 s6rc_repo_flattenservices.o
+s6rc_repo_list_sets.o
 s6rc_repo_listalldeps.o
 s6rc_repo_listcontents.o
 s6rc_repo_listdeps.o
@@ -37,6 +39,8 @@ s6rc_repo_subnames.o
 s6rc_repo_sv_bcmpr.o
 s6rc_repo_sv_cmpr.o
 s6rc_repo_sync.o
+s6rc_repo_syncset.o
+s6rc_repo_syncset_tmp.o
 s6rc_sanitize_dir.o
 s6rc_servicedir_internal.o
 s6rc_servicedir_block.o

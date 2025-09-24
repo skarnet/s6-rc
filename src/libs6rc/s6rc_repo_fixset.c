@@ -5,7 +5,6 @@
 #include <errno.h>
 
 #include <skalibs/posixplz.h>
-#include <skalibs/direntry.h>
 #include <skalibs/strerr.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>

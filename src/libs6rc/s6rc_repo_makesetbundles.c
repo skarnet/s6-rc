@@ -34,8 +34,12 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
   memcpy(src + repolen + 10, ".bundles", 9) ;
   rm_rf_tmp(dst, &sa) ;
 
-  n = s6rc_repo_listsub(repo, set, "masked", &sa, &ga) ;
-  if (n < 0) goto err ;
+  n = s6rc_repo_listsub(repo, set, s6rc_repo_subnames[0], &sa, &ga) ;
+  if (n < 0)
+  {
+    strerr_warnfu6sys("list sub ",  s6rc_repo_subnames[0], " of set ", set, " in repository ", repo) ;
+    goto err ;
+  }
   if (n)
   {
     DIR *dir ;

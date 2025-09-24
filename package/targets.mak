@@ -8,6 +8,7 @@ s6-rc \
 s6-rc-update \
 s6-rc-format-upgrade \
 s6-rc-repo-init \
+s6-rc-repo-sync \
 s6-rc-set-new \
 s6-rc-set-copy \
 s6-rc-set-delete \

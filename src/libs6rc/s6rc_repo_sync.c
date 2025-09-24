@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include <skalibs/uint32.h>
 #include <skalibs/direntry.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/strerr.h>
@@ -27,98 +28,19 @@ static inline void cleanup (char const *ato, char const *bun)
   errno = e ;
 }
 
-static int unlink_stales_in_sub (char const *repo, char const *set, char const *sub, uint32_t where, stralloc *sa, genalloc *ga, unsigned int verbosity)
+int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuser)
 {
   size_t repolen = strlen(repo) ;
-  size_t setlen = strlen(set) ;
-  size_t sublen = strlen(sub) ;
-  size_t subfnlen = repolen + setlen + sublen + 10 ;
-  char subfn[subfnlen + 1] ;
-  memcpy(subfn, repo, repolen) ;
-  memcpy(subfn + repolen, "/sources/", 9) ;
-  memcpy(subfn + repolen + 9, set, setlen) ;
-  subfn[repolen + 9 + setlen] = '/' ;
-  memcpy(subfn + repolen + 10 + setlen, sub, sublen + 1) ;
-  DIR *dir = opendir(subfn) ;
-  if (!dir)
-  {
-    strerr_warnfu2sys("opendir ", subfn) ;
-    return 0 ;
-  }
-  for (;;)
-  {
-    size_t len ;
-    direntry *d ;
-    errno = 0 ;
-    d = readdir(dir) ;
-    if (!d) break ;
-    if (d->d_name[0] == '.') continue ;
-    len = strlen(d->d_name) ;
-    char fn[subfnlen + len + 2] ;
-    memcpy(fn, subfn, sublen) ;
-    fn[sublen] = '/' ;
-    memcpy(fn + sublen + 1, d->d_name, len+1) ;
-    if (access(fn, F_OK) == -1)
-    {
-      if (errno != ENOENT)
-      {
-        strerr_warnfu2sys("access ", fn) ;
-        goto err ;
-      }
-      unlink_void(fn) ;
-      if (verbosity >= 2)
-        strerr_warni6x("service ", d->d_name, " does not exist anymore, removed from sub ", sub, " of set ", set) ;
-    }
-    else
-    {
-      if (!genalloc_append(size_t, ga, &sa->len)) goto err ;
-      if (!stralloc_catb(sa, d->d_name, len+1)) goto err ;
-    }
-  }
-  if (errno)
-  {
-    strerr_warnfu2sys("readdir ", subfn) ;
-    goto err ;
-  }
-
-  dir_close(dir) ;
-  return 1 ;
-
- err:
-  dir_close(dir) ;
-  return 0 ;
-}
-
-static inline int s6rc_repo_syncset (char const *repo, size_t repolen, char const *set, stralloc *sa, genalloc *ga, unsigned int verbosity)
-{
-  for (unsigned int i = 0 ; i < 4 ; i++)
-    if (unlink_stales_in_sub(repo, set, s6rc_repo_subnames[i], i, sa, ga, verbosity)) goto err ;
-
-  {
-    size_t n = genalloc_len(size_t, ga) ;
-    char const *stillhere[n + !n] ;
-    for (size_t i = 0 ; i < n ; i++) stillhere[i] = sa->s + genalloc_s(size_t, ga)[i] ;
-    if (!s6rc_repo_fillset(repo, set, stillhere, n)) goto err ;
-  }
-
-  sa->len = 0 ;
-  genalloc_setlen(size_t, ga, 0) ;
-  return 1 ;
-
- err:
-  sa->len = 0 ;
-  genalloc_setlen(size_t, ga, 0) ;
-  return 0 ;
-}
-
-int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sourceslen, unsigned int verbosity, char const *fdhuser)
-{
-  size_t repolen = strlen(repo) ;
+  char store[repolen + 17] ;
   char ato[repolen + 26] ;
   char bun[repolen + 26] ;
 
+  memcpy(store, repo, repolen) ;
+  memcpy(store + repolen, "/stores/", 8) ;
+  store[repolen + 16] = 0 ;
 
- /* Fill new .atomics/ and .bundles/ with symlinks to real sources */
+
+ /* Fill new .atomics/ and .bundles/ with symlinks to real stores */
 
   memcpy(ato, repo, repolen) ;
   memcpy(ato + repolen, "/sources/..atomics:XXXXXX", 26) ;
@@ -147,13 +69,15 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
     return 0 ;
   }
 
-  for (size_t i = 0 ; i < sourceslen ; i++)
+  for (uint32_t istore = 0 ;; istore++)
   {
-    size_t srclen = strlen(sources[i]) ;
-    DIR *dir = opendir(sources[i]) ;
+    DIR *dir ;
+    uint320_xfmt(store + repolen + 8, istore, 8) ;
+    dir = opendir(store) ;
     if (!dir)
     {
-      strerr_warnfu2sys("opendir ", sources[i]) ;
+      if (errno == ENOENT) break ;
+      strerr_warnfu2sys("opendir ", store) ;
       goto err ;
     }
     for (;;)
@@ -168,10 +92,11 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
       {
         char const *x ;
         char dst[repolen + 28 + len] ;
-        char src[srclen + len + 2] ;
-        memcpy(src, sources[i], srclen) ;
-        src[srclen] = '/' ;
-        memcpy(src + srclen + 1, d->d_name, len+1) ;
+        char src[26 + len] ;
+        memcpy(src, "../../../stores/", 16) ;
+        memcpy(src + 16, store + repolen + 8, 8) ;
+        src[24] = '/' ;
+        memcpy(src + 25, d->d_name, len+1) ;
         switch (s6rc_type_check(-1, src))
         {
           case 1 :
@@ -215,13 +140,13 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
     dir_close(dir) ;
     if (errno)
     {
-      strerr_warnfu2sys("readdir ", sources[i]) ;
+      strerr_warnfu2sys("readdir ", store) ;
       goto err ;
     }
   }
 
 
- /* Compile the reference db - also checks new sources consistency */
+ /* Compile the reference db - also checks consistency of new stores */
 
   {
     char const *subs[2] = { ato + repolen + 9, bun + repolen + 9 } ;
@@ -232,7 +157,7 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
   }
 
 
- /* Switch to the new sources, delete the old ones */
+ /* Switch, delete links to old stores */
 
   {
     char fn[repolen + 18] ;
@@ -278,7 +203,7 @@ int s6rc_repo_sync (char const *repo, char const *const *sources, size_t sources
       d = readdir(dir) ;
       if (!d) break ;
       if (d->d_name[0] == '.') continue ;
-      if (!s6rc_repo_syncset(repo, repolen, d->d_name, &sa, &ga, verbosity)) break ;
+      if (!s6rc_repo_syncset_tmp(repo, d->d_name, &sa, &ga, verbosity)) break ;
     }
     dir_close(dir) ;
     genalloc_free(size_t, &ga) ;

@@ -24,7 +24,9 @@ extern char const s6rc_repo_subnames[4][7] ;
 extern int s6rc_repo_fillset (char const *, char const *, char const *const *, uint32_t) ;
 
 extern int s6rc_repo_cleanup (char const *) ;
-extern int s6rc_repo_sync (char const *, char const *const *, size_t, unsigned int, char const *) ;
+extern int s6rc_repo_sync (char const *, unsigned int, char const *) ;
+extern int s6rc_repo_syncset (char const *, char const *, unsigned int) ;
+extern int s6rc_repo_syncset_tmp (char const *, char const *, stralloc *, genalloc *ga, unsigned int) ;
 extern int s6rc_repo_lock (char const *, int) ;
 
 extern int s6rc_repo_makesetbundles (char const *, char const *, unsigned int) ;
@@ -35,6 +37,7 @@ extern int s6rc_repo_compile (char const *, char const *, char const *const *, u
 extern int s6rc_repo_refcompile (char const *, char *, unsigned int, char const *) ;
 extern int s6rc_repo_setcompile (char const *, char const *, char const *, char *, unsigned int, char const *) ;
 
+extern int s6rc_repo_list_sets (char const *, stralloc *, genalloc *) ;
 extern int s6rc_repo_listsub (char const *, char const *, char const *, stralloc *, genalloc *) ;
 extern int s6rc_repo_listcontents (char const *, char const *, stralloc *, genalloc *) ;
 extern int s6rc_repo_listdeps (char const *, char const *, stralloc *, genalloc *, int) ;
