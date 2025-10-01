@@ -12,7 +12,6 @@
 #include <skalibs/allreadwrite.h>
 #include <skalibs/strerr.h>
 #include <skalibs/gol.h>
-#include <skalibs/tai.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
@@ -47,7 +46,7 @@ static gol_arg const rgola[] =
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
   { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
   { .so = 'D', .lo = "default-bundle", .i = GOLA_DEFBUNDLE },
-  { .so = 'h', .lo = "fd-holder-user", .i = GOLA_FDHUSER }
+  { .so = 'h', .lo = "fdholder-user", .i = GOLA_FDHUSER }
 } ;
 
 static uint64_t wgolb = 0 ;
@@ -94,7 +93,6 @@ int main (int argc, char const *const *argv)
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
   check_set(wgola[GOLA_REPODIR], argv[0]) ;
-  tain_now_g() ;
 
   size_t oldclen = S6RC_REPO_COMPILE_BUFLEN(strlen(wgola[GOLA_REPODIR]), strlen(argv[0])) ;
   char oldc[oldclen] ;

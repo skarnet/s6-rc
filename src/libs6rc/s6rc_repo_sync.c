@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include <skalibs/uint32.h>
+#include <skalibs/uint16.h>
 #include <skalibs/direntry.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/strerr.h>
@@ -31,13 +31,13 @@ static inline void cleanup (char const *ato, char const *bun)
 int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuser)
 {
   size_t repolen = strlen(repo) ;
-  char store[repolen + 17] ;
+  char store[repolen + 13] ;
   char ato[repolen + 26] ;
   char bun[repolen + 26] ;
 
   memcpy(store, repo, repolen) ;
   memcpy(store + repolen, "/stores/", 8) ;
-  store[repolen + 16] = 0 ;
+  store[repolen + 12] = 0 ;
 
 
  /* Fill new .atomics/ and .bundles/ with symlinks to real stores */
@@ -69,10 +69,10 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
     return 0 ;
   }
 
-  for (uint32_t istore = 0 ;; istore++)
+  for (uint16_t istore = 0 ;; istore++)
   {
     DIR *dir ;
-    uint320_xfmt(store + repolen + 8, istore, 8) ;
+    uint160_xfmt(store + repolen + 8, istore, 4) ;
     dir = opendir(store) ;
     if (!dir)
     {
@@ -92,11 +92,11 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
       {
         char const *x ;
         char dst[repolen + 28 + len] ;
-        char src[26 + len] ;
+        char src[22 + len] ;
         memcpy(src, "../../../stores/", 16) ;
-        memcpy(src + 16, store + repolen + 8, 8) ;
-        src[24] = '/' ;
-        memcpy(src + 25, d->d_name, len+1) ;
+        memcpy(src + 16, store + repolen + 8, 4) ;
+        src[20] = '/' ;
+        memcpy(src + 21, d->d_name, len+1) ;
         switch (s6rc_type_check(-1, src))
         {
           case 1 :

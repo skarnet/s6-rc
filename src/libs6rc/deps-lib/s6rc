@@ -30,6 +30,7 @@ s6rc_repo_listsub.o
 s6rc_repo_lock.o
 s6rc_repo_makedefbundle.o
 s6rc_repo_makesetbundles.o
+s6rc_repo_makestores.o
 s6rc_repo_makesvlist.o
 s6rc_repo_makesvlist_byname.o
 s6rc_repo_moveservices.o

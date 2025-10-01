@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include <skalibs/gol.h>
-#include <skalibs/tai.h>
 #include <skalibs/prog.h>
 #include <skalibs/strerr.h>
 
@@ -25,7 +24,7 @@ static gol_arg const rgola[] =
 {
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
   { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
-  { .so = 'h', .lo = "fd-holder-user", .i = GOLA_FDHUSER }
+  { .so = 'h', .lo = "fdholder-user", .i = GOLA_FDHUSER }
 } ;
 
 int main (int argc, char const *const *argv)
@@ -33,6 +32,7 @@ int main (int argc, char const *const *argv)
   char const *wgola[GOLA_N] = { 0 } ;
   unsigned int verbosity = 1 ;
   unsigned int golc ;
+  int fdlock ;
 
   PROG = "s6-rc-repo-sync" ;
   wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
@@ -41,7 +41,9 @@ int main (int argc, char const *const *argv)
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
-  tain_now_g() ;
+
+  fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
+  if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
 
   if (!s6rc_repo_sync(wgola[GOLA_REPODIR], verbosity, wgola[GOLA_FDHUSER])) _exit(111) ;
 

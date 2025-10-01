@@ -10,7 +10,6 @@
 #include <skalibs/prog.h>
 #include <skalibs/strerr.h>
 #include <skalibs/gol.h>
-#include <skalibs/tai.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
@@ -126,7 +125,6 @@ int main (int argc, char const *const *argv)
 
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
-  tain_now_g() ;
 
   if (!s6rc_repo_makesvlist_byname(wgola[GOLA_REPODIR], argv[0], &storage, &svlist)) _exit(111) ;
   list = genalloc_s(s6rc_repo_sv, &svlist) ;
