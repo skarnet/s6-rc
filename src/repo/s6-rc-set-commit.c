@@ -19,12 +19,13 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-commit [ -v verbosity ] [ -r repo ] [ -D defaultbundle ] [ -h fdhuser ] [ -K ] set"
+#define USAGE "s6-rc-set-commit [ -v verbosity ] [ -r repo ] [ -D defaultbundle ] [ -h fdhuser ] [ -K ] [ -f ] set"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
 {
-  GOLB_KEEPOLD = 0x01
+  GOLB_KEEPOLD = 0x01,
+  GOLB_FORCE = 0x02
 } ;
 
 enum gola_e
@@ -38,7 +39,8 @@ enum gola_e
 
 static gol_bool const rgolb[] =
 {
-  { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD }
+  { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD },
+  { .so = 'f', .lo = "force", .clear = 0, .set = GOLB_FORCE }
 } ;
 
 static gol_arg const rgola[] =
@@ -51,7 +53,7 @@ static gol_arg const rgola[] =
 
 static uint64_t wgolb = 0 ;
 
-static void check_set (char const *repo, char const *set)
+static inline void check_set (char const *repo, char const *set)
 {
   struct stat st ;
   size_t repolen = strlen(repo) ;
@@ -68,6 +70,34 @@ static void check_set (char const *repo, char const *set)
   }
   if (!S_ISDIR(st.st_mode))
     strerr_dief3x(102, "file ", fn, " is not a directory") ;
+}
+
+static inline int uptodate (char const *repo, char const *set)
+{
+  struct stat stsource ;
+  struct stat stcompiled ;
+  size_t repolen = strlen(repo) ;
+  size_t setlen = strlen(set) ;
+  char srcfn[repolen + 17 + setlen] ;
+  char dstfn[repolen + 11 + setlen] ;
+  memcpy(srcfn, repo, repolen) ;
+  memcpy(srcfn + repolen, "/sources/", 9) ;
+  memcpy(srcfn + repolen + 9, set, setlen) ;
+  memcpy(srcfn + repolen + 9 + setlen, "/.stamp", 8) ;
+  memcpy(dstfn, repo, repolen) ;
+  memcpy(dstfn + repolen, "/compiled/", 10) ;
+  memcpy(dstfn + repolen + 10, set, setlen + 1) ;
+  if (stat(srcfn, &stsource) == -1)
+    strerr_diefu2sys(111, "stat ", srcfn) ;
+  if (stat(dstfn, &stcompiled) == -1)
+  {
+    if (errno == ENOENT) return 0 ;
+    else strerr_diefu2sys(111, "stat ", dstfn) ;
+  }
+  return
+    stsource.st_atim.tv_sec < stcompiled.st_atim.tv_sec ? 1 :
+    stsource.st_atim.tv_sec > stcompiled.st_atim.tv_sec ? 0 :
+    stsource.st_atim.tv_nsec < stcompiled.st_atim.tv_nsec ;
 }
 
 int main (int argc, char const *const *argv)
@@ -93,6 +123,11 @@ int main (int argc, char const *const *argv)
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
   check_set(wgola[GOLA_REPODIR], argv[0]) ;
+  if (!(wgolb & GOLB_FORCE) && uptodate(wgola[GOLA_REPODIR], argv[0]))
+  {
+    if (verbosity >= 2) strerr_warni3x("set ", argv[0], " is already up-to-date.") ;
+    _exit(0) ;
+  }
 
   size_t oldclen = S6RC_REPO_COMPILE_BUFLEN(strlen(wgola[GOLA_REPODIR]), strlen(argv[0])) ;
   char oldc[oldclen] ;

@@ -30,6 +30,8 @@ extern int s6rc_repo_sync (char const *, unsigned int, char const *) ;
 extern int s6rc_repo_syncset (char const *, char const *, unsigned int) ;
 extern int s6rc_repo_syncset_tmp (char const *, char const *, stralloc *, genalloc *ga, unsigned int) ;
 extern int s6rc_repo_lock (char const *, int) ;
+extern int s6rc_repo_touch (char const *) ;
+extern int s6rc_repo_touchset (char const *, char const *) ;
 
 extern int s6rc_repo_makesetbundles (char const *, char const *, unsigned int) ;
 extern int s6rc_repo_makedefbundle (char const *, char const *, char const *) ;

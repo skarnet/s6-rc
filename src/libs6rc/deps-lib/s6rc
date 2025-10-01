@@ -42,6 +42,8 @@ s6rc_repo_sv_cmpr.o
 s6rc_repo_sync.o
 s6rc_repo_syncset.o
 s6rc_repo_syncset_tmp.o
+s6rc_repo_touch.o
+s6rc_repo_touchset.o
 s6rc_sanitize_dir.o
 s6rc_servicedir_internal.o
 s6rc_servicedir_block.o

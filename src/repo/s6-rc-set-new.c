@@ -34,6 +34,7 @@ static inline void newset (char const *repo, char const *setname)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(setname) ;
+  mode_t m ;
   char atomics[repolen + 18] ;
   char fn[repolen + 10 + setlen] ;
   char tmp[repolen + 18 + setlen] ;
@@ -51,6 +52,7 @@ static inline void newset (char const *repo, char const *setname)
   tmp[repolen + 9] = '.' ;
   memcpy(tmp + repolen + 10, setname, setlen) ;
   memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
+  m = umask(0) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
 
   for (size_t i = 0 ; i < 4 ; i++)
@@ -58,12 +60,14 @@ static inline void newset (char const *repo, char const *setname)
     memcpy(sub + repolen + 18 + setlen, s6rc_repo_subnames[i], 7) ;
     if (mkdir(sub, 02755) == -1)
     {
+      umask(m) ;
       cleanup(tmp) ;
       strerr_diefu2sys(111, "mkdir ", sub) ;
     }
   }
-
-  if (s6rc_repo_fillset(repo, tmp + repolen + 9, 0, 0))
+  umask(m) ;
+  if (!s6rc_repo_fillset(repo, tmp + repolen + 9, 0, 0)
+   || !s6rc_repo_touchset(repo, tmp + repolen + 9))
   {
     cleanup(tmp) ;
     _exit(111) ;
