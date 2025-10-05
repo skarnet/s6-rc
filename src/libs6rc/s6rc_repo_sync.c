@@ -9,6 +9,7 @@
 #include <errno.h>
 
 #include <skalibs/uint16.h>
+#include <skalibs/stat.h>
 #include <skalibs/direntry.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/strerr.h>
@@ -31,6 +32,7 @@ static inline void cleanup (char const *ato, char const *bun)
 int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuser)
 {
   size_t repolen = strlen(repo) ;
+  mode_t m ;
   char store[repolen + 13] ;
   char ato[repolen + 26] ;
   char bun[repolen + 26] ;
@@ -46,14 +48,17 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
   memcpy(ato + repolen, "/sources/..atomics:XXXXXX", 26) ;
   memcpy(bun, ato, repolen + 26) ;
   memcpy(bun + repolen + 11, "bundle", 6) ;
+  m = umask(0) ;
   if (!mkdtemp(ato))
   {
     strerr_warnfu2sys("mkdtemp ", ato) ;
+    umask(m) ;
     return 0 ;
   }
   if (chmod(ato, 02755) == -1)
   {
     strerr_warnfu2sys("chmod ", ato) ;
+    umask(m) ;
     return 0 ;
   }
 
@@ -61,8 +66,10 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
   {
     strerr_warnfu2sys("mkdtemp ", bun) ;
     rmdir(ato) ;
+    umask(m) ;
     return 0 ;
   }
+  umask(m) ;
   if (chmod(bun, 02755) == -1)
   {
     strerr_warnfu2sys("chmod ", bun) ;

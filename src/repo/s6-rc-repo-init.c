@@ -18,6 +18,7 @@
 #include <skalibs/strerr.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/random.h>
+#include <skalibs/unix-transactional.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
@@ -180,13 +181,29 @@ int main (int argc, char const *const *argv)
   if (lockfd == -1)
     strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
 
-  if (!s6rc_repo_makestores(wgola[GOLA_REPODIR], argv, argc)) _exit(111) ;
+  char sold[repolen + 16] ;
+  memcpy(sold, wgola[GOLA_REPODIR], repolen) ;
+  sold[repolen] = '/' ;
+
+  if (!s6rc_repo_makestores(wgola[GOLA_REPODIR], argv, argc, sold + repolen + 1)) _exit(111) ;
 
   if (!(wgolb & GOLB_BARE))
   {
     if (!s6rc_repo_sync(wgola[GOLA_REPODIR], verbosity, wgola[GOLA_FDHUSER]))
+    {
+      char stores[repolen + 8] ;
+      char snew[repolen + 16] ;
+      memcpy(stores, wgola[GOLA_REPODIR], repolen) ;
+      memcpy(stores + repolen, "/stores", 8) ;
+      memcpy(snew, wgola[GOLA_REPODIR], repolen) ;
+      snew[repolen] = '/' ;
+      if (!atomic_symlink4(sold + repolen + 1, stores, snew + repolen + 1, 15))
+        strerr_diefu7sys(111, "atomically switch back stores at ", wgola[GOLA_REPODIR], " - old store is ", sold + repolen + 1, " and new (invalid) store is ", snew + repolen + 1, " - reported error was") ;
+      rm_rf(snew) ;
       _exit(111) ;
+    }
   }
 
+  rm_rf(sold) ;
   _exit(0) ;
 }

@@ -18,17 +18,20 @@ int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, cha
 {
   size_t newlen, ddirlen ;
   size_t sabase = sa->len ;
+  mode_t m ;
   int wasnull = !sa->s ;
   if (!s6rc_sanitize_dir(sa, live, &ddirlen)) return 0 ;
   if (!stralloc_cats(sa, ":")) goto err ;
   if (!stralloc_cats(sa, suffix)) goto err ;
   if (!stralloc_cats(sa, ":XXXXXX")) goto err ;
   if (!stralloc_0(sa)) goto err ;
-  if (!mkdtemp(sa->s + sabase)) goto err ;
+  m = umask(0) ;
+  if (!mkdtemp(sa->s + sabase)) { umask(m) ; goto err ; }
   newlen = sa->len-- ;
+  if (!stralloc_catb(sa, "/servicedirs", 13)) { umask(m) ; goto delerr ; }  /* allocates enough for the next strcpys */
+  if (mkdir(sa->s + sabase, 0755) < 0) { umask(m) ; goto delerr ; }
+  umask(m) ;
   if (chmod(sa->s + sabase, 0755) < 0) goto delerr ;
-  if (!stralloc_catb(sa, "/servicedirs", 13)) goto delerr ;  /* allocates enough for the next strcpys */
-  if (mkdir(sa->s + sabase, 0755) < 0) goto delerr ;
   strcpy(sa->s + newlen, "compiled") ;
   if (symlink(compiled, sa->s + sabase) < 0) goto delerr ;
   strcpy(sa->s + newlen, "scandir") ;

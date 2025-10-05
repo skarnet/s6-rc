@@ -21,7 +21,7 @@ extern int s6rc_repo_sv_bcmpr (void const *a, void const *b, void *aux) ;
 
 extern char const s6rc_repo_subnames[4][7] ;
 
-extern int s6rc_repo_makestores (char const *, char const *const *, uint16_t) ;
+extern int s6rc_repo_makestores (char const *, char const *const *, uint16_t, char *) ;
 
 extern int s6rc_repo_fillset (char const *, char const *, char const *const *, uint32_t) ;
 
