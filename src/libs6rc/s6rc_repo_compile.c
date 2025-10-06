@@ -93,7 +93,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
     char fn[repolen + setlen + 11] ;
     memcpy(fn, newc, repolen + 10) ;
     memcpy(fn + repolen + 10, set, setlen + 1) ;
-    if (!atomic_symlink4(newc + repolen + 10, fn, oldc + repolen + 10, repolen + setlen + 45))
+    if (!atomic_symlink4(newc + repolen + 10, fn, oldc + repolen + 10, setlen + 35))
     {
       int e = errno ;
       rm_rf(newc) ;

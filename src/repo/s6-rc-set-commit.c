@@ -51,60 +51,12 @@ static gol_arg const rgola[] =
   { .so = 'h', .lo = "fdholder-user", .i = GOLA_FDHUSER }
 } ;
 
-static uint64_t wgolb = 0 ;
-
-static inline void check_set (char const *repo, char const *set)
-{
-  struct stat st ;
-  size_t repolen = strlen(repo) ;
-  size_t setlen = strlen(set) ;
-  char fn[repolen + 10 + setlen] ;
-  memcpy(fn, repo, repolen) ;
-  memcpy(fn + repolen, "/sources/", 9) ;
-  memcpy(fn + repolen + 9, set, setlen + 1) ;
-  if (stat(fn, &st) == -1)
-  {
-    if (errno == ENOENT)
-      strerr_dief4x(3, "set ", set, " does not exist in repository ", repo) ;
-    else strerr_diefu2sys(111, "stat ", fn) ;
-  }
-  if (!S_ISDIR(st.st_mode))
-    strerr_dief3x(102, "file ", fn, " is not a directory") ;
-}
-
-static inline int uptodate (char const *repo, char const *set)
-{
-  struct stat stsource ;
-  struct stat stcompiled ;
-  size_t repolen = strlen(repo) ;
-  size_t setlen = strlen(set) ;
-  char srcfn[repolen + 17 + setlen] ;
-  char dstfn[repolen + 11 + setlen] ;
-  memcpy(srcfn, repo, repolen) ;
-  memcpy(srcfn + repolen, "/sources/", 9) ;
-  memcpy(srcfn + repolen + 9, set, setlen) ;
-  memcpy(srcfn + repolen + 9 + setlen, "/.stamp", 8) ;
-  memcpy(dstfn, repo, repolen) ;
-  memcpy(dstfn + repolen, "/compiled/", 10) ;
-  memcpy(dstfn + repolen + 10, set, setlen + 1) ;
-  if (stat(srcfn, &stsource) == -1)
-    strerr_diefu2sys(111, "stat ", srcfn) ;
-  if (stat(dstfn, &stcompiled) == -1)
-  {
-    if (errno == ENOENT) return 0 ;
-    else strerr_diefu2sys(111, "stat ", dstfn) ;
-  }
-  return
-    stsource.st_atim.tv_sec < stcompiled.st_atim.tv_sec ? 1 :
-    stsource.st_atim.tv_sec > stcompiled.st_atim.tv_sec ? 0 :
-    stsource.st_atim.tv_nsec < stcompiled.st_atim.tv_nsec ;
-}
-
 int main (int argc, char const *const *argv)
 {
   int fdlock ;
   unsigned int verbosity = 1 ;
   char const *wgola[GOLA_N] = { 0 } ;
+  uint64_t wgolb = 0 ;
   unsigned int golc ;
   int r ;
 
@@ -122,11 +74,17 @@ int main (int argc, char const *const *argv)
 
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
-  check_set(wgola[GOLA_REPODIR], argv[0]) ;
-  if (!(wgolb & GOLB_FORCE) && uptodate(wgola[GOLA_REPODIR], argv[0]))
+  r = s6rc_repo_checkset(wgola[GOLA_REPODIR], argv[0]) ;
+  if (r) _exit(r) ;
+  if (!(wgolb & GOLB_FORCE))
   {
-    if (verbosity >= 2) strerr_warni3x("set ", argv[0], " is already up-to-date.") ;
-    _exit(0) ;
+    r = s6rc_repo_setuptodate(wgola[GOLA_REPODIR], argv[0]) ;
+    if (r == -1) _exit(111) ;
+    if (r)
+    {
+      if (verbosity >= 2) strerr_warni3x("set ", argv[0], " is already up-to-date.") ;
+      _exit(0) ;
+    }
   }
 
   size_t oldclen = S6RC_REPO_COMPILE_BUFLEN(strlen(wgola[GOLA_REPODIR]), strlen(argv[0])) ;

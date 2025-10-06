@@ -17,7 +17,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-changestate [ -v verbosity ] [ -r repo ] [ -E ] [ -f | -I fail|pull|warn ] [ -n ] set newstate services..."
+#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E ] [ -f | -I fail|pull|warn ] [ -n ] set newstate services..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -101,7 +101,7 @@ int main (int argc, char const *const *argv)
   s6rc_repo_sv *list ;
   uint32_t listn, n ;
 
-  PROG = "s6-rc-set-changestate" ;
+  PROG = "s6-rc-set-change" ;
   wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
 
   golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;

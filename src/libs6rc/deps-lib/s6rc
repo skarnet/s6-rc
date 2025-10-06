@@ -16,6 +16,7 @@ s6rc_ls.o
 s6rc_nlto0.o
 s6rc_read_uint.o
 s6rc_repo_badsub.o
+s6rc_repo_checkset.o
 s6rc_repo_cleanup.o
 s6rc_repo_compile.o
 s6rc_repo_fillset.o
@@ -36,6 +37,7 @@ s6rc_repo_makesvlist_byname.o
 s6rc_repo_moveservices.o
 s6rc_repo_refcompile.o
 s6rc_repo_setcompile.o
+s6rc_repo_setuptodate.o
 s6rc_repo_subnames.o
 s6rc_repo_sv_bcmpr.o
 s6rc_repo_sv_cmpr.o
