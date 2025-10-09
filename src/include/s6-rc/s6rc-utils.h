@@ -12,8 +12,6 @@
 
 #include <s6-rc/s6rc-db.h>
 
-extern int s6rc_strrefcmp (void const *, void const *) ;
-
 extern void s6rc_graph_closure (s6rc_db_t const *, unsigned char *, unsigned int, int) ;
 extern int s6rc_lock (char const *, int, int *, char const *, int, int *, int) ;
 extern int s6rc_read_uint (char const *, unsigned int *) ;

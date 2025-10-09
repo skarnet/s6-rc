@@ -51,35 +51,13 @@ simply because they manage a <em>repository</em> of services.
 
 <h2> Definitions </h2>
 
-<div id="repository">
-<h3> Repository </h3>
-</div>
-
-<p>
- An s6-rc <em>repository</em> is a place in the filesystem where the
-<em>repo</em> commands perform their work and store their data. It
-is made of hierarchies of symlinks (lots and lots of symlinks), that
-ultimately point to source definition directories in the
-<a href="#store">stores</a>, as well as several compiled databases:
-the <a href="#refdb">reference database</a>, and the compiled databases
-made of the <a href="#set">sets</a> you have
-<a href="#commit">committed</a>, including the one you will eventually
-<a href="#install">install</a>.
-</p>
-
-<p>
- A <em>repository</em> is where <strong>offline</strong> work on
-services happens. It must be located on a read-write filesystem, but
-that filesystem does not need to be accessible during the early boot.
-The default repository is located in <tt>/var/lib/s6-rc/repository</tt>
-(configurable at build-time). Other repositories can be created and
-used at will, typically by non-root users who want to manage their own
-sets of services.
-</p>
-
 <div id="store">
 <h3> Store </h3>
 </div>
+
+<p>
+<em> Store: place where service definitions are stored </em>
+</p>
 
 <p>
  A service <em>store</em> is a place in the filesystem where source
@@ -87,10 +65,10 @@ definition directories are written by the package manager or the
 user, where you can find the real contents of the services (instead
 of just symlinks), as in, source definition directories that are
 processed by <a href="s6-rc-compile.html">s6-rc-compile</a>.
-A repository will typically link to several stores: one provided by
-the package manager, and one &mdash; or more &mdash; provided locally
-by the admin. No s6-rc command will ever write to a store, but most
-repo commands read from all the stores.
+A <a href="#repository">repository</a> will typically link to several
+stores: one provided by the package manager, and one &mdash; or more
+&mdash; provided locally by the admin. No s6-rc command will ever
+write to a store, but most repo commands read from all the stores.
 </p>
 
 <p>
@@ -102,21 +80,64 @@ place to host local service definition directories managed by
 an administrator could be <tt>/etc/s6-rc/sources</tt>.
 </p>
 
+
+<div id="repository">
+<h3> Repository </h3>
+</div>
+
+<p>
+<em> Repository: place in the filesystem where the repo commands work,
+write their data, maintain the dependency graph of all the services
+in the stores, etc. </em>
+</p>
+
+<p>
+ The s6-rc <em>repository</em> is the central concept of the <em>repo</em>
+commands: it's the place in the filesystem where these commands perform
+their work and store their data. It is made of hierarchies of symlinks
+(lots and lots of symlinks), that ultimately point to source definition
+directories in the <a href="#store">stores</a>, as well as several
+compiled databases: the <a href="#refdb">reference database</a>, and the
+compiled databases made of the <a href="#set">sets</a> the user has
+<a href="#commit">committed</a>, including the one the user will eventually
+<a href="#install">install</a>.
+</p>
+
+<p>
+ The <em>repository</em> is where <strong>offline</strong> work on
+services happens. It must be located on a read-write filesystem, but
+that filesystem does not need to be accessible during the early boot.
+By default, the repository is located in <tt>/var/lib/s6-rc/repository</tt>;
+it is configurable at s6-rc build time.
+</p>
+
+<p>
+ The repository is generally unique for a system. However, it is possible
+to create and use repositories in non-default locations; that is, for
+instance, what non-root users would do in order to manage their own sets
+of services.
+</p>
+
 <div id="refdb">
 <h3> Reference database </h3>
 </div>
 
 <p>
- When a repository is created or updated, the list of all services
+ <em>Reference database: the dependency graph between all the services
+in all the stores used by the repository. </em>
+</p>
+
+<p>
+ When the repository is created or updated, the list of all services
 defined in all the <a href="#store">stores</a> used by this repository
 is analyzed, and all these services are automatically compiled into a
 <em>reference database</em>, stored in the repository. The reference
 database is never meant to be installed or go live in any way; its
 purpose is mainly to give repo commands access to the full dependency
-graph of all the services in the store. Additionally, compiling this
-reference database ensures that the whole set of services defined
-in all the used stores is consistent: if not, the initialization fails,
-so the problem is reported as early as possible.
+graph of all the services in the stores. Additionally, compiling this
+reference database ensures that the whole set of services defined by
+the unions of all the stores is consistent: if not, the initialization
+fails, so the problem is reported as early as possible.
 </p>
 
 <div id="set">
@@ -124,13 +145,19 @@ so the problem is reported as early as possible.
 </div>
 
 <p>
- Inside a repository, a <em>set</em> is the fundamental unit of operation,
-and what users will interact the most with. A set is a map associating
-each service contained in the <a href="#refdb">reference database</a>
+ <em> Set: a set of services with all the states the user wants them
+to be in at boot time: unavailable in the database, available but not
+automatically started, started at boot time. </em>
+</p>
+
+<p>
+ Inside the repository, a <em>set</em> is the fundamental unit of operation,
+and what users will interact the most with. A set contains all the
+services defined in the <a href="#refdb">reference database</a>
 (so, each service listed in all the <a href="#store">stores</a> used by the
-repository) to a given state that the user wants this service in when
-booting the system. This target state is also called a
-<a href="#sub">sub</a>, because target states are implemented by
+repository) and associates, to each service, a given state that the user
+wants this service to be in when the system boots. This target state is also
+called a <a href="#sub">sub</a>, because target states are implemented by
 subdirectories of the directory holding a set.
 </p>
 
@@ -147,6 +174,10 @@ can <a href="#commit">commit</a> the set, then <a href="#install">install</a> it
 </div>
 
 <p>
+ <em> Sub: the state the user wants a service to reach at boot time. </em>
+</p>
+
+<p>
  A <em>sub</em> is the target state for every service in a set. At all times,
 each service is in one and only one sub. The list of subs the service can be in
 is the following:
@@ -156,26 +187,30 @@ is the following:
  <li> <em>masked</em>: when the set is committed, masked services <em>will not</em>
 be included in the compiled set database. They will be completely absent; if
 the set database is installed, <a href="s6-rc.html">s6-rc</a> will not know them.
-A service in another sub cannot depend on a masked service. </li>
- <li> <em>disabled</em>, aka <em>unmasked</em>, aka <em>active</em> (yes, the
-naming may seem inconsistent, but bear with me): these services will appear in
-the compiled set database, and be startable by <a href="s6-rc.html">s6-rc</a> if
-the database is installed. However, they will not be included in the default
-bundle, i.e. they will not be automatically started at boot time. </li>
+A service in another sub cannot depend on a masked service. Users typically mask
+services that are included in a store but are superfluous to them, services they
+just do not want to interact with. </li>
+ <li> <em>disabled</em>: these services will appear in the compiled set database,
+and will be startable by <a href="s6-rc.html">s6-rc</a> if the database is installed.
+However, they will not be included in the default bundle, i.e. they will not be
+automatically started at boot time. Other names for <em>disabled</em> are:
+<em>inactive</em>, <em>unmasked</em>, <em>latent</em>, <em>usable</em>. (Tooling
+will likely report these services as <em>latent</em> or <em>usable</em>.) </li>
  <li> <em>enabled</em>: these services will appear in the compiled set database,
-<em>and</em> in the default bundle. They will be started at boot time. </li>
+<em>and</em> in the default bundle, which means they will be started at boot time.
+Other names for <em>enabled</em> are: <em>active</em>. </li>
  <li> <em>essential</em>, aka <em>always</em>: these services have been marked
 as essential in their source definition directories, so they will always be
 enabled. They cannot be disabled or masked. They cannot depend on non-essential
 services. This sub is typically used by early boot services that should always
-be run. </li>
+run. </li>
 </ul>
 
 <p>
  Working on a set basically means moving services from one of these subs to
-another, mostly choosing what services you will enable or disable, and sometimes
-masking services you don't want to see at all. And once you are happy with a set,
-you can commit it.
+another, mostly choosing what services to enable or disable, and sometimes
+masking services the user does not want to see at all. Once the user is happy
+with a set, they should commit it.
 </p>
 
 <div id="commit">
@@ -211,12 +246,14 @@ the new live database.
 according to distribution policy. </li>
    <li> The installer also sets a default live service database up. </li>
   </ul> </li>
+
  <li> <strong>Whenever distribution policies change</strong>, for instance
 when declaring an additional local store:
   <ul>
    <li> The admin updates the list of stores with
 <a href="s6-rc-repo-init.html">s6-rc-repo-init -U</a>. </li>
   </ul> </li>
+
  <li> <strong>Whenever service files change</strong>, typically when the
 package manager installs/updates/deletes packages that provide daemons,
 or admins modify services in local stores:
@@ -230,6 +267,15 @@ repository in sync with the stores. </li>
 database is also kept in sync with the machine state. (Failure to do so may
 prevent the machine from booting next time.)
   </ul> </li>
+
+ <li> <strong>Whenever the admin wants to modify the <em>current</em>, live,
+machine state, by starting, stopping or restarting services</strong>:
+  <ul>
+   <li> They use the original <a href="s6-rc.html">s6-rc change</a> command,
+which operates on the live database. No <em>repo</em> command is involved
+here. </li>
+  </ul> </li>
+
  <li> <strong>Whenever the admin wants to customize their startup process</strong>:
   <ul>
    <li> They can create new sets (with default subs coming from policy that's
@@ -242,6 +288,7 @@ or delete sets with <a href="s6-rc-set-delete.html">s6-rc-set-delete</a>. </li>
    <li> They install the set with <a href="s6-rc-set-install.html">s6-rc-set-install</a>.
 This action potentially modifies the current state of the machine! </li>
   </ul> </li>
+
  <li> <strong>At boot time</strong>:
   <ul>
    <li> The system boots on the installed live database. None of the <em>repo</em>

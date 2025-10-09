@@ -66,19 +66,25 @@ static uint64_t wgolb = 0 ;
 
 static struct subname_s const accepted_subs[] =
 {
-  { .name = "active", .sub = 1 },
+  { .name = "activate", .sub = 2 },
+  { .name = "active", .sub = 2 },
   { .name = "always", .sub = 3 },
+  { .name = "deactivate", .sub = 1 },
   { .name = "disable", .sub = 1 },
   { .name = "disabled", .sub = 1 },
   { .name = "enable", .sub = 2 },
   { .name = "enabled", .sub = 2 },
   { .name = "essential", .sub = 3 },
+  { .name = "inactive", .sub = 1 },
+  { .name = "latent", .sub = 1 },
   { .name = "make-essential", .sub = 3 },
   { .name = "mask", .sub = 0 },
   { .name = "masked", .sub = 0 },
   { .name = "onboot", .sub = 2 },
+  { .name = "suppress", .sub = 0 },
   { .name = "unmask", .sub = 1 },
-  { .name = "unmasked", .sub = 1 }
+  { .name = "unmasked", .sub = 1 },
+  { .name = "usable", .sub = 1 }
 } ;
 
 static int subname_cmp (void const *a, void const *b)

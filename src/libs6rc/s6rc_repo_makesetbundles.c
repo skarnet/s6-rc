@@ -9,12 +9,12 @@
 
 #include <skalibs/stat.h>
 #include <skalibs/direntry.h>
+#include <skalibs/bytestr.h>
 #include <skalibs/strerr.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 #include <skalibs/djbunix.h>
 
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int verbosity)
@@ -49,7 +49,7 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
     for (size_t i = 0 ; i < n ; i++) masked[i] = maskedstorage + genalloc_s(size_t, &ga)[i] ;
     sa.len = 0 ;
     genalloc_setlen(size_t, &ga, 0) ;
-    qsort(masked, n, sizeof(char const *), &s6rc_strrefcmp) ;
+    qsort(masked, n, sizeof(char const *), &str_cmp) ;
 
     if (mkdir(dst, 02755) == -1)
     {
@@ -83,7 +83,7 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
       for (; i < m ; i++)
       {
         char const *x = sa.s + genalloc_s(size_t, &ga)[i] ;
-        if (bsearch(x, masked, n, sizeof(char const *), &s6rc_strrefcmp))
+        if (bsearch(x, masked, n, sizeof(char const *), &str_bcmp))
         {
           if (verbosity >= 3)
             strerr_warni4x("skipping bundle ", d->d_name, " containing e.g. masked service ", x) ;

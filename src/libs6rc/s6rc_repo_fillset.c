@@ -5,10 +5,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include <skalibs/bytestr.h>
 #include <skalibs/direntry.h>
 #include <skalibs/strerr.h>
 
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 int s6rc_repo_fillset (char const *repo, char const *set, char const *const *existing, uint32_t n)
@@ -45,7 +45,7 @@ int s6rc_repo_fillset (char const *repo, char const *set, char const *const *exi
     char dst[repolen + 18 + setlen + len] ;
     memcpy(src, "../.atomics/", 12) ;
     memcpy(src + 12, d->d_name, len+1) ;
-    if (n && bsearch(&d->d_name, existing, n, sizeof(char const *), &s6rc_strrefcmp)) continue ;
+    if (n && bsearch(d->d_name, existing, n, sizeof(char const *), &str_bcmp)) continue ;
     memcpy(src + 12 + len, "/flag-essential", 16) ;
     if (access(src, F_OK) == 0) subi = 3 ;
     else
