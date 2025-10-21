@@ -189,7 +189,8 @@ int main (int argc, char const *const *argv)
 
   if (!(wgolb & GOLB_BARE))
   {
-    if (!s6rc_repo_sync(wgola[GOLA_REPODIR], verbosity, wgola[GOLA_FDHUSER]))
+    int r = s6rc_repo_sync(wgola[GOLA_REPODIR], verbosity, wgola[GOLA_FDHUSER]) ;
+    if (r <= 0)
     {
       char stores[repolen + 8] ;
       char snew[repolen + 16] ;
@@ -200,7 +201,7 @@ int main (int argc, char const *const *argv)
       if (!atomic_symlink4(sold + repolen + 1, stores, snew + repolen + 1, 15))
         strerr_diefu7sys(111, "atomically switch back stores at ", wgola[GOLA_REPODIR], " - old store is ", sold + repolen + 1, " and new (invalid) store is ", snew + repolen + 1, " - reported error was") ;
       rm_rf(snew) ;
-      _exit(111) ;
+      _exit(r ? 111 : 1) ;
     }
   }
 

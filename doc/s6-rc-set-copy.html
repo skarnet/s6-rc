@@ -1,0 +1,72 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-set-copy program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-set-copy program" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-copy repo set sub copy services" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-set-copy program </h1>
+
+<p>
+ s6-rc-set-copy makes a copy of a <a href="repodefs.html#set">set</a> under a
+different name, in a <a href="repodefs.html#repository">repository</a>.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-set-copy [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -f ] <em>src</em> <em>dst</em>
+</pre>
+
+<ul>
+ <li> s6-rc-set-copy makes an exact copy of set <em>src</em> and names it <em>dst</em>. </li>
+ <li> It exits 0. </li>
+</ul>
+
+<h2> Options </h2>
+
+<dl>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less verbose. The default is <strong>1</strong>, which means
+that error messages and warnings will be written to stderr. 0 means that only
+error messages will be written, and 2 or more adds informational messages. </dd>
+
+ <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dd> Use the repository in <em>repo</em>, which must exist. Default is
+<strong>/var/lib/s6-rc/repository</strong>.
+ </dd>
+
+ <dt> -f, --force </dt>
+ <dd> Overwrite set <em>dst</em> if it exists. </dd>
+</dl>
+
+<h2> Exit codes </h2>
+
+<dl>
+ <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 1 </dt> <dd> Set <em>dst</em> already exists and the <tt>-f</tt> option has not been given. </dd>
+ <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 102 </dt> <dd> Inconsistent repository. </dd>
+ <dt> 111 </dt> <dd> System call failed. </dd>
+</dl>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> s6-rc-set-copy can be used to create a dynamic working set, to be copied back
+to its source when the user is happy with the changes. </li>
+</ul>
+
+</body>
+</html>

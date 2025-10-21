@@ -109,9 +109,14 @@ directory. </li>
  <li> An optional regular file named <tt>flag-essential</tt>. The contents of this
 file are irrelevant, only its presence is tested. If this file exists, the service
 will be marked as essential, which means that a <tt>s6-rc -d change <em>foo</em></tt>
-command will not stop the service. Only a <tt>s6-rc -D change <em>foo</em></tt>
+command will not stop the service; only a <tt>s6-rc -D change <em>foo</em></tt>
 command will. If the service is a bundle, the flag will be propagated to all its
-contents, i.e. all the services it represents will be marked as essential. </li>
+contents, i.e. all the services it represents will be marked as essential.
+ </li>
+ <li> An optional regular file named <tt>flag-recommended</tt>. The contents of this
+file are irrelevant, only its presence is tested. If this file exists, the service
+will be marked as recommended. This is only important for
+<a href="repodefs.html">repo</a> commands, not when compiling the database. </li>
 </ul>
 
 <h3> For bundles </h3>

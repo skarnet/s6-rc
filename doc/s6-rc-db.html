@@ -222,9 +222,28 @@ for atomic service <em>atomicname</em>.
 </p>
 
 <p>
- Those binary flags are currently unused, but this may change in a
-future version of s6-rc.
+ Those binary flags are used by <a href="repodefs.html">repo</a>
+commands:
 </p>
+
+<ul>
+ <li> Bit 0 is set if there's a <tt>flag-essential</tt> file in the
+source directory (or if the "essential" flag was inherited from a
+bundle). It means the service cannot be downed by normal means:
+<code>s6-rc -d change <em>atomicname</em></code> will not work,
+the <tt>-D</tt> option to s6-rc is needed. Additionally, when
+importing <em>atomicname</em> in a <a href="repodefs.html#set">set</a>,
+it will automatically be put in the <tt>always</tt> sub, which means
+it will always be enabled by default. </li>
+ <li> Bit 1 is set if there's a <tt>flag-recommended</tt> file in the
+source directory (or if the "essential" flag was inherited from a
+bundle). When
+importing <em>atomicname</em> in a <a href="repodefs.html#set">set</a>,
+it will automatically be put in the <tt>active</tt> sub rather than the
+<tt>latent</tt> one: unless the user actively makes a change before
+committing the set, <em>atomicname</em> will be in the default bundle
+and be started at boot time. </li>
+</ul>
 
 <h3> s6-rc-db atomics <em>servicename...</em> </h3>
 

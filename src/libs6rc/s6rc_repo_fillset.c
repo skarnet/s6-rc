@@ -1,6 +1,7 @@
 /* ISC license. */
 
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -33,37 +34,24 @@ int s6rc_repo_fillset (char const *repo, char const *set, char const *const *exi
   for (;;)
   {
     size_t len ;
-    unsigned int subi = 1 ;
+    uint32_t flags ;
     direntry *d ;
+    uint8_t subi ;
     errno = 0 ;
     d = readdir(dir) ;
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
 
     len = strlen(d->d_name) ;
-    char src[len + 30] ;
+    char src[len + 13] ;
     char dst[repolen + 18 + setlen + len] ;
     memcpy(src, "../.atomics/", 12) ;
     memcpy(src + 12, d->d_name, len+1) ;
     if (n && bsearch(d->d_name, existing, n, sizeof(char const *), &str_bcmp)) continue ;
-    memcpy(src + 12 + len, "/flag-essential", 16) ;
-    if (access(src, F_OK) == 0) subi = 3 ;
-    else
-    {
-      if (errno != ENOENT)
-      {
-        strerr_warnfu2sys("access ", src) ;
-        break ;
-      }
-      memcpy(src + 18 + len, "recommended", 12) ;
-      if (access(src, F_OK) == 0) subi = 2 ;
-      else if (errno != ENOENT)
-      {
-        strerr_warnfu2sys("access ", src) ;
-        break ;
-      }
-    }
-    src[12 + len] = 0 ;
+    if (s6rc_repo_getserviceflags(repo, d->d_name, &flags) <= 0) return 0 ;
+    if (flags & 1) subi = 3 ;
+    else if (flags & 2) subi = 2 ;
+    else subi = 1 ;
     memcpy(dst, setfn, repolen + 10 + setlen) ;
     memcpy(dst + repolen + 10 + setlen, s6rc_repo_subnames[subi], 6) ;
     dst[repolen + setlen + 16] = '/' ;

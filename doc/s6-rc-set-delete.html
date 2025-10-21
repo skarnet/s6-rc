@@ -1,0 +1,69 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-set-delete program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-set-delete program" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-delete repo set sub deletion services" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-set-delete program </h1>
+
+<p>
+ s6-rc-set-delete deletes a whole <a href="repodefs.html#set">set</a>
+from a <a href="repodefs.html#repository">repository</a>.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-set-delete [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] <em>setname...</em>
+</pre>
+
+<ul>
+ <li> For every argument in <em>setname...</em>, s6-rc-set-delete deletes that
+<a href="repodefs.html#set">set</a> from the repository.
+ <li> It exits 0. </li>
+</ul>
+
+<h2> Options </h2>
+
+<dl>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less verbose. The default is <strong>1</strong>, which means
+that error messages and warnings will be written to stderr. 0 means that only
+error messages will be written, and 2 or more adds informational messages. </dd>
+
+ <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dd> Use the repository in <em>repo</em>, which must exist. Default is
+<strong>/var/lib/s6-rc/repository</strong>.
+ </dd>
+</dl>
+
+<h2> Exit codes </h2>
+
+<dl>
+ <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 111 </dt> <dd> System call failed. </dd>
+</dl>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> An error in one of the arguments (e.g. if the user specifies a non-existent
+set) will prevent processing the rest of the command line. The user should
+double-check the set names in case of multiple deletions. </li>
+</ul>
+
+</body>
+</html>

@@ -127,7 +127,7 @@ int main (int argc, char const *const *argv)
   newsub = bsearch(argv[1], accepted_subs, sizeof(accepted_subs)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
   if (!newsub) strerr_dief2x(100, "unrecognized state change directive:", argv[1]) ;
   if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
-    strerr_dief1x(100, " artificially mark a service as essential without --force-essential") ;
+    strerr_diefu1x(10, " artificially mark a service as essential without --force-essential") ;
 
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;

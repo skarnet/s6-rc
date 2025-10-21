@@ -32,7 +32,7 @@ int main (int argc, char const *const *argv)
   char const *wgola[GOLA_N] = { 0 } ;
   unsigned int verbosity = 1 ;
   unsigned int golc ;
-  int fdlock ;
+  int fdlock, r ;
 
   PROG = "s6-rc-repo-sync" ;
   wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
@@ -45,7 +45,8 @@ int main (int argc, char const *const *argv)
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
 
-  if (!s6rc_repo_sync(wgola[GOLA_REPODIR], verbosity, wgola[GOLA_FDHUSER])) _exit(111) ;
+  r = s6rc_repo_sync(wgola[GOLA_REPODIR], verbosity, wgola[GOLA_FDHUSER]) ;
+  if (r <= 0) _exit(r ? 111 : 1) ;
   if (!s6rc_repo_touch(wgola[GOLA_REPODIR])) _exit(111) ;
 
   _exit(0) ;

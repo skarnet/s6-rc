@@ -1,0 +1,100 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-repo-sync program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-repo-sync program" />
+    <meta name="Keywords" content="s6-rc repo sync synchronization update set store repository" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-repo-sync program </h1>
+
+<p>
+ s6-rc-repo-sync synchronizes a <a href="repodefs.html#repository">repository</a>,
+which means making an up-to-date <a href="repodefs.html#refdb">reference
+database</a>, and ensuring that all defined
+<a href="repodefs.html#set">sets</a> include all the services in the
+repository's stores, and only them.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-repo-sync [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -h <em>fdhuser</em> ]
+</pre>
+
+<ul>
+ <li> s6-rc-repo-sync looks at all the services defined in the repository's
+<a href="repodefs.html#store">stores</a>, and compiles them into a
+<a href="repodefs.html#refdb">reference database</a>. </li>
+ <li> It then looks at all the <a href="repodefs.html#set">sets</a>
+and synchronizes them with the services in all the stores:
+  <ul>
+   <li> Existing services are preserved as they are. </li>
+   <li> If a service doesn't appear in the stores, it is removed from all sets. </li>
+   <li> If a new service is defined in the stores, it is added to all sets. Services
+with the <em>essential</em> flag are added to the <tt>always</tt>
+<a href="repodefs.html#sub">sub</a>; services with
+the <em>recommended</em> flag are added to the <tt>active</tt> sub; others are added
+to the <tt>usable</tt> sub. </li>
+  </ul> </li>
+ <li> It exits 0. </li>
+</ul>
+
+<h2> Options </h2>
+
+<dl>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less verbose. The default is <strong>1</strong>, which means
+that error messages and warnings will be written to stderr. 0 means that only
+error messages will be written, and 2 or more adds informational messages.
+The option is also passed to commands that s6-rc-repo-sync may call, such
+as <a href="s6-rc-compile.html">s6-rc-compile</a>, so their verbosity will
+be similarly adjusted. </dd>
+
+ <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dd> Use the repository in <em>repo</em>, which must exist. Default is
+<strong>/var/lib/s6-rc/repository</strong>.
+ </dd>
+
+ <dt> -h <em>fdhuser</em>, --fdholder-user=<em>fdhuser</em> </dt>
+ <dd> You can safely ignore this option and forget about it. What it does
+is ensure that if a supervision tree is started as root on a compiled
+database produced by this command, the fd-holder daemon in that
+supervision tree runs as <em>fdhuser</em> rather than root. (It is okay
+to run that daemon as root.) </dd>
+</dl>
+
+<h2> Exit codes </h2>
+
+<dl>
+ <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 1 </dt> <dd> Failure. Either the services in the listed stores do not make a
+consistent reference database, or some set is inconsistent.
+With a nonzero <em>verbosity</em>, the error messages from
+<a href="s6-rc-compile.html">s6-rc-compile</a> will be displayed
+and detail exactly what went wrong. </dd>
+ <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 111 </dt> <dd> System call failed. This usually signals an issue with the
+underlying operating system. </dd>
+</dl>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> s6-rc-repo-sync should be called when the contents of the stores have
+changed, for instance when the package manager has added packages that define
+new services. </li>
+</ul>
+
+</body>
+</html>

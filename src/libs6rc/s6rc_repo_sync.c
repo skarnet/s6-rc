@@ -53,13 +53,13 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
   {
     strerr_warnfu2sys("mkdtemp ", ato) ;
     umask(m) ;
-    return 0 ;
+    return -1 ;
   }
   if (chmod(ato, 02755) == -1)
   {
     strerr_warnfu2sys("chmod ", ato) ;
     umask(m) ;
-    return 0 ;
+    return -1 ;
   }
 
   if (!mkdtemp(bun))
@@ -67,13 +67,13 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
     strerr_warnfu2sys("mkdtemp ", bun) ;
     rmdir(ato) ;
     umask(m) ;
-    return 0 ;
+    return -1 ;
   }
   umask(m) ;
   if (chmod(bun, 02755) == -1)
   {
     strerr_warnfu2sys("chmod ", bun) ;
-    return 0 ;
+    return -1 ;
   }
 
   for (uint16_t istore = 0 ;; istore++)
@@ -159,7 +159,8 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
     char const *subs[2] = { ato + repolen + 9, bun + repolen + 9 } ;
     char oldc[repolen + 49] ;
     int r = s6rc_repo_compile(repo, ".ref", subs, 2, oldc, verbosity, fdhuser) ;
-    if (r <= 0) goto err ;
+    if (r < 0) goto err ;
+    if (!r) { cleanup(ato, bun) ; return 0 ; }
     if (r == 2) rm_rf(oldc) ;
   }
 
@@ -201,7 +202,7 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
     if (!dir)
     {
       strerr_warnfu2sys("opendir ", ato) ;
-      return 0 ;
+      return -1 ;
     }
     for (;;)
     {
@@ -218,7 +219,7 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
     if (errno)
     {
       strerr_warnfu2sys("readdir ", ato) ;
-      return 0 ;
+      return -1 ;
     }
   }
   
@@ -226,5 +227,5 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
 
  err:
   cleanup(ato, bun) ;
-  return 0 ;
+  return -1 ;
 }

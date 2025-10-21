@@ -1,0 +1,111 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-repo-init program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-repo-init program" />
+    <meta name="Keywords" content="s6-rc repo init initialisation update setup repository" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-repo-init program </h1>
+
+<p>
+ s6-rc-repo-init initializes a <a href="repodefs.html#repository">repository</a>
+on a system, linking it to a list of <a href="repodefs.html#store">stores</a>
+and ensuring that the set of all services defined in all the stores is
+consistent.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-repo-init [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -h <em>fdhuser</em> ] [ -f ] [ -U ] [ -B ] <em>stores...</em>
+</pre>
+
+<ul>
+ <li> s6-rc-repo-init creates an s6-rc repository at location <em>repo</em>. </li>
+ <li> It makes <em>stores...</em> (which must be a list of several locations in the
+filesystem) the current list of stores for this repository. </li>
+ <li> It synchronizes with the list of stores, as if
+<a href="s6-rc-repo-sync.html">s6-rc-repo-sync</a> had been called. That means
+that it imports all the services in the stores and builds the
+<a href="repodefs.html#refdb">reference database</a>. </li>
+ <li> It exits 0. </li>
+</ul>
+
+<h2> Options </h2>
+
+<dl>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less verbose. The default is <strong>1</strong>, which means
+that error messages and warnings will be written to stderr. 0 means that only
+error messages will be written, and 2 or more adds informational messages.
+The option is also passed to commands that s6-rc-repo-init may call, such
+as <a href="s6-rc-compile.html">s6-rc-compile</a>, so their verbosity will
+be similarly adjusted. </dd>
+
+ <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dd> Create the repository in <em>repo</em>. Default is
+<strong>/var/lib/s6-rc/repository</strong>. Unless the <tt>-U</tt> option is
+given, <em>repo</em> must not previously exist in the filesystem.
+ </dd>
+
+ <dt> -h <em>fdhuser</em>, --fdholder-user=<em>fdhuser</em> </dt>
+ <dd> You can safely ignore this option and forget about it. What it does
+is ensure that if a supervision tree is started as root on a compiled
+database produced by this command (this will never happen to the reference
+database, so it is only ever useful together with the <tt>-U</tt>
+option when there are sets to update), the fd-holder daemon in that
+supervision tree runs as <em>fdhuser</em> rather than root. Told you:
+you can safely forget about that option. </dd>
+
+ <dt> -f, --force </dt>
+ <dd> Make a new repository at <em>repo</em> even if one already exists.
+This is dangerous, use of this option is not recommended. </dd>
+
+ <dt> -U, --update-stores </dt>
+ <dd> Rather than create a new repository, change the list of stores in an
+existing one. This is useful, for instance, when a distribution's policies
+change and local stores are added, moved, or removed. It is not an operation
+that should be done frequently, however. </dd>
+
+ <dt> -B, --bare </dt>
+ <dd> Do not synchronize the repository with the stores. This is
+useful if you are going to call
+<a href="s6-rc-repo-sync.html">s6-rc-repo-sync</a> afterwards anyway. </dd>
+</dl>
+
+<h2> Exit codes </h2>
+
+<dl>
+ <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 1 </dt> <dd> Failure. The services in the listed stores do not make a
+consistent reference database. With a nonzero <em>verbosity</em>, the error
+messages from <a href="s6-rc-compile.html">s6-rc-compile</a> will be displayed
+and detail exactly what went wrong. </dd>
+ <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 111 </dt> <dd> System call failed. This usually signals an issue with the
+underlying operating system. </dd>
+</dl>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> s6-rc-repo-init is the first command to invoke when creating a repository,
+or when a change occurs within the stores. </li>
+ <li> There is generally only one repository per system, but non-root users
+who would want to run their own tree of s6-rc services can do so by specifying
+an alternative <em>repo</em>. </li>
+</ul>
+
+</body>
+</html>

@@ -50,6 +50,7 @@ extern int s6rc_repo_listdeps (char const *, char const *, stralloc *, genalloc 
 extern int s6rc_repo_listalldeps (char const *, char const *const *, uint32_t, stralloc *, genalloc *, int) ;
 extern int s6rc_repo_listdeps_internal (char const *, char const *const *, uint32_t, stralloc *, genalloc *, uint32_t) ;
 
+extern int s6rc_repo_getserviceflags (char const *, char const *, uint32_t *) ;
 extern int s6rc_repo_flattenservices (char const *, char const *const *, uint32_t n, stralloc *storage, genalloc *indices) ;
 extern int s6rc_repo_makesvlist (char const *, char const *, stralloc *, genalloc *, uint32_t *) ;
 extern int s6rc_repo_makesvlist_byname (char const *, char const *, stralloc *, genalloc *) ;

@@ -79,7 +79,7 @@ static inline void docopy (char const *repo, char const *srcname, char const *ds
     if (r == -1) strerr_diefu2sys(111, "readlink ", dst) ;
     if (r != dstlen + 8) strerr_dief3x(102, "symlink ", dst, "doesn't point to a valid name") ;
   }
-  else strerr_dief4x(100, "set ", dstname, " already exists in repository ", repo) ;
+  else strerr_dief4x(1, "set ", dstname, " already exists in repository ", repo) ;
 
   memcpy(realsrc, src, repolen + 9) ;
   r = readlink(src, realsrc + repolen + 9, srclen + 9) ;
