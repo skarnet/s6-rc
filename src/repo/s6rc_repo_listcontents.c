@@ -14,7 +14,6 @@
 #include <skalibs/djbunix.h>
 
 #include <s6-rc/config.h>
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 int s6rc_repo_listcontents (char const *repo, char const *bundle, stralloc *storage, genalloc *indices)
@@ -56,7 +55,7 @@ int s6rc_repo_listcontents (char const *repo, char const *bundle, stralloc *stor
     return (WEXITSTATUS(wstat) < 99) - 1 ;
   }
 
- if (!s6rc_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
+ if (!s6rc_repo_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
  return 1 ;
 
  err:

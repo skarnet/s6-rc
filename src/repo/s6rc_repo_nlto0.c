@@ -4,9 +4,9 @@
 
 #include <skalibs/genalloc.h>
 
-#include <s6-rc/s6rc-utils.h>
+#include <s6-rc/repo.h>
 
-int s6rc_nlto0 (char *s, size_t start, size_t len, genalloc *indices)
+int s6rc_repo_nlto0 (char *s, size_t start, size_t len, genalloc *indices)
 {
   size_t origlen = genalloc_len(size_t, indices) ;
   size_t pos = start ;

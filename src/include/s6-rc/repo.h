@@ -19,6 +19,10 @@ struct s6rc_repo_sv_s
 extern int s6rc_repo_sv_cmpr (void const *, void const *, void *) ;
 extern int s6rc_repo_sv_bcmpr (void const *a, void const *b, void *aux) ;
 
+extern int s6rc_repo_nlto0 (char *, size_t, size_t, genalloc *) ;
+extern int s6rc_repo_type_check (char const *) ;
+extern int s6rc_repo_ls (char const *, stralloc *, genalloc *) ;
+
 extern char const s6rc_repo_subnames[4][7] ;
 
 extern int s6rc_repo_makestores (char const *, char const *const *, uint16_t, char *) ;

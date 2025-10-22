@@ -20,4 +20,4 @@ LIBEXEC_TARGETS := \
 s6-rc-fdholder-filler \
 s6-rc-oneshot-run
 
-LIB_DEFS := S6RC=s6rc
+LIB_DEFS := S6RC=s6rc S6RCREPO=s6rcrepo

@@ -2,7 +2,6 @@
 
 #include <string.h>
 
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 int s6rc_repo_listsub (char const *repo, char const *set, char const *sub, stralloc *sa, genalloc *ga)
@@ -16,5 +15,5 @@ int s6rc_repo_listsub (char const *repo, char const *set, char const *sub, stral
   memcpy(fn + repolen + 9, set, setlen) ;
   memcpy(fn + repolen + 9 + setlen, sub, sublen + 1) ;
 
-  return s6rc_ls(fn, sa, ga) ;
+  return s6rc_repo_ls(fn, sa, ga) ;
 }

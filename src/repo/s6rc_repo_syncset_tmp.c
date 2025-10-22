@@ -11,7 +11,6 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 static int unlink_stales_in_sub (char const *repo, size_t repolen, char const *set, char const *sub, uint32_t where, stralloc *sa, genalloc *ga, unsigned int verbosity)

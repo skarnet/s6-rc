@@ -18,41 +18,7 @@ src/libs6rc/s6rc_livedir_create.o src/libs6rc/s6rc_livedir_create.lo: src/libs6r
 src/libs6rc/s6rc_livedir_prefix.o src/libs6rc/s6rc_livedir_prefix.lo: src/libs6rc/s6rc_livedir_prefix.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_livedir_prefixsize.o src/libs6rc/s6rc_livedir_prefixsize.lo: src/libs6rc/s6rc_livedir_prefixsize.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_lock.o src/libs6rc/s6rc_lock.lo: src/libs6rc/s6rc_lock.c src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_ls.o src/libs6rc/s6rc_ls.lo: src/libs6rc/s6rc_ls.c src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_nlto0.o src/libs6rc/s6rc_nlto0.lo: src/libs6rc/s6rc_nlto0.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_read_uint.lo: src/libs6rc/s6rc_read_uint.c src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_badsub.o src/libs6rc/s6rc_repo_badsub.lo: src/libs6rc/s6rc_repo_badsub.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_checkset.o src/libs6rc/s6rc_repo_checkset.lo: src/libs6rc/s6rc_repo_checkset.c src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_cleanup.o src/libs6rc/s6rc_repo_cleanup.lo: src/libs6rc/s6rc_repo_cleanup.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_compile.o src/libs6rc/s6rc_repo_compile.lo: src/libs6rc/s6rc_repo_compile.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_fillset.o src/libs6rc/s6rc_repo_fillset.lo: src/libs6rc/s6rc_repo_fillset.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_fix.o src/libs6rc/s6rc_repo_fix.lo: src/libs6rc/s6rc_repo_fix.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_fixset.o src/libs6rc/s6rc_repo_fixset.lo: src/libs6rc/s6rc_repo_fixset.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_flattenservices.o src/libs6rc/s6rc_repo_flattenservices.lo: src/libs6rc/s6rc_repo_flattenservices.c src/include/s6-rc/config.h src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_getserviceflags.o src/libs6rc/s6rc_repo_getserviceflags.lo: src/libs6rc/s6rc_repo_getserviceflags.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_list_sets.o src/libs6rc/s6rc_repo_list_sets.lo: src/libs6rc/s6rc_repo_list_sets.c src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_listalldeps.o src/libs6rc/s6rc_repo_listalldeps.lo: src/libs6rc/s6rc_repo_listalldeps.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_listcontents.o src/libs6rc/s6rc_repo_listcontents.lo: src/libs6rc/s6rc_repo_listcontents.c src/include/s6-rc/config.h src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_listdeps.o src/libs6rc/s6rc_repo_listdeps.lo: src/libs6rc/s6rc_repo_listdeps.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_listdeps_internal.o src/libs6rc/s6rc_repo_listdeps_internal.lo: src/libs6rc/s6rc_repo_listdeps_internal.c src/include/s6-rc/config.h src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_listsub.o src/libs6rc/s6rc_repo_listsub.lo: src/libs6rc/s6rc_repo_listsub.c src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_lock.o src/libs6rc/s6rc_repo_lock.lo: src/libs6rc/s6rc_repo_lock.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_makedefbundle.o src/libs6rc/s6rc_repo_makedefbundle.lo: src/libs6rc/s6rc_repo_makedefbundle.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_makesetbundles.o src/libs6rc/s6rc_repo_makesetbundles.lo: src/libs6rc/s6rc_repo_makesetbundles.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_makestores.o src/libs6rc/s6rc_repo_makestores.lo: src/libs6rc/s6rc_repo_makestores.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_makesvlist.o src/libs6rc/s6rc_repo_makesvlist.lo: src/libs6rc/s6rc_repo_makesvlist.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_makesvlist_byname.o src/libs6rc/s6rc_repo_makesvlist_byname.lo: src/libs6rc/s6rc_repo_makesvlist_byname.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_moveservices.o src/libs6rc/s6rc_repo_moveservices.lo: src/libs6rc/s6rc_repo_moveservices.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_setcompile.o src/libs6rc/s6rc_repo_setcompile.lo: src/libs6rc/s6rc_repo_setcompile.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_setuptodate.o src/libs6rc/s6rc_repo_setuptodate.lo: src/libs6rc/s6rc_repo_setuptodate.c src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_subnames.o src/libs6rc/s6rc_repo_subnames.lo: src/libs6rc/s6rc_repo_subnames.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_sv_bcmpr.o src/libs6rc/s6rc_repo_sv_bcmpr.lo: src/libs6rc/s6rc_repo_sv_bcmpr.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_sv_cmpr.o src/libs6rc/s6rc_repo_sv_cmpr.lo: src/libs6rc/s6rc_repo_sv_cmpr.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_sync.o src/libs6rc/s6rc_repo_sync.lo: src/libs6rc/s6rc_repo_sync.c src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_syncset.o src/libs6rc/s6rc_repo_syncset.lo: src/libs6rc/s6rc_repo_syncset.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_syncset_tmp.o src/libs6rc/s6rc_repo_syncset_tmp.lo: src/libs6rc/s6rc_repo_syncset_tmp.c src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/libs6rc/s6rc_repo_touch.o src/libs6rc/s6rc_repo_touch.lo: src/libs6rc/s6rc_repo_touch.c src/include/s6-rc/repo.h
-src/libs6rc/s6rc_repo_touchset.o src/libs6rc/s6rc_repo_touchset.lo: src/libs6rc/s6rc_repo_touchset.c src/include/s6-rc/repo.h
 src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_sanitize_dir.lo: src/libs6rc/s6rc_sanitize_dir.c src/include/s6-rc/s6rc-utils.h
 src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_block.lo: src/libs6rc/s6rc_servicedir_block.c src/include/s6-rc/s6rc-servicedir.h
 src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_offline.lo: src/libs6rc/s6rc_servicedir_copy_offline.c src/include/s6-rc/s6rc-servicedir.h src/libs6rc/s6rc-servicedir-internal.h
@@ -61,7 +27,6 @@ src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_internal.lo: 
 src/libs6rc/s6rc_servicedir_manage.o src/libs6rc/s6rc_servicedir_manage.lo: src/libs6rc/s6rc_servicedir_manage.c src/include/s6-rc/s6rc-servicedir.h
 src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_unblock.lo: src/libs6rc/s6rc_servicedir_unblock.c src/include/s6-rc/s6rc-servicedir.h
 src/libs6rc/s6rc_servicedir_unsupervise.o src/libs6rc/s6rc_servicedir_unsupervise.lo: src/libs6rc/s6rc_servicedir_unsupervise.c src/include/s6-rc/s6rc-servicedir.h
-src/libs6rc/s6rc_type_check.o src/libs6rc/s6rc_type_check.lo: src/libs6rc/s6rc_type_check.c src/include/s6-rc/s6rc-utils.h
 src/repo/s6-rc-repo-init.o src/repo/s6-rc-repo-init.lo: src/repo/s6-rc-repo-init.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-repo-sync.o src/repo/s6-rc-repo-sync.lo: src/repo/s6-rc-repo-sync.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-change.o src/repo/s6-rc-set-change.lo: src/repo/s6-rc-set-change.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
@@ -70,6 +35,41 @@ src/repo/s6-rc-set-copy.o src/repo/s6-rc-set-copy.lo: src/repo/s6-rc-set-copy.c 
 src/repo/s6-rc-set-delete.o src/repo/s6-rc-set-delete.lo: src/repo/s6-rc-set-delete.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-install.o src/repo/s6-rc-set-install.lo: src/repo/s6-rc-set-install.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-new.o src/repo/s6-rc-set-new.lo: src/repo/s6-rc-set-new.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
+src/repo/s6rc_repo_badsub.o src/repo/s6rc_repo_badsub.lo: src/repo/s6rc_repo_badsub.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_checkset.o src/repo/s6rc_repo_checkset.lo: src/repo/s6rc_repo_checkset.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_cleanup.o src/repo/s6rc_repo_cleanup.lo: src/repo/s6rc_repo_cleanup.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_compile.o src/repo/s6rc_repo_compile.lo: src/repo/s6rc_repo_compile.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
+src/repo/s6rc_repo_fillset.o src/repo/s6rc_repo_fillset.lo: src/repo/s6rc_repo_fillset.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_fix.o src/repo/s6rc_repo_fix.lo: src/repo/s6rc_repo_fix.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_fixset.o src/repo/s6rc_repo_fixset.lo: src/repo/s6rc_repo_fixset.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_flattenservices.o src/repo/s6rc_repo_flattenservices.lo: src/repo/s6rc_repo_flattenservices.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
+src/repo/s6rc_repo_getserviceflags.o src/repo/s6rc_repo_getserviceflags.lo: src/repo/s6rc_repo_getserviceflags.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
+src/repo/s6rc_repo_list_sets.o src/repo/s6rc_repo_list_sets.lo: src/repo/s6rc_repo_list_sets.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_listalldeps.o src/repo/s6rc_repo_listalldeps.lo: src/repo/s6rc_repo_listalldeps.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_listcontents.o src/repo/s6rc_repo_listcontents.lo: src/repo/s6rc_repo_listcontents.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
+src/repo/s6rc_repo_listdeps.o src/repo/s6rc_repo_listdeps.lo: src/repo/s6rc_repo_listdeps.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_listdeps_internal.o src/repo/s6rc_repo_listdeps_internal.lo: src/repo/s6rc_repo_listdeps_internal.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
+src/repo/s6rc_repo_listsub.o src/repo/s6rc_repo_listsub.lo: src/repo/s6rc_repo_listsub.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_lock.o src/repo/s6rc_repo_lock.lo: src/repo/s6rc_repo_lock.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_ls.o src/repo/s6rc_repo_ls.lo: src/repo/s6rc_repo_ls.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_makedefbundle.o src/repo/s6rc_repo_makedefbundle.lo: src/repo/s6rc_repo_makedefbundle.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_makesetbundles.o src/repo/s6rc_repo_makesetbundles.lo: src/repo/s6rc_repo_makesetbundles.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_makestores.o src/repo/s6rc_repo_makestores.lo: src/repo/s6rc_repo_makestores.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_makesvlist.o src/repo/s6rc_repo_makesvlist.lo: src/repo/s6rc_repo_makesvlist.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_makesvlist_byname.o src/repo/s6rc_repo_makesvlist_byname.lo: src/repo/s6rc_repo_makesvlist_byname.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_moveservices.o src/repo/s6rc_repo_moveservices.lo: src/repo/s6rc_repo_moveservices.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_nlto0.o src/repo/s6rc_repo_nlto0.lo: src/repo/s6rc_repo_nlto0.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_setcompile.o src/repo/s6rc_repo_setcompile.lo: src/repo/s6rc_repo_setcompile.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_setuptodate.o src/repo/s6rc_repo_setuptodate.lo: src/repo/s6rc_repo_setuptodate.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_subnames.o src/repo/s6rc_repo_subnames.lo: src/repo/s6rc_repo_subnames.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_sv_bcmpr.o src/repo/s6rc_repo_sv_bcmpr.lo: src/repo/s6rc_repo_sv_bcmpr.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_sv_cmpr.o src/repo/s6rc_repo_sv_cmpr.lo: src/repo/s6rc_repo_sv_cmpr.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_sync.o src/repo/s6rc_repo_sync.lo: src/repo/s6rc_repo_sync.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_syncset.o src/repo/s6rc_repo_syncset.lo: src/repo/s6rc_repo_syncset.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_syncset_tmp.o src/repo/s6rc_repo_syncset_tmp.lo: src/repo/s6rc_repo_syncset_tmp.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_touch.o src/repo/s6rc_repo_touch.lo: src/repo/s6rc_repo_touch.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_touchset.o src/repo/s6rc_repo_touchset.lo: src/repo/s6rc_repo_touchset.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_type_check.o src/repo/s6rc_repo_type_check.lo: src/repo/s6rc_repo_type_check.c src/include/s6-rc/repo.h
 src/s6-rc/s6-rc-bundle.o src/s6-rc/s6-rc-bundle.lo: src/s6-rc/s6-rc-bundle.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-compile.o src/s6-rc/s6-rc-compile.lo: src/s6-rc/s6-rc-compile.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/s6-rc/s6-rc-db.o src/s6-rc/s6-rc-db.lo: src/s6-rc/s6-rc-db.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
@@ -82,31 +82,41 @@ src/s6-rc/s6-rc-update.o src/s6-rc/s6-rc-update.lo: src/s6-rc/s6-rc-update.c src
 src/s6-rc/s6-rc.o src/s6-rc/s6-rc.lo: src/s6-rc/s6-rc.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 
 ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
-libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_check_pipelines.o src/libs6rc/s6rc_db_check_revdeps.o src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_graph_closure.o src/libs6rc/s6rc_live_state_size.o src/libs6rc/s6rc_live_state_read.o src/libs6rc/s6rc_livedir_canon.o src/libs6rc/s6rc_livedir_create.o src/libs6rc/s6rc_livedir_prefix.o src/libs6rc/s6rc_livedir_prefixsize.o src/libs6rc/s6rc_lock.o src/libs6rc/s6rc_ls.o src/libs6rc/s6rc_nlto0.o src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_repo_badsub.o src/libs6rc/s6rc_repo_checkset.o src/libs6rc/s6rc_repo_cleanup.o src/libs6rc/s6rc_repo_compile.o src/libs6rc/s6rc_repo_fillset.o src/libs6rc/s6rc_repo_fixset.o src/libs6rc/s6rc_repo_flattenservices.o src/libs6rc/s6rc_repo_getserviceflags.o src/libs6rc/s6rc_repo_list_sets.o src/libs6rc/s6rc_repo_listalldeps.o src/libs6rc/s6rc_repo_listcontents.o src/libs6rc/s6rc_repo_listdeps.o src/libs6rc/s6rc_repo_listdeps_internal.o src/libs6rc/s6rc_repo_listsub.o src/libs6rc/s6rc_repo_lock.o src/libs6rc/s6rc_repo_makedefbundle.o src/libs6rc/s6rc_repo_makesetbundles.o src/libs6rc/s6rc_repo_makestores.o src/libs6rc/s6rc_repo_makesvlist.o src/libs6rc/s6rc_repo_makesvlist_byname.o src/libs6rc/s6rc_repo_moveservices.o src/libs6rc/s6rc_repo_setcompile.o src/libs6rc/s6rc_repo_setuptodate.o src/libs6rc/s6rc_repo_subnames.o src/libs6rc/s6rc_repo_sv_bcmpr.o src/libs6rc/s6rc_repo_sv_cmpr.o src/libs6rc/s6rc_repo_sync.o src/libs6rc/s6rc_repo_syncset.o src/libs6rc/s6rc_repo_syncset_tmp.o src/libs6rc/s6rc_repo_touch.o src/libs6rc/s6rc_repo_touchset.o src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_online.o src/libs6rc/s6rc_servicedir_manage.o src/libs6rc/s6rc_servicedir_unsupervise.o src/libs6rc/s6rc_type_check.o
+libs6rc.a.xyzzy: src/libs6rc/s6rc_db_check_depcycles.o src/libs6rc/s6rc_db_check_pipelines.o src/libs6rc/s6rc_db_check_revdeps.o src/libs6rc/s6rc_db_read.o src/libs6rc/s6rc_db_read_sizes.o src/libs6rc/s6rc_db_read_uint32.o src/libs6rc/s6rc_graph_closure.o src/libs6rc/s6rc_live_state_size.o src/libs6rc/s6rc_live_state_read.o src/libs6rc/s6rc_livedir_canon.o src/libs6rc/s6rc_livedir_create.o src/libs6rc/s6rc_livedir_prefix.o src/libs6rc/s6rc_livedir_prefixsize.o src/libs6rc/s6rc_lock.o src/libs6rc/s6rc_read_uint.o src/libs6rc/s6rc_sanitize_dir.o src/libs6rc/s6rc_servicedir_internal.o src/libs6rc/s6rc_servicedir_block.o src/libs6rc/s6rc_servicedir_unblock.o src/libs6rc/s6rc_servicedir_copy_offline.o src/libs6rc/s6rc_servicedir_copy_online.o src/libs6rc/s6rc_servicedir_manage.o src/libs6rc/s6rc_servicedir_unsupervise.o
 else
-libs6rc.a.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_ls.lo src/libs6rc/s6rc_nlto0.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_repo_badsub.lo src/libs6rc/s6rc_repo_checkset.lo src/libs6rc/s6rc_repo_cleanup.lo src/libs6rc/s6rc_repo_compile.lo src/libs6rc/s6rc_repo_fillset.lo src/libs6rc/s6rc_repo_fixset.lo src/libs6rc/s6rc_repo_flattenservices.lo src/libs6rc/s6rc_repo_getserviceflags.lo src/libs6rc/s6rc_repo_list_sets.lo src/libs6rc/s6rc_repo_listalldeps.lo src/libs6rc/s6rc_repo_listcontents.lo src/libs6rc/s6rc_repo_listdeps.lo src/libs6rc/s6rc_repo_listdeps_internal.lo src/libs6rc/s6rc_repo_listsub.lo src/libs6rc/s6rc_repo_lock.lo src/libs6rc/s6rc_repo_makedefbundle.lo src/libs6rc/s6rc_repo_makesetbundles.lo src/libs6rc/s6rc_repo_makestores.lo src/libs6rc/s6rc_repo_makesvlist.lo src/libs6rc/s6rc_repo_makesvlist_byname.lo src/libs6rc/s6rc_repo_moveservices.lo src/libs6rc/s6rc_repo_setcompile.lo src/libs6rc/s6rc_repo_setuptodate.lo src/libs6rc/s6rc_repo_subnames.lo src/libs6rc/s6rc_repo_sv_bcmpr.lo src/libs6rc/s6rc_repo_sv_cmpr.lo src/libs6rc/s6rc_repo_sync.lo src/libs6rc/s6rc_repo_syncset.lo src/libs6rc/s6rc_repo_syncset_tmp.lo src/libs6rc/s6rc_repo_touch.lo src/libs6rc/s6rc_repo_touchset.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo src/libs6rc/s6rc_type_check.lo
+libs6rc.a.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
 endif
 libs6rc.pc: EXTRA_LIBS := -ls6 -lskarnet ${SPAWN_LIB}
 libs6rc.so.xyzzy: EXTRA_LIBS := -ls6 -lskarnet ${SPAWN_LIB}
-libs6rc.so.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_ls.lo src/libs6rc/s6rc_nlto0.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_repo_badsub.lo src/libs6rc/s6rc_repo_checkset.lo src/libs6rc/s6rc_repo_cleanup.lo src/libs6rc/s6rc_repo_compile.lo src/libs6rc/s6rc_repo_fillset.lo src/libs6rc/s6rc_repo_fixset.lo src/libs6rc/s6rc_repo_flattenservices.lo src/libs6rc/s6rc_repo_getserviceflags.lo src/libs6rc/s6rc_repo_list_sets.lo src/libs6rc/s6rc_repo_listalldeps.lo src/libs6rc/s6rc_repo_listcontents.lo src/libs6rc/s6rc_repo_listdeps.lo src/libs6rc/s6rc_repo_listdeps_internal.lo src/libs6rc/s6rc_repo_listsub.lo src/libs6rc/s6rc_repo_lock.lo src/libs6rc/s6rc_repo_makedefbundle.lo src/libs6rc/s6rc_repo_makesetbundles.lo src/libs6rc/s6rc_repo_makestores.lo src/libs6rc/s6rc_repo_makesvlist.lo src/libs6rc/s6rc_repo_makesvlist_byname.lo src/libs6rc/s6rc_repo_moveservices.lo src/libs6rc/s6rc_repo_setcompile.lo src/libs6rc/s6rc_repo_setuptodate.lo src/libs6rc/s6rc_repo_subnames.lo src/libs6rc/s6rc_repo_sv_bcmpr.lo src/libs6rc/s6rc_repo_sv_cmpr.lo src/libs6rc/s6rc_repo_sync.lo src/libs6rc/s6rc_repo_syncset.lo src/libs6rc/s6rc_repo_syncset_tmp.lo src/libs6rc/s6rc_repo_touch.lo src/libs6rc/s6rc_repo_touchset.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo src/libs6rc/s6rc_type_check.lo
+libs6rc.so.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
 libs6rc.dylib.xyzzy: EXTRA_LIBS := -ls6 -lskarnet ${SPAWN_LIB}
-libs6rc.dylib.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_ls.lo src/libs6rc/s6rc_nlto0.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_repo_badsub.lo src/libs6rc/s6rc_repo_checkset.lo src/libs6rc/s6rc_repo_cleanup.lo src/libs6rc/s6rc_repo_compile.lo src/libs6rc/s6rc_repo_fillset.lo src/libs6rc/s6rc_repo_fixset.lo src/libs6rc/s6rc_repo_flattenservices.lo src/libs6rc/s6rc_repo_getserviceflags.lo src/libs6rc/s6rc_repo_list_sets.lo src/libs6rc/s6rc_repo_listalldeps.lo src/libs6rc/s6rc_repo_listcontents.lo src/libs6rc/s6rc_repo_listdeps.lo src/libs6rc/s6rc_repo_listdeps_internal.lo src/libs6rc/s6rc_repo_listsub.lo src/libs6rc/s6rc_repo_lock.lo src/libs6rc/s6rc_repo_makedefbundle.lo src/libs6rc/s6rc_repo_makesetbundles.lo src/libs6rc/s6rc_repo_makestores.lo src/libs6rc/s6rc_repo_makesvlist.lo src/libs6rc/s6rc_repo_makesvlist_byname.lo src/libs6rc/s6rc_repo_moveservices.lo src/libs6rc/s6rc_repo_setcompile.lo src/libs6rc/s6rc_repo_setuptodate.lo src/libs6rc/s6rc_repo_subnames.lo src/libs6rc/s6rc_repo_sv_bcmpr.lo src/libs6rc/s6rc_repo_sv_cmpr.lo src/libs6rc/s6rc_repo_sync.lo src/libs6rc/s6rc_repo_syncset.lo src/libs6rc/s6rc_repo_syncset_tmp.lo src/libs6rc/s6rc_repo_touch.lo src/libs6rc/s6rc_repo_touchset.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo src/libs6rc/s6rc_type_check.lo
-s6-rc-repo-init: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-repo-init: src/repo/s6-rc-repo-init.o ${LIBS6RC} -lskarnet
-s6-rc-repo-sync: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-repo-sync: src/repo/s6-rc-repo-sync.o ${LIBS6RC} -lskarnet
-s6-rc-set-change: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-set-change: src/repo/s6-rc-set-change.o ${LIBS6RC} -lskarnet
-s6-rc-set-commit: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-set-commit: src/repo/s6-rc-set-commit.o ${LIBS6RC} -lskarnet
-s6-rc-set-copy: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-set-copy: src/repo/s6-rc-set-copy.o ${LIBS6RC} -lskarnet
-s6-rc-set-delete: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-set-delete: src/repo/s6-rc-set-delete.o ${LIBS6RC} -lskarnet
-s6-rc-set-install: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-set-install: src/repo/s6-rc-set-install.o ${LIBS6RC} -lskarnet
-s6-rc-set-new: EXTRA_LIBS := ${SYSCLOCK_LIB}
-s6-rc-set-new: src/repo/s6-rc-set-new.o ${LIBS6RC} -lskarnet
+libs6rc.dylib.xyzzy:src/libs6rc/s6rc_db_check_depcycles.lo src/libs6rc/s6rc_db_check_pipelines.lo src/libs6rc/s6rc_db_check_revdeps.lo src/libs6rc/s6rc_db_read.lo src/libs6rc/s6rc_db_read_sizes.lo src/libs6rc/s6rc_db_read_uint32.lo src/libs6rc/s6rc_graph_closure.lo src/libs6rc/s6rc_live_state_size.lo src/libs6rc/s6rc_live_state_read.lo src/libs6rc/s6rc_livedir_canon.lo src/libs6rc/s6rc_livedir_create.lo src/libs6rc/s6rc_livedir_prefix.lo src/libs6rc/s6rc_livedir_prefixsize.lo src/libs6rc/s6rc_lock.lo src/libs6rc/s6rc_read_uint.lo src/libs6rc/s6rc_sanitize_dir.lo src/libs6rc/s6rc_servicedir_internal.lo src/libs6rc/s6rc_servicedir_block.lo src/libs6rc/s6rc_servicedir_unblock.lo src/libs6rc/s6rc_servicedir_copy_offline.lo src/libs6rc/s6rc_servicedir_copy_online.lo src/libs6rc/s6rc_servicedir_manage.lo src/libs6rc/s6rc_servicedir_unsupervise.lo
+ifeq ($(strip $(STATIC_LIBS_ARE_PIC)),)
+libs6rcrepo.a.xyzzy: src/repo/s6rc_repo_badsub.o src/repo/s6rc_repo_checkset.o src/repo/s6rc_repo_cleanup.o src/repo/s6rc_repo_compile.o src/repo/s6rc_repo_fillset.o src/repo/s6rc_repo_fixset.o src/repo/s6rc_repo_flattenservices.o src/repo/s6rc_repo_getserviceflags.o src/repo/s6rc_repo_list_sets.o src/repo/s6rc_repo_listalldeps.o src/repo/s6rc_repo_listcontents.o src/repo/s6rc_repo_listdeps.o src/repo/s6rc_repo_listdeps_internal.o src/repo/s6rc_repo_listsub.o src/repo/s6rc_repo_lock.o src/repo/s6rc_repo_ls.o src/repo/s6rc_repo_makedefbundle.o src/repo/s6rc_repo_makesetbundles.o src/repo/s6rc_repo_makestores.o src/repo/s6rc_repo_makesvlist.o src/repo/s6rc_repo_makesvlist_byname.o src/repo/s6rc_repo_moveservices.o src/repo/s6rc_repo_nlto0.o src/repo/s6rc_repo_setcompile.o src/repo/s6rc_repo_setuptodate.o src/repo/s6rc_repo_subnames.o src/repo/s6rc_repo_sv_bcmpr.o src/repo/s6rc_repo_sv_cmpr.o src/repo/s6rc_repo_sync.o src/repo/s6rc_repo_syncset.o src/repo/s6rc_repo_syncset_tmp.o src/repo/s6rc_repo_touch.o src/repo/s6rc_repo_touchset.o src/repo/s6rc_repo_type_check.o
+else
+libs6rcrepo.a.xyzzy:src/repo/s6rc_repo_badsub.lo src/repo/s6rc_repo_checkset.lo src/repo/s6rc_repo_cleanup.lo src/repo/s6rc_repo_compile.lo src/repo/s6rc_repo_fillset.lo src/repo/s6rc_repo_fixset.lo src/repo/s6rc_repo_flattenservices.lo src/repo/s6rc_repo_getserviceflags.lo src/repo/s6rc_repo_list_sets.lo src/repo/s6rc_repo_listalldeps.lo src/repo/s6rc_repo_listcontents.lo src/repo/s6rc_repo_listdeps.lo src/repo/s6rc_repo_listdeps_internal.lo src/repo/s6rc_repo_listsub.lo src/repo/s6rc_repo_lock.lo src/repo/s6rc_repo_ls.lo src/repo/s6rc_repo_makedefbundle.lo src/repo/s6rc_repo_makesetbundles.lo src/repo/s6rc_repo_makestores.lo src/repo/s6rc_repo_makesvlist.lo src/repo/s6rc_repo_makesvlist_byname.lo src/repo/s6rc_repo_moveservices.lo src/repo/s6rc_repo_nlto0.lo src/repo/s6rc_repo_setcompile.lo src/repo/s6rc_repo_setuptodate.lo src/repo/s6rc_repo_subnames.lo src/repo/s6rc_repo_sv_bcmpr.lo src/repo/s6rc_repo_sv_cmpr.lo src/repo/s6rc_repo_sync.lo src/repo/s6rc_repo_syncset.lo src/repo/s6rc_repo_syncset_tmp.lo src/repo/s6rc_repo_touch.lo src/repo/s6rc_repo_touchset.lo src/repo/s6rc_repo_type_check.lo
+endif
+libs6rcrepo.pc: EXTRA_LIBS := -lskarnet ${SPAWN_LIB}
+libs6rcrepo.so.xyzzy: EXTRA_LIBS := -lskarnet ${SPAWN_LIB}
+libs6rcrepo.so.xyzzy:src/repo/s6rc_repo_badsub.lo src/repo/s6rc_repo_checkset.lo src/repo/s6rc_repo_cleanup.lo src/repo/s6rc_repo_compile.lo src/repo/s6rc_repo_fillset.lo src/repo/s6rc_repo_fixset.lo src/repo/s6rc_repo_flattenservices.lo src/repo/s6rc_repo_getserviceflags.lo src/repo/s6rc_repo_list_sets.lo src/repo/s6rc_repo_listalldeps.lo src/repo/s6rc_repo_listcontents.lo src/repo/s6rc_repo_listdeps.lo src/repo/s6rc_repo_listdeps_internal.lo src/repo/s6rc_repo_listsub.lo src/repo/s6rc_repo_lock.lo src/repo/s6rc_repo_ls.lo src/repo/s6rc_repo_makedefbundle.lo src/repo/s6rc_repo_makesetbundles.lo src/repo/s6rc_repo_makestores.lo src/repo/s6rc_repo_makesvlist.lo src/repo/s6rc_repo_makesvlist_byname.lo src/repo/s6rc_repo_moveservices.lo src/repo/s6rc_repo_nlto0.lo src/repo/s6rc_repo_setcompile.lo src/repo/s6rc_repo_setuptodate.lo src/repo/s6rc_repo_subnames.lo src/repo/s6rc_repo_sv_bcmpr.lo src/repo/s6rc_repo_sv_cmpr.lo src/repo/s6rc_repo_sync.lo src/repo/s6rc_repo_syncset.lo src/repo/s6rc_repo_syncset_tmp.lo src/repo/s6rc_repo_touch.lo src/repo/s6rc_repo_touchset.lo src/repo/s6rc_repo_type_check.lo
+libs6rcrepo.dylib.xyzzy: EXTRA_LIBS := -lskarnet ${SPAWN_LIB}
+libs6rcrepo.dylib.xyzzy:src/repo/s6rc_repo_badsub.lo src/repo/s6rc_repo_checkset.lo src/repo/s6rc_repo_cleanup.lo src/repo/s6rc_repo_compile.lo src/repo/s6rc_repo_fillset.lo src/repo/s6rc_repo_fixset.lo src/repo/s6rc_repo_flattenservices.lo src/repo/s6rc_repo_getserviceflags.lo src/repo/s6rc_repo_list_sets.lo src/repo/s6rc_repo_listalldeps.lo src/repo/s6rc_repo_listcontents.lo src/repo/s6rc_repo_listdeps.lo src/repo/s6rc_repo_listdeps_internal.lo src/repo/s6rc_repo_listsub.lo src/repo/s6rc_repo_lock.lo src/repo/s6rc_repo_ls.lo src/repo/s6rc_repo_makedefbundle.lo src/repo/s6rc_repo_makesetbundles.lo src/repo/s6rc_repo_makestores.lo src/repo/s6rc_repo_makesvlist.lo src/repo/s6rc_repo_makesvlist_byname.lo src/repo/s6rc_repo_moveservices.lo src/repo/s6rc_repo_nlto0.lo src/repo/s6rc_repo_setcompile.lo src/repo/s6rc_repo_setuptodate.lo src/repo/s6rc_repo_subnames.lo src/repo/s6rc_repo_sv_bcmpr.lo src/repo/s6rc_repo_sv_cmpr.lo src/repo/s6rc_repo_sync.lo src/repo/s6rc_repo_syncset.lo src/repo/s6rc_repo_syncset_tmp.lo src/repo/s6rc_repo_touch.lo src/repo/s6rc_repo_touchset.lo src/repo/s6rc_repo_type_check.lo
+s6-rc-repo-init: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-repo-init: src/repo/s6-rc-repo-init.o ${LIBS6RCREPO} -lskarnet
+s6-rc-repo-sync: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-repo-sync: src/repo/s6-rc-repo-sync.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-change: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-set-change: src/repo/s6-rc-set-change.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-commit: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-set-commit: src/repo/s6-rc-set-commit.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-copy: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-set-copy: src/repo/s6-rc-set-copy.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-delete: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-set-delete: src/repo/s6-rc-set-delete.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-install: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-set-install: src/repo/s6-rc-set-install.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-new: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-set-new: src/repo/s6-rc-set-new.o ${LIBS6RCREPO} -lskarnet
 s6-rc: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SPAWN_LIB}
 s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-bundle: EXTRA_LIBS :=

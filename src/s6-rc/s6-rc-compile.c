@@ -145,6 +145,21 @@ static char const *typestr (servicetype_t type)
          "unknown" ;
 }
 
+static inline int type_check (int dfd)
+{
+  char type[8] ;
+  ssize_t r = openreadnclose_at(dfd, "type", type, 8) ;
+  if (r == -1) return -1 ;
+  if (r < 6) return 0 ;
+  if (type[r-1] == '\n') r-- ;
+  if (r == 8) return 0 ;
+  type[r++] = 0 ;
+  return
+    !strcmp(type, "longrun") ? 1 :
+    !strcmp(type, "oneshot") ? 2 :
+    !strcmp(type, "bundle")  ? 3 : 0 ;
+}
+
 static int add_name_nocheck (before_t *be, char const *srcdir, char const *name, servicetype_t type, unsigned int *pos, unsigned int *kpos)
 {
   uint32_t id ;
@@ -529,7 +544,7 @@ static inline void add_bundle (before_t *be, int dfd, char const *srcdir, char c
 static inline void add_source (before_t *be, int dfd, char const *srcdir, char const *name)
 {
   if (verbosity >= 2) strerr_warni4x("parsing ", srcdir, "/", name) ;
-  switch (s6rc_type_check(dfd, 0))
+  switch (type_check(dfd))
   {
     case 0 : strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
     case 1 : add_longrun(be, dfd, srcdir, name) ; break ;

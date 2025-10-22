@@ -14,7 +14,6 @@
 #include <skalibs/djbunix.h>
 
 #include <s6-rc/config.h>
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, uint32_t n, stralloc *storage, genalloc *indices, uint32_t options)
@@ -62,7 +61,7 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
     if (WEXITSTATUS(wstat)) return wait_estatus(wstat) ;
   }
 
- if (!s6rc_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
+ if (!s6rc_repo_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
  return 0 ;
 
  err:

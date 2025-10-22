@@ -1,3 +1,3 @@
-${LIBS6RC}
+${LIBS6RCREPO}
 -lskarnet
-${SYSCLOCK_LIB}
+${SPAWN_LIB}

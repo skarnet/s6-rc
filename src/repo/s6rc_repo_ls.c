@@ -7,9 +7,9 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 
-#include <s6-rc/s6rc-utils.h>
+#include <s6-rc/repo.h>
 
-int s6rc_ls (char const *fn, stralloc *sa, genalloc *ga)
+int s6rc_repo_ls (char const *fn, stralloc *sa, genalloc *ga)
 {
   size_t sabase = sa->len ;
   size_t gabase = genalloc_len(size_t, ga) ;

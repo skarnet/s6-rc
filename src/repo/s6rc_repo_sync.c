@@ -18,7 +18,6 @@
 #include <skalibs/skamisc.h>
 #include <skalibs/unix-transactional.h>
 
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 static inline void cleanup (char const *ato, char const *bun)
@@ -104,7 +103,7 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
         memcpy(src + 16, store + repolen + 8, 4) ;
         src[20] = '/' ;
         memcpy(src + 21, d->d_name, len+1) ;
-        switch (s6rc_type_check(-1, src))
+        switch (s6rc_repo_type_check(src))
         {
           case 1 :
           case 2 : x = ato ; break ;

@@ -6,7 +6,6 @@
 #include <skalibs/stat.h>
 #include <skalibs/strerr.h>
 
-#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 int s6rc_repo_checkset (char const *repo, char const *set)
