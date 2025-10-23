@@ -1,5 +1,7 @@
 /* ISC license. */
 
+#include <skalibs/nonposix.h>  /* mkdtemp */
+
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
