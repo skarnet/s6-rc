@@ -1,6 +1,7 @@
 /* ISC license. */
 
 #include <skalibs/bsdsnowflake.h>
+#include <skalibs/nonposix.h>
 
 #include <string.h>
 #include <errno.h>
@@ -37,8 +38,7 @@ int s6rc_repo_setuptodate (char const *repo, char const *set)
     return -1 ;
   }
   return
-    stsource.st_atim.tv_sec < stcompiled.st_atim.tv_sec ? 1 :
-    stsource.st_atim.tv_sec > stcompiled.st_atim.tv_sec ? 0 :
-    stsource.st_atim.tv_nsec < stcompiled.st_atim.tv_nsec ;
+    stsource.st_mtim.tv_sec < stcompiled.st_mtim.tv_sec ? 1 :
+    stsource.st_mtim.tv_sec > stcompiled.st_mtim.tv_sec ? 0 :
+    stsource.st_mtim.tv_nsec < stcompiled.st_mtim.tv_nsec ;
 }
-
