@@ -72,7 +72,7 @@ int main (int argc, char const *const *argv)
   int lockfd ;
 
   PROG = "s6-rc-repo-init" ;
-  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+  wgola[GOLA_REPODIR] = S6RC_REPODIR ;
 
   golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;

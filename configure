@@ -25,6 +25,7 @@ Fine tuning of the installation directories:
   --includedir=DIR              C header files [PREFIX/include]
   --sysconfdir=DIR              global configuration files [PREFIX/etc]
   --pkgconfdir=DIR              pkg-config .pc files [PREFIX/lib/pkgconfig]
+  --bootdb=PATH                 default path for the boot database [/etc/s6-rc/compiled/current]
   --livedir=DIR                 default live directory [/run/s6-rc]
   --repodir=DIR                 default repo directory [/var/lib/s6-rc/repository]
 
@@ -170,6 +171,7 @@ deplibpath=''
 vpaths=''
 vpathd=''
 build=
+bootdb=/etc/s6-rc/compiled/current
 livedir=/run/s6-rc
 repodir=/var/lib/s6-rc/repository
 
@@ -209,6 +211,7 @@ for arg ; do
     --disable-slashpackage) sproot= ; slashpackage=false ;;
     --enable-absolute-paths|--enable-absolute-paths=yes) abspath=true ;;
     --disable-absolute-paths|--enable-absolute-paths=no) abspath=false ;;
+    --bootdb=*)  bootdb=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --repodir=*) repodir=${arg#*=} ;;
 
@@ -549,8 +552,9 @@ else
 fi
 echo "#define ${package_macro_name}_LIBEXECPREFIX \"$libexecdir/\""
 echo "#define ${package_macro_name}_SYSCONFPREFIX \"$sysconfdir/\""
-echo "#define ${package_macro_name}_LIVE_BASE \"$livedir\""
-echo "#define ${package_macro_name}_REPO_BASE \"$repodir\""
+echo "#define ${package_macro_name}_BOOTDB \"$bootdb\""
+echo "#define ${package_macro_name}_LIVEDIR \"$livedir\""
+echo "#define ${package_macro_name}_REPODIR \"$repodir\""
 
 echo
 echo "#endif"

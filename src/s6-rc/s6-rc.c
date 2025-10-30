@@ -38,7 +38,7 @@ struct pidindex_s
 } ;
 
 static unsigned int verbosity = 1 ;
-static char const *live = S6RC_LIVE_BASE ;
+static char const *live = S6RC_LIVEDIR ;
 static size_t livelen ;
 static pidindex_t *pidindex ;
 static unsigned int npids = 0 ;

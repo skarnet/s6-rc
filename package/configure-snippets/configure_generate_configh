@@ -1,3 +1,4 @@
-echo "#define ${package_macro_name}_LIVE_BASE \"$livedir\""
-echo "#define ${package_macro_name}_REPO_BASE \"$repodir\""
+echo "#define ${package_macro_name}_BOOTDB \"$bootdb\""
+echo "#define ${package_macro_name}_LIVEDIR \"$livedir\""
+echo "#define ${package_macro_name}_REPODIR \"$repodir\""
 

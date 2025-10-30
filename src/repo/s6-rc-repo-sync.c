@@ -35,7 +35,7 @@ int main (int argc, char const *const *argv)
   int fdlock, r ;
 
   PROG = "s6-rc-repo-sync" ;
-  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+  wgola[GOLA_REPODIR] = S6RC_REPODIR ;
 
   golc = gol_main(argc, argv, 0, 0, rgola, 3, 0, wgola) ;
   argc -= golc ; argv += golc ;

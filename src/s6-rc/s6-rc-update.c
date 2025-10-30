@@ -41,8 +41,8 @@
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "build string") ;
 
-static char const *live = S6RC_LIVE_BASE ;
-static size_t livelen = sizeof(S6RC_LIVE_BASE) - 1 ;
+static char const *live = S6RC_LIVEDIR ;
+static size_t livelen = sizeof(S6RC_LIVEDIR) - 1 ;
 static unsigned int verbosity = 1 ;
 
 

@@ -16,13 +16,15 @@
 #include <skalibs/buffer.h>
 #include <skalibs/strerr.h>
 #include <skalibs/gol.h>
+#include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cspawn.h>
+#include <skalibs/unix-transactional.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-install [ -v verbosity ] [ -l livedir ] [ -r repo ] [ -f convfile ] [ -b ] [ -K ] set bootdbdir"
+#define USAGE "s6-rc-set-install [ -v verbosity ] [ -c bootdb ] [ -l livedir ] [ -r repo ] [ -f convfile ] [ -b ] [ -K ] set"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -34,6 +36,7 @@ enum golb_e
 enum gola_e
 {
   GOLA_VERBOSITY,
+  GOLA_BOOTDB,
   GOLA_LIVEDIR,
   GOLA_REPODIR,
   GOLA_CONVFILE,
@@ -49,6 +52,7 @@ static gol_bool const rgolb[] =
 static gol_arg const rgola[] =
 {
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+  { .so = 'c', .lo = "bootdb", .i = GOLA_BOOTDB },
   { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
   { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
   { .so = 'f', .lo = "conversion-file", .i = GOLA_CONVFILE }
@@ -62,16 +66,18 @@ int main (int argc, char const *const *argv)
   uint64_t wgolb = 0 ;
   unsigned int golc ;
   int r ;
+  stralloc sa = STRALLOC_ZERO ;
 
   PROG = "s6-rc-set-install" ;
-  wgola[GOLA_LIVEDIR] = S6RC_LIVE_BASE ;
-  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+  wgola[GOLA_BOOTDB] = S6RC_BOOTDB ;
+  wgola[GOLA_LIVEDIR] = S6RC_LIVEDIR ;
+  wgola[GOLA_REPODIR] = S6RC_REPODIR ;
 
   golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
-  if (argc < 2) dieusage() ;
+  if (!argc) dieusage() ;
   if (strchr(argv[0], '/') || strchr(argv[0], '\n'))
     strerr_dief1x(100, "set names cannot contain / or newlines") ;
 
@@ -84,11 +90,14 @@ int main (int argc, char const *const *argv)
   if (r == -1) _exit(111) ;
   if (!r) strerr_dief3x(7, "set ", argv[0], " is not up-to-date; commit it first") ;
 
+  if (!sadirname(&sa, wgola[GOLA_BOOTDB], strlen(wgola[GOLA_BOOTDB]))
+   || !stralloc_0(&sa)) strerr_diefu1sys(111, "sadirname") ;
+  sa.len-- ;
+
   {
     size_t repolen = strlen(wgola[GOLA_REPODIR]) ;
     size_t setlen = strlen(argv[0]) ;
     size_t clen = S6RC_REPO_COMPILE_BUFLEN(repolen, setlen) ;
-    size_t dstlen = strlen(argv[1]) ;
     ssize_t l ;
     pid_t pid ;
     int wstat ;
@@ -97,32 +106,28 @@ int main (int argc, char const *const *argv)
     char fmtv[UINT_FMT] ;
     char clink[repolen + setlen + 11] ;
     char cfull[clen] ;
-    char dstfn[dstlen + setlen + 36] ;
+    char dstfn[sa.len + setlen + 36] ;
     fmtv[uint_fmt(fmtv, verbosity)] = 0 ;
     memcpy(clink, wgola[GOLA_REPODIR], repolen) ;
     memcpy(clink + repolen, "/compiled/", 10) ;
     memcpy(clink + repolen + 10, argv[0], setlen + 1) ;
     memcpy(cfull, clink, repolen + 10) ;
-    memcpy(dstfn, argv[1], dstlen) ;
-    dstfn[dstlen] = '/' ;
+    memcpy(dstfn, sa.s, sa.len) ;
+    dstfn[sa.len] = '/' ;
     l = readlink(clink, cfull + repolen + 10, setlen + 35) ;
     if (l == -1) strerr_diefu2sys(111, "readlink ", clink) ;
     if (l >= setlen + 35) strerr_diefu2x(102, "incorrect/unexpected link contents for ", clink) ;
     cfull[repolen + 10 + l] = 0 ;
-    memcpy(dstfn + dstlen + 1, cfull + repolen + 10, l+1) ;
+    memcpy(dstfn + sa.len + 1, cfull + repolen + 10, l+1) ;
     l = 0 ;
     {    
       struct stat st ;
-      if (stat(argv[1], &st) == -1)
-        strerr_diefu2sys(111, "stat ", argv[1]) ;
-      if (!S_ISDIR(st.st_mode))
-        strerr_dief2x(100, argv[1], " is not a directory") ;
       if (stat(dstfn, &st) == -1)
       {
         if (errno != ENOENT)
           strerr_diefu2sys(111, "stat ", dstfn) ;
       }
-      else strerr_dief2x(102, dstfn, " already exists!?") ;
+      else strerr_dief2x(102, dstfn, " already exists") ;
     }
     {
       size_t llen = strlen(wgola[GOLA_LIVEDIR]) ;
@@ -182,7 +187,7 @@ int main (int argc, char const *const *argv)
       fmt[int_fmt(fmt, r)] = 0 ;
       rm_rf(dstfn) ;
       errno = e ;
-      strerr_dief4x(r, uargv[0], " exited with code ", fmt, ": live database switch NOT performed") ;
+      strerr_dief4x(r, uargv[0], " exited with code ", fmt, " (live database switch was NOT performed)") ;
     }
     if (olddb)
     {
@@ -190,7 +195,7 @@ int main (int argc, char const *const *argv)
       {
         if (buffer_puts(buffer_1small, olddb) == -1
          || !buffer_putflush(buffer_1small, "\n", 1))
-          strerr_diefu1sys(111, "write to stdout (live database switch performed)") ;
+          strerr_diefu2sys(111, "write to stdout", " (live database switch was performed)") ;
       }
       else rm_rf(olddb) ;
     }
@@ -198,8 +203,11 @@ int main (int argc, char const *const *argv)
     {
       char fmt[INT_FMT] ;
       fmt[int_fmt(fmt, r)] = 0 ;
-      strerr_dief4x(r, uargv[0], " exited with code ", fmt, ", but the live database switch was performed") ;
+      strerr_dief4x(r, uargv[0], " exited with code ", fmt, " (live database switch was performed") ;
     }
+    if (!atomic_symlink4(dstfn + sa.len + 1, argv[1], 0, 0))
+      strerr_diefu6sys(111, "symlink ", dstfn + sa.len + 1, " to ", argv[1], " (live database switch was performed)", " (update that link manually or next boot might fail)") ;
   }
+  // stralloc_free(&sa) ;
   _exit(0) ;
 }

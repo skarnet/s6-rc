@@ -33,7 +33,7 @@ static inline void update_livedir (char const *live, char const *newcompiled, ta
 int main (int argc, char const *const *argv, char const *const *envp)
 {
   tain deadline ;
-  char const *live = S6RC_LIVE_BASE ;
+  char const *live = S6RC_LIVEDIR ;
   int blocking = 0 ;
   int livelock ;
   PROG = "s6-rc-format-upgrade" ;

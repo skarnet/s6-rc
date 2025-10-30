@@ -1,3 +1,4 @@
+  --bootdb=PATH                 default path for the boot database [/etc/s6-rc/compiled/current]
   --livedir=DIR                 default live directory [/run/s6-rc]
   --repodir=DIR                 default repo directory [/var/lib/s6-rc/repository]
 

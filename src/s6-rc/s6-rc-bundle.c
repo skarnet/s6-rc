@@ -225,7 +225,7 @@ static inline unsigned int parse_command (char const *command)
 
 int main (int argc, char const **argv)
 {
-  char const *live = S6RC_LIVE_BASE ;
+  char const *live = S6RC_LIVEDIR ;
   char const *compiled = 0 ;
   unsigned int what ;
   int force = 0 ;

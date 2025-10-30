@@ -19,7 +19,7 @@
 
 int main (int argc, char const *const *argv)
 {
-  char const *live = S6RC_LIVE_BASE ;
+  char const *live = S6RC_LIVEDIR ;
   unsigned int number ;
   int up ;
   int blocking = 0 ;

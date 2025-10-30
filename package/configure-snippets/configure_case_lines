@@ -1,3 +1,4 @@
+    --bootdb=*)  bootdb=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --repodir=*) repodir=${arg#*=} ;;
 

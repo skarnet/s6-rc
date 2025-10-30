@@ -106,7 +106,7 @@ int main (int argc, char const *const *argv)
   unsigned int golc ;
 
   PROG = "s6-rc-set-new" ;
-  wgola[GOLA_REPODIR] = S6RC_REPO_BASE ;
+  wgola[GOLA_REPODIR] = S6RC_REPODIR ;
 
   golc = gol_main(argc, argv, 0, 0, rgola, 2, 0, wgola) ;
   argc -= golc ; argv += golc ;

@@ -8,6 +8,8 @@ In 0.6.0.0
  - New: s6-rc-repo-* and s6-rc-set-* binaries, the "repo"
 collection of tools to help with management of source definition
 directories.
+ - The boot database is now configurable at build time (--bootdb)
+and the default is now /etc/s6-rc/compiled/current.
 
 
 In 0.5.6.0

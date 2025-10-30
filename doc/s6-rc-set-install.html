@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Language" content="en" />
     <title>s6-rc: the s6-rc-set-install program</title>
     <meta name="Description" content="s6-rc: the s6-rc-set-install program" />
-    <meta name="Keywords" content="s6-rc s6-rc-set-install repo set installation update s6-rc-update boot" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-install repo set installation update s6-rc-update boot bootdb" />
     <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
@@ -31,16 +31,18 @@ the <em>live database</em> of the currently running system.
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-install [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -l <em>livedir</em> ] [ -f <em>convfile</em> ] [ -b ] [ -K ] <em>set</em> <em>bootdbdir</em>
+     s6-rc-set-install [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -c <em>bootdb</em> ] [ -l <em>livedir</em> ] [ -f <em>convfile</em> ] [ -b ] [ -K ] <em>set</em>
 </pre>
 
 <ul>
  <li> s6-rc-set-install checks that the <a href="repodefs.html#set">set</a> of services <em>set</em>
 has been <a href="repodefs.html#commit">committed</a> and that no changes have occurred since. </li>
- <li> It takes the corresponding service database and copies it to <em>bootdbdir</em>. </li>
+ <li> It takes the corresponding service database and copies it to the same directory as <em>bootdb</em>. </li>
  <li> It calls <a href="s6-rc-update.html">s6-rc-update</a> on that copy of the compiled service
 database, which makes it the new <em>live</em> database. Some services may be stopped, and
 other started, in the process. </li>
+ <li> It updates the <em>bootdb</em> link to point to the new database, so that
+next boot uses it. </li>
 </ul>
 
 <h2> Options </h2>
@@ -54,6 +56,13 @@ error messages will be written, and 2 or more adds informational messages. </dd>
  <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
  <dd> Use the repository in <em>repo</em>, which must exist. Default is
 <strong>/var/lib/s6-rc/repository</strong>. </dd>
+
+ <dt> -c <em>bootdb</em>, --bootdb=<em>bootdb</em> </dt>
+ <dd> Use <em>bootdb</em> as the path to the boot-time database. This must be
+the same path that is given to the <tt>-c</tt> option of
+<a href="s6-rc-init.html">s6-rc-init</a> at boot time. The default is
+<strong><tt>/etc/s6-rc/compiled/current</tt></strong>. Note that <em>bootdb</em>
+must always be a symlink, pointing to the real compiled database at any time. </dd>
 
  <dt> -l <em>livedir</em>, --livedir=<em>livedir</em> </dt>
  <dd> Assume the <em>live directory</em> of the machine, as created by

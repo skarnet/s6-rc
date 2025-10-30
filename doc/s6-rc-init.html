@@ -28,22 +28,22 @@ invocation of the
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-init [ -c <em>compiled</em> ] [ -l <em>live</em> ] [ -p <em>prefix</em> ] [ -t <em>timeout</em> ] [ -b ] [ -d ] <em>scandir</em>
+     s6-rc-init [ -c <em>bootdb</em> ] [ -l <em>live</em> ] [ -p <em>prefix</em> ] [ -t <em>timeout</em> ] [ -b ] [ -d ] <em>scandir</em>
 </pre>
 
 <ul>
- <li> <em>compiled</em> (if the <tt>-d</tt> option hasn't been given),
+ <li> <em>bootdb</em> (if the <tt>-d</tt> option hasn't been given),
 <em>live</em> and <em>scandir</em> must be absolute paths. </li>
  <li> s6-rc-init expects to find a <em>compiled service database</em>
-in <em>compiled</em>. It expects to be able to create a directory
+in <em>bootdb</em>. It expects to be able to create a directory
 named <em>live</em>. It also expects that an instance of
 <a href="//skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>
 is running on <em>scandir</em>. </li>
  <li> s6-rc-init initializes the live state in <em>live</em>. It
-declares <em>compiled</em> as the current service database and
+declares <em>bootdb</em> as the current service database and
 sets the state as "all services down". </li>
  <li> It then copies verbatim all
-the service directories declared by <em>compiled</em> into a
+the service directories declared by <em>bootdb</em> into a
 subdirectory of <em>live</em>, adds <tt>./down</tt> files to the live copies
 and links those live copies into <em>scandir</em>. It then triggers
 <a href="//skarnet.org/software/s6/s6-svscan.html">s6-svscan</a>,
@@ -64,9 +64,12 @@ milliseconds, s6-rc-init will complain and exit 111. This is a
 safety feature so s6-rc-init doesn't hang indefinitely on a
 nonworking installation; normally this initialization should not take
 more than a few milliseconds. </li>
- <li> <tt>-c&nbsp;<em>compiled</em></tt>&nbsp;: declare <em>compiled</em>
+ <li> <tt>-c&nbsp;<em>bootdb</em></tt>&nbsp;: declare <em>bootdb</em>
 as the current compiled service database for the upcoming live state.
-Default is <tt>/etc/s6-rc/compiled</tt>. </li>
+Default is <tt>/etc/s6-rc/compiled/current</tt>. Note that <em>bootdb</em>
+should always be a symlink pointing to the real compiled database: that
+is how databases can be live switched without modifying the boot
+process that invokes s6-rc-init. </li>
  <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: Store the live state into
 the <em>live</em> directory, which should not exist prior to running
 s6-rc-init, but should be under a writable filesystem - likely a RAM
@@ -91,11 +94,10 @@ being used by another program, s6-rc-init will wait until that
 other program has released its lock on the database, then proceed.
 By default, s6-rc-init fails with an error message if the database
 is currently in use. </li>
- <li><tt>-d</tt>&nbsp;: dereference <em>compiled</em>. Fully resolve
-the <em>compiled</em> path before declaring it as the current
-compiled service database for the upcoming live state. This allows
-<em>compiled</em> to be a symlink that can be updated later without
-impacting the current live state. Using this flag in your init scripts'
+ <li><tt>-d</tt>&nbsp;: dereference <em>bootdb</em>. Fully resolve
+the <em>bootdb</em> path before declaring it as the current
+compiled service database for the upcoming live state.
+Using this flag in your init scripts'
 <tt>s6-rc-init</tt> invocation means that it's possible to boot on a
 compiled service database whose validity has not previously been
 guaranteed by a successful <a href="s6-rc-update.html">s6-rc-update</a>
@@ -137,11 +139,11 @@ and updates the live state by atomically changing the target of the
 the real directory may. </li>
  <li> Similarly, it is recommended that administrators store their
 compiled service databases into some versioned directory, and that
-<em>compiled</em> be a symbolic link to the database currently in
+<em>bootdb</em> be a symbolic link to the database currently in
 use. This will make it easier to create new compiled databases and
 switch them with <a href="s6-rc-update.html">s6-rc-update</a>
 without having to change the s6-rc-init invocation in boot scripts. </li>
- <li> After s6-rc-init runs, <em>compiled</em> has become the
+ <li> After s6-rc-init runs, <em>bootdb</em> has become the
 "live compiled database", and must not be tampered with or deleted.
 The only way to free it for deletion is to replace it with another
 database, via a call to <a href="s6-rc-update.html">s6-rc-update</a>. </li>

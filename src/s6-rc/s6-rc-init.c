@@ -32,8 +32,8 @@ int main (int argc, char const *const *argv)
   tain deadline ;
   stralloc sa = STRALLOC_ZERO ;
   size_t dirlen ;
-  char const *live = S6RC_LIVE_BASE ;
-  char const *compiled = S6RC_COMPILED_BASE ;
+  char const *live = S6RC_LIVEDIR ;
+  char const *compiled = S6RC_BOOTDB ;
   char const *prefix = "" ;
   int deref = 0 ;
   PROG = "s6-rc-init" ;
