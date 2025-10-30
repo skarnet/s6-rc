@@ -1,0 +1,118 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-set-commit program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-set-commit program" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-commit repo set commit compile" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-set-commit program </h1>
+
+<p>
+ s6-rc-set-commit compiles a <a href="repodefs.html#set">set</a> of services,
+ensuring it is ready for installation.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-set-commit [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -D <em>defaultbundle</em> ] [ -h <em>fdhuser</em> ] [ -K ] [ -f ] <em>set</em>
+</pre>
+
+<ul>
+ <li> s6-rc-set-commit checks that no changes have occurred for set <em>set</em> of the
+<a href="repodefs.html#repository">repository</a> <em>repo</em> since the last commit, if any. </li>
+ <li> It examines all the services in <em>set</em> that are not masked and makes a temporary source
+directory with them. It includes all the bundles defined in the <a href="repodefs.html#store">stores</a>, as long
+as none of the atomic services composing a bundle is masked. If any service in a bundle is masked,
+the bundle does not appear in the database. </li>
+ <li> It makes an additional bundle, <em>defaultbundle</em>, based on the
+services' <a href="repodefs.html#sub">subs</a>:
+  <ul>
+   <li> If a service is <em>masked</em>, it will not appear in the database at all,
+and neither will any bundle it's a part of. </li>
+   <li> If a service is <em>latent</em>, it will be included in the database, but
+not in <em>defaultbundle</em>. </li>
+   <li> If a service is <em>active</em> or <em>essential</em>, it will be included
+in the database and in <em>defaultbundle</em>. </li>
+  </ul> </li>
+ <li> It compiles the resulting temporary source directory, by calling
+<a href="s6-rc-compile.html">s6-rc-compile</a>, and stores the compiled database
+in the repository. </li>
+</ul>
+
+<h2> Options </h2>
+
+<dl>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less verbose. The default is <strong>1</strong>, which means
+that error messages and warnings will be written to stderr. 0 means that only
+error messages will be written, and 2 or more adds informational messages. </dd>
+
+ <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dd> Use the repository in <em>repo</em>, which must exist. Default is
+<strong>/var/lib/s6-rc/repository</strong>.
+ </dd>
+
+ <dt> -D <em>defaultbundle</em>, --default-bundle=<em>defaultbundle</em> </dt>
+ <dd> This option specifies the name of the bundle that will contain all the active and
+essential services. It should be the name that is used to bring up the machine at
+boot time when invoking the <a href="s6-rc.html">s6-rc change</a> command. The
+default is <strong>default</strong>. </dd>
+
+ <dt> -h <em>fdhuser</em>, --fdholder-user=<em>fdhuser</em> </dt>
+ <dd> Specifies <em>fdhuser</em> as the user the fd-holder daemon will run
+at if the service database is installed and booted on. The default is
+<strong>root</strong>, which is fine, but paranoid users may want to
+specify a non-root account. </dd>
+
+ <dt> -K, --keep-old </dt>
+ <dd> If this option is given: if there is a previous compiled database for set <em>set</em>,
+it will be kept around. On sucess, s6-rc-set-commit will print a line to stdout
+that is the path to the old compiled database. You can copy it with
+<tt>cp -PR</tt>, move it with <tt>mv</tt> or delete it with <tt>rm -r</tt>.
+By default, old compiled databases are not kept &mdash; they're deleted when
+a new commit operation succeeds. </dd>
+
+ <dt> -f, --force </dt>
+ <dd> Force a new compilation even if a compiled database already exists for
+the set and it has not changed since the last commit. By default, when a
+compiled version of <em>set</em> exists and is more recent than the last
+change to the source version, s6-rc-set-commit notices it and does nothing. </dd>
+</dl>
+
+<h2> Exit codes </h2>
+
+<dl>
+ <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 1 </dt> <dd> The set failed to compile. </dd>
+ <dt> 3 </dt> <dd> <em>set</em> was not found in the repository. </dt>
+ <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 102 </dt> <dd> Inconsistent repository. </dd>
+ <dt> 111 </dt> <dd> System call failed. </dd>
+</dl>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> s6-rc-set-commit is essentially a wrapper around <a href="s6-rc-compile.html">s6-rc-compile</a>,
+that translates a user-oriented view of services ("which services do I want available, and
+which do I want started at boot time?"), implemented via subs, into the source format for
+<a href="s6-rc-compile.html">s6-rc-compile</a>, then builds the corresponding service
+database. </li>
+ <li> s6-rc-set-commit is the ultimate verification step for consistency. When it passes,
+the compiled set is ready to be <a href="s6-rc-set-install.html">installed</a>. </li>
+</ul>
+
+</body>
+</html>

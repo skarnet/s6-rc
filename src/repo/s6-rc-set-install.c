@@ -82,7 +82,7 @@ int main (int argc, char const *const *argv)
  
   r = s6rc_repo_setuptodate(wgola[GOLA_REPODIR], argv[0]) ;
   if (r == -1) _exit(111) ;
-  if (!r) strerr_dief3x(1, "set ", argv[0], " is not up-to-date; commit it first") ;
+  if (!r) strerr_dief3x(7, "set ", argv[0], " is not up-to-date; commit it first") ;
 
   {
     size_t repolen = strlen(wgola[GOLA_REPODIR]) ;

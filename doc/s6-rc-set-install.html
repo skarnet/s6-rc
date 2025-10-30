@@ -1,0 +1,106 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-set-install program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-set-install program" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-install repo set installation update s6-rc-update boot" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-set-install program </h1>
+
+<p>
+ s6-rc-set-install installs a <a href="s6-rc-set-commit.html">committed</a>
+<a href="repodefs.html#set">set</a> of services, i.e. a compiled database, as
+the <em>live database</em> of the currently running system.
+</p>
+
+<p>
+ It is basically a wrapper around <a href="s6-rc-update.html">s6-rc-update</a>.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-set-install [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -l <em>livedir</em> ] [ -f <em>convfile</em> ] [ -b ] [ -K ] <em>set</em> <em>bootdbdir</em>
+</pre>
+
+<ul>
+ <li> s6-rc-set-install checks that the <a href="repodefs.html#set">set</a> of services <em>set</em>
+has been <a href="repodefs.html#commit">committed</a> and that no changes have occurred since. </li>
+ <li> It takes the corresponding service database and copies it to <em>bootdbdir</em>. </li>
+ <li> It calls <a href="s6-rc-update.html">s6-rc-update</a> on that copy of the compiled service
+database, which makes it the new <em>live</em> database. Some services may be stopped, and
+other started, in the process. </li>
+</ul>
+
+<h2> Options </h2>
+
+<dl>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less verbose. The default is <strong>1</strong>, which means
+that error messages and warnings will be written to stderr. 0 means that only
+error messages will be written, and 2 or more adds informational messages. </dd>
+
+ <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dd> Use the repository in <em>repo</em>, which must exist. Default is
+<strong>/var/lib/s6-rc/repository</strong>. </dd>
+
+ <dt> -l <em>livedir</em>, --livedir=<em>livedir</em> </dt>
+ <dd> Assume the <em>live directory</em> of the machine, as created by
+<a href="s6-rc-init.html">s6-rc-init</a>, is <em>livedir</em>. The default
+is <strong><tt>/run/s6-rc</tt></strong>, but may have been changed at s6-rc
+build time with the <tt>--livedir</tt> configure argument. </dd>
+
+ <dt> -f <em>convfile</em>, --conversion-file=<em>convfile</em> </dt>
+ <dd> Specifies a conversion file to give to
+<a href="s6-rc-update.html">s6-rc-update</a>. The default is not having
+a conversion file, which should be correct in most cases. </dd>
+
+ <dt> -b, --block </dt>
+ <dd> Pass the <tt>-b</tt> option to <a href="s6-rc-update.html">s6-rc-update</a>,
+which makes it block rather than fail when the live database is currently being
+used by another program - typically when an <a href="s6-rc.html">s6-rc change</a>
+transition is under way. </dd>
+
+ <dt> -K, --keep-old </dt>
+ <dd> If this option is given, the old live database, after it has been
+replaced, is kapt around, and s6-rc-set-install prints a line to stdout that
+is the path to that old database. It can e.g. be used by automation to keep
+the possibility of rollbacks.
+By default, s6-rc-set-install will delete the old live database after
+successfully updating to the new one. </dd>
+</dl>
+
+<h2> Exit codes </h2>
+
+<dl>
+ <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 3 </dt> <dd> <em>set</em> was not found in the repository. </dt>
+ <dt> 7 </dt> <dd> <em>set</em> was not up-to-date. </dt>
+ <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 102 </dt> <dd> Inconsistent repository. </dd>
+ <dt> 111 </dt> <dd> System call failed. </dd>
+ <dt> Other codes </dt> <dd> s6-rc-set-install can also exit with
+exit codes from <a href="s6-rc-update.html">s6-rc-update</a>. </dd>
+</dl>
+
+<h2> Notes </h2>
+
+<ul>
+ <li> s6-rc-set-install is a simple wrapper around <a href="s6-rc-update.html">s6-rc-update</a>
+that ties the <em>repo</em> commands and the way they manage service sets with the
+basic operation of the s6-rc engine. </li>
+</ul>
+
+</body>
+</html>
