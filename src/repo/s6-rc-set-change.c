@@ -17,7 +17,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E ] [ -f | -I fail|pull|warn ] [ -n ] set newstate services..."
+#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E ] [ -f | -I fail|pull|warn ] [ -n ] set newsub services..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -180,7 +180,7 @@ int main (int argc, char const *const *argv)
     {
       uint32_t const *bads = genalloc_s(uint32_t, &indices) ;
       uint32_t badn = genalloc_len(uint32_t, &indices) ;
-      if (verbosity)
+      if (verbosity || !forcelevel)
       {
         char const *arg[10 + (badn << 1)] ;
         arg[0] = PROG ;
