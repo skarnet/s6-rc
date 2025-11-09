@@ -1,3 +1,4 @@
 bootdb=/etc/s6-rc/compiled/current
 livedir=/run/s6-rc
 repodir=/var/lib/s6-rc/repository
+defaultbundle=default

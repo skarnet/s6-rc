@@ -1,4 +1,5 @@
 echo "#define ${package_macro_name}_BOOTDB \"$bootdb\""
 echo "#define ${package_macro_name}_LIVEDIR \"$livedir\""
 echo "#define ${package_macro_name}_REPODIR \"$repodir\""
+echo "#define ${package_macro_name}_DEFBUNDLE \"$defaultbundle\""
 

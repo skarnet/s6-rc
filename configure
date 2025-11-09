@@ -51,6 +51,7 @@ Optional features:
   --enable-pkgconfig            Build and install .pc files for pkg-config [disabled]
   --enable-slashpackage[=ROOT]  assume /package installation at ROOT [disabled]
   --enable-absolute-paths       hardcode absolute BINDIR/foobar paths in binaries [disabled]
+  --with-default-bundle=def     name of the bundle started at boot [default]
 
 EOF
 exit 0
@@ -174,6 +175,7 @@ build=
 bootdb=/etc/s6-rc/compiled/current
 livedir=/run/s6-rc
 repodir=/var/lib/s6-rc/repository
+defaultbundle=default
 
 for arg ; do
   case "$arg" in
@@ -214,6 +216,7 @@ for arg ; do
     --bootdb=*)  bootdb=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --repodir=*) repodir=${arg#*=} ;;
+    --with-default-bundle=*) defaultbundle=${arg#*=} ;;
 
     --enable-*|--disable-*|--with-*|--without-*|--*dir=*) ;;
     --enable-*|--disable-*|--with-*|--without-*|--*dir=*) ;;
@@ -555,6 +558,7 @@ echo "#define ${package_macro_name}_SYSCONFPREFIX \"$sysconfdir/\""
 echo "#define ${package_macro_name}_BOOTDB \"$bootdb\""
 echo "#define ${package_macro_name}_LIVEDIR \"$livedir\""
 echo "#define ${package_macro_name}_REPODIR \"$repodir\""
+echo "#define ${package_macro_name}_DEFBUNDLE \"$defaultbundle\""
 
 echo
 echo "#endif"

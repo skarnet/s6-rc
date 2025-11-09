@@ -1,4 +1,5 @@
     --bootdb=*)  bootdb=${arg#*=} ;;
     --livedir=*) livedir=${arg#*=} ;;
     --repodir=*) repodir=${arg#*=} ;;
+    --with-default-bundle=*) defaultbundle=${arg#*=} ;;
 

@@ -62,7 +62,7 @@ int main (int argc, char const *const *argv)
 
   PROG = "s6-rc-set-commit" ;
   wgola[GOLA_REPODIR] = S6RC_REPODIR ;
-  wgola[GOLA_DEFBUNDLE] = "default" ;
+  wgola[GOLA_DEFBUNDLE] = S6RC_DEFBUNDLE ;
 
   golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
