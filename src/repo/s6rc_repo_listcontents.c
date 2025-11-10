@@ -12,6 +12,7 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/skamisc.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
@@ -55,7 +56,7 @@ int s6rc_repo_listcontents (char const *repo, char const *bundle, stralloc *stor
     return (WEXITSTATUS(wstat) < 99) - 1 ;
   }
 
- if (!s6rc_repo_nlto0(storage->s + sabase, sabase, storage->len, indices)) goto err ;
+ if (!string_index(storage->s + sabase, sabase, storage->len, '\n', indices)) goto err ;
  return 1 ;
 
  err:
