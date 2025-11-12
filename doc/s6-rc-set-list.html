@@ -3,9 +3,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta http-equiv="Content-Language" content="en" />
-    <title>s6-rc: the s6-rc-set-new program</title>
-    <meta name="Description" content="s6-rc: the s6-rc-set-new program" />
-    <meta name="Keywords" content="s6-rc s6-rc-set-new repo set sub new services" />
+    <title>s6-rc: the s6-rc-set-list program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-set-list program" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-list repo set sub list services" />
     <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
@@ -16,29 +16,26 @@
 <a href="//skarnet.org/">skarnet.org</a>
 </p>
 
-<h1> The s6-rc-set-new program </h1>
+<h1> The s6-rc-set-list program </h1>
 
 <p>
- s6-rc-set-new creates new <a href="repodefs.html#set">sets</a>
-in a <a href="repodefs.html#repository">repository</a>.
+ s6-rc-set-list lists all the services of a <a href="repodefs.html#set">set</a>,
+along with the <a href="repodefs.html#sub">sub</a> each service is on.
 </p>
 
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-new [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] <em>setname...</em>
+     s6-rc-set-list [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] <em>set</em>
 </pre>
 
 <ul>
- <li> For every argument in <em>setname...</em>, s6-rc-set-new creates a
-<a href="repodefs.html#set">set</a> with that name, in the repository
-<em>repo</em>. Under that set name, it attributes a default
-<a href="repodefs.html#sub">sub</a> to every service listed in the
-<a href="repodefs.html#store">stores</a>:
+ <li> s6-rc-set-list prints all the services in set <em>set</em> of repository
+<em>repo</em>, one per line, to stdout. Each line contains: 
   <ul>
-   <li> Services with the <em>essential</em> flag are added to the <tt>always</tt> sub </li>
-   <li> Services with the <em>recommended</em> flag are added to the <tt>active</tt> sub </li>
-   <li> Others are added to the <tt>usable</tt> sub. </li>
+   <li> The name of the service </li>
+   <li> A slash (<tt>/</tt>) character </li>
+   <li> The canonical name for the sub the service is in. </li>
   </ul> </li>
  <li> It exits 0. </li>
 </ul>
@@ -61,15 +58,20 @@ error messages will be written, and 2 or more adds informational messages. </dd>
 
 <dl>
  <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 3 </dt> <dd> Nonexistent set. </dd>
  <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 102 </dt> <dd> Invalid repository. </dd>
  <dt> 111 </dt> <dd> System call failed. </dd>
 </dl>
 
 <h2> Notes </h2>
 
 <ul>
- <li> s6-rc-set-new can be called at the user's convenience, but in a typical
-installation, two sets are enough: a stable committed set and a working set. </li>
+ <li> s6-rc-set-list is meant to be used with automation such as
+<a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cut.html">cut</a>
+or util-linux's <a href="https://man7.org/linux/man-pages/man1/column.1.html">column</a>
+for formatting. A slash is used to separate the service name for the sub because
+slashes cannot appear in service names. </li>
 </ul>
 
 </body>

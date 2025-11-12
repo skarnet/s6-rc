@@ -10,6 +10,7 @@ s6-rc-oneshot-run	0755
 s6-rc-format-upgrade	0755
 s6-rc-repo-init		0755
 s6-rc-repo-sync		0755
+s6-rc-set-list		0755
 s6-rc-set-new		0755
 s6-rc-set-copy		0755
 s6-rc-set-delete	0755
