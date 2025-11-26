@@ -34,8 +34,8 @@ src/repo/s6-rc-set-commit.o src/repo/s6-rc-set-commit.lo: src/repo/s6-rc-set-com
 src/repo/s6-rc-set-copy.o src/repo/s6-rc-set-copy.lo: src/repo/s6-rc-set-copy.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-delete.o src/repo/s6-rc-set-delete.lo: src/repo/s6-rc-set-delete.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
 src/repo/s6-rc-set-install.o src/repo/s6-rc-set-install.lo: src/repo/s6-rc-set-install.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
-src/repo/s6-rc-set-list.o src/repo/s6-rc-set-list.lo: src/repo/s6-rc-set-list.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
 src/repo/s6-rc-set-new.o src/repo/s6-rc-set-new.lo: src/repo/s6-rc-set-new.c src/include/s6-rc/config.h src/include/s6-rc/s6rc.h
+src/repo/s6-rc-set-status.o src/repo/s6-rc-set-status.lo: src/repo/s6-rc-set-status.c src/include/s6-rc/config.h src/include/s6-rc/repo.h
 src/repo/s6rc_repo_badsub.o src/repo/s6rc_repo_badsub.lo: src/repo/s6rc_repo_badsub.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_checkset.o src/repo/s6rc_repo_checkset.lo: src/repo/s6rc_repo_checkset.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_cleanup.o src/repo/s6rc_repo_cleanup.lo: src/repo/s6rc_repo_cleanup.c src/include/s6-rc/repo.h
@@ -115,10 +115,10 @@ s6-rc-set-delete: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-delete: src/repo/s6-rc-set-delete.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-install: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-install: src/repo/s6-rc-set-install.o ${LIBS6RCREPO} -lskarnet
-s6-rc-set-list: EXTRA_LIBS := ${SPAWN_LIB}
-s6-rc-set-list: src/repo/s6-rc-set-list.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-new: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-new: src/repo/s6-rc-set-new.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-status: EXTRA_LIBS := ${SPAWN_LIB}
+s6-rc-set-status: src/repo/s6-rc-set-status.o ${LIBS6RCREPO} -lskarnet
 s6-rc: EXTRA_LIBS := ${SYSCLOCK_LIB} ${SPAWN_LIB}
 s6-rc: src/s6-rc/s6-rc.o ${LIBS6RC} -ls6 -lskarnet
 s6-rc-bundle: EXTRA_LIBS :=

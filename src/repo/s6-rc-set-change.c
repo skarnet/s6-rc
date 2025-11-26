@@ -129,9 +129,16 @@ int main (int argc, char const *const *argv)
   if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
     strerr_diefu1x(10, " artificially mark a service as essential without --force-essential") ;
 
+  for (unsigned int i = 2 ; i < argc ; i++)
+  {
+    if (argv[i][0] == '.')
+      strerr_dief2x(100, "service names cannot ", "start with a dot") ;
+    if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
+      strerr_dief2x(100, "service names cannot ", "contain / or newlines") ;
+  }
+
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
-
   if (!s6rc_repo_makesvlist_byname(wgola[GOLA_REPODIR], argv[0], &storage, &svlist)) _exit(111) ;
   list = genalloc_s(s6rc_repo_sv, &svlist) ;
   listn = genalloc_len(s6rc_repo_sv, &svlist) ;

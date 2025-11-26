@@ -3,9 +3,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta http-equiv="Content-Language" content="en" />
-    <title>s6-rc: the s6-rc-set-list program</title>
-    <meta name="Description" content="s6-rc: the s6-rc-set-list program" />
-    <meta name="Keywords" content="s6-rc s6-rc-set-list repo set sub list services" />
+    <title>s6-rc: the s6-rc-set-status program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-set-status program" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-status repo set sub list services status" />
     <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
@@ -16,22 +16,24 @@
 <a href="//skarnet.org/">skarnet.org</a>
 </p>
 
-<h1> The s6-rc-set-list program </h1>
+<h1> The s6-rc-set-status program </h1>
 
 <p>
- s6-rc-set-list lists all the services of a <a href="repodefs.html#set">set</a>,
+ s6-rc-set-list lists some of, or all, the services of a <a href="repodefs.html#set">set</a>,
 along with the <a href="repodefs.html#sub">sub</a> each service is on.
 </p>
 
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-list [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] <em>set</em>
+     s6-rc-set-list [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -L ] <em>set</em> [ <em>services...</em> ]
 </pre>
 
 <ul>
- <li> s6-rc-set-list prints all the services in set <em>set</em> of repository
-<em>repo</em>, one per line, to stdout. Each line contains: 
+ <li> s6-rc-set-list prints the services in set <em>set</em> of repository
+<em>repo</em>, one per line, to stdout. If some <em>services...</em> are specified,
+it only prints the ones listed; if <em>services...</em> is empty, it prints all the
+services in the set. Each line consists of:
   <ul>
    <li> The name of the service </li>
    <li> A slash (<tt>/</tt>) character </li>
@@ -52,6 +54,16 @@ error messages will be written, and 2 or more adds informational messages. </dd>
  <dd> Use the repository in <em>repo</em>, which must exist. Default is
 <strong>/var/lib/s6-rc/repository</strong>.
  </dd>
+
+ <dt> -E, --with-essentials </dt>
+ <dd> Do not ignore services in the <tt>always</tt> sub, i.e. services marked as
+essential. This is the default. </dd>
+
+ <dt> -e, --without-essentials </dt>
+ <dd> Ignore services in the <tt>always</tt> sub: do not print them. </dd>
+
+ <dt> -L. --list </dt>
+ <dd> Do not print <tt>/<em>sub</em></tt> at the end of each line: only print the service names. </dd>
 </dl>
 
 <h2> Exit codes </h2>
@@ -67,9 +79,8 @@ error messages will be written, and 2 or more adds informational messages. </dd>
 <h2> Notes </h2>
 
 <ul>
- <li> s6-rc-set-list is meant to be used with automation such as
-<a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cut.html">cut</a>
-or util-linux's <a href="https://man7.org/linux/man-pages/man1/column.1.html">column</a>
+ <li> s6-rc-set-status is meant to be used with automation such as
+util-linux's <a href="https://man7.org/linux/man-pages/man1/column.1.html">column</a>
 for formatting. A slash is used to separate the service name for the sub because
 slashes cannot appear in service names. </li>
 </ul>
