@@ -55,7 +55,8 @@ static inline void newset (char const *repo, char const *setname)
   memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
   m = umask(0) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
-
+  memcpy(sub, tmp, repolen + 17 + setlen) ;
+  sub[repolen + 17 + setlen] = '/' ;
   for (size_t i = 0 ; i < 4 ; i++)
   {
     memcpy(sub + repolen + 18 + setlen, s6rc_repo_subnames[i], 7) ;
@@ -79,10 +80,10 @@ static inline void newset (char const *repo, char const *setname)
     cleanup(tmp) ;
     strerr_diefu2sys(111, "chmod ", tmp) ;
   }
-  if (symlink(tmp, fn) == -1)
+  if (symlink(tmp + repolen + 9, fn) == -1)
   {
     cleanup(tmp) ;
-    strerr_diefu4sys(111, "rename ", tmp, " to ", fn) ;
+    strerr_diefu4sys(111, "symlink ", tmp, " to ", fn) ;
   }
 }
 

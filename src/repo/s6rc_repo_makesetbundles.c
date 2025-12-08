@@ -102,7 +102,7 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
       memcpy(fn + repolen + setlen + 17, d->d_name, len+1) ;
       if (symlink(target, fn) == -1)
       {
-        strerr_warnfu4sys("make a symlink named ", fn, " pointing to ", target) ;
+        strerr_warnfu4sys("symlink ", target, " to ", fn) ;
         dir_close(dir) ;
         goto err0 ;
       }

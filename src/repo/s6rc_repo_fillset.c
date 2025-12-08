@@ -52,13 +52,14 @@ int s6rc_repo_fillset (char const *repo, char const *set, char const *const *exi
     if (flags & 1) subi = 3 ;
     else if (flags & 2) subi = 2 ;
     else subi = 1 ;
-    memcpy(dst, setfn, repolen + 10 + setlen) ;
+    memcpy(dst, setfn, repolen + 9 + setlen) ;
+    dst[repolen + 9 + setlen] = '/' ;
     memcpy(dst + repolen + 10 + setlen, s6rc_repo_subnames[subi], 6) ;
     dst[repolen + setlen + 16] = '/' ;
     memcpy(dst + repolen + setlen + 17, d->d_name, len+1) ;
     if (symlink(src, dst) == -1)
     {
-      strerr_warnfu4sys("make a symlink named ", dst, " pointing to ", src) ;
+      strerr_warnfu4sys("symlink ", src, " to ", dst) ;
       return 0 ;
     }
   }

@@ -98,7 +98,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
       int e = errno ;
       rm_rf(newc) ;
       errno = e ;
-      strerr_warnfu4sys("atomically make a ", fn, " symlink pointing to ", newc + repolen + 10) ;
+      strerr_warnfu4sys("atomically symlink ", newc + repolen + 10, " to ", fn) ;
       return -1 ;
     }
   }

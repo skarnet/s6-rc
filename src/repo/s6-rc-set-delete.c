@@ -38,7 +38,7 @@ static inline void dodelete (char const *repo, char const *set)
     memcpy(real + repolen, "/sources/", 9) ;
     r = readlink(fn, real + repolen + 9, setlen + 9) ;
     if (r == -1) strerr_diefu2sys(111, "readlink ", fn) ;
-    else if (r != 8) strerr_dief3x(102, "symlink ", fn, " points to an invalid name") ;
+    else if (r != setlen + 8) strerr_dief3x(102, "symlink ", fn, " points to an invalid name") ;
     real[repolen + setlen + 17] = 0 ;
     unlink_void(fn) ;
     rm_rf(real) ;
