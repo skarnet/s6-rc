@@ -15,6 +15,7 @@
 #include <skalibs/prog.h>
 #include <skalibs/strerr.h>
 #include <skalibs/direntry.h>
+#include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
 
 #include <s6-rc/config.h>
@@ -122,6 +123,8 @@ int main (int argc, char const *const *argv)
     if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
       strerr_dief2x(100, "set names cannot ", "contain / or newlines") ;
   }
+
+  tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
 

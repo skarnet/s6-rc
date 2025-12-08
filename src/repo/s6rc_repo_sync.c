@@ -97,29 +97,33 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
       len = strlen(d->d_name) ;
       {
         char const *x ;
-        char dst[repolen + 28 + len] ;
-        char src[22 + len] ;
-        memcpy(src, "../../../stores/", 16) ;
-        memcpy(src + 16, store + repolen + 8, 4) ;
-        src[20] = '/' ;
-        memcpy(src + 21, d->d_name, len+1) ;
-        switch (s6rc_repo_type_check(src))
+        char dst[repolen + 27 + len] ;
+        char src[19 + len] ;
+        char fn[repolen + 14 + len] ;
+        memcpy(src, "../../stores/", 13) ;
+        memcpy(src + 13, store + repolen + 8, 4) ;
+        src[17] = '/' ;
+        memcpy(src + 18, d->d_name, len+1) ;
+        memcpy(fn, store, repolen + 12) ;
+        fn[repolen + 12] = '/' ;
+        memcpy(fn + repolen + 13, d->d_name, len+1) ;
+        switch (s6rc_repo_type_check(fn))
         {
           case 1 :
           case 2 : x = ato ; break ;
           case 3 : x = bun ; break ;
           case 0 :
-            strerr_warnf2x("invalid service type for ", src) ;
+            strerr_warnf2x("invalid service type for ", fn) ;
             dir_close(dir) ;
             goto err ;
           default :
-            strerr_warnfu2sys("check service type of ", src) ;
+            strerr_warnfu2sys("check service type of ", fn) ;
             dir_close(dir) ;
             goto err ;
         }
-        memcpy(dst, x, repolen + 26) ;
-        dst[repolen + 26] = '/' ;
-        memcpy(dst + repolen + 27, d->d_name, len+1) ;
+        memcpy(dst, x, repolen + 25) ;
+        dst[repolen + 25] = '/' ;
+        memcpy(dst + repolen + 26, d->d_name, len+1) ;
         if (symlink(src, dst) == -1)
         {
           if (errno != EEXIST)
@@ -185,9 +189,16 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
       }
       goto err ;
     }
-    memcpy(ato + repolen + 9, oldato, 16) ;
-    memcpy(bun + repolen + 9, oldbun, 16) ;
-    cleanup(ato, bun) ;
+    if (oldato[0])
+    {
+      memcpy(ato + repolen + 9, oldato, 16) ;
+      rm_rf(ato) ;
+    }
+    if (oldbun[0])
+    {
+      memcpy(bun + repolen + 9, oldbun, 16) ;
+      rm_rf(bun) ;
+    }
   }
 
 

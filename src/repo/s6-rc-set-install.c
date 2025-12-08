@@ -18,6 +18,7 @@
 #include <skalibs/gol.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/tai.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/unix-transactional.h>
 
@@ -81,6 +82,7 @@ int main (int argc, char const *const *argv)
   if (strchr(argv[0], '/') || strchr(argv[0], '\n'))
     strerr_dief1x(100, "set names cannot contain / or newlines") ;
 
+  tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 0) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
   r = s6rc_repo_checkset(wgola[GOLA_REPODIR], argv[0]) ;

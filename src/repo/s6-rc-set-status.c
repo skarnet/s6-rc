@@ -11,6 +11,7 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/direntry.h>
 #include <skalibs/buffer.h>
+#include <skalibs/tai.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
@@ -72,6 +73,7 @@ int main (int argc, char const **argv)
       strerr_dief2x(100, "service", " names cannot contain / or newlines") ;
   }
 
+  tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
 
@@ -113,6 +115,6 @@ int main (int argc, char const **argv)
     if (errno) strerr_diefu2sys(111, "readdir ", fn) ;
     dir_close(dir) ;
   }
-  if (!buffer_flush(buffer_1)) strerr_diefu1sys(111, "write to stdout") ;
+  if (!buffer_flush(buffer_1)) dieout() ;
   _exit(0) ;
 }
