@@ -20,6 +20,9 @@ s6rc_repo_makestores.o
 s6rc_repo_makesvlist.o
 s6rc_repo_makesvlist_byname.o
 s6rc_repo_moveservices.o
+s6rc_repo_removeinternals.o
+s6rc_repo_sanitize_setname.o
+s6rc_repo_sanitize_svname.o
 s6rc_repo_setcompile.o
 s6rc_repo_setuptodate.o
 s6rc_repo_subnames.o

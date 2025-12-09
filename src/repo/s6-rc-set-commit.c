@@ -70,8 +70,8 @@ int main (int argc, char const *const *argv)
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
   if (!argc) dieusage() ;
-  if (strchr(argv[0], '/') || strchr(argv[0], '\n'))
-    strerr_dief1x(100, "set names cannot contain / or newlines") ;
+  s6rc_repo_sanitize_setname(argv[0]) ;
+
   tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;

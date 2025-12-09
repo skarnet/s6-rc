@@ -119,9 +119,8 @@ int main (int argc, char const *const *argv)
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
   if (argc < 2) dieusage() ;
-  for (unsigned int i = 0 ; i < 2 ; i++)
-    if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
-      strerr_dief1x(100, "set names cannot contain / or newlines") ;
+  s6rc_repo_sanitize_setname(argv[0]) ;
+  s6rc_repo_sanitize_setname(argv[1]) ;
 
   tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;

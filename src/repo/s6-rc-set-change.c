@@ -122,21 +122,12 @@ int main (int argc, char const *const *argv)
     forcelevel = p->sub ;
   }
   if (argc < 3) dieusage() ;
-  if (strchr(argv[0], '/') || strchr(argv[0], '\n'))
-    strerr_dief1x(100, "set names cannot contain / or newlines") ;
-
+  s6rc_repo_sanitize_setname(argv[0]) ;
   newsub = bsearch(argv[1], accepted_subs, sizeof(accepted_subs)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
   if (!newsub) strerr_dief2x(100, "unrecognized state change directive:", argv[1]) ;
   if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
-    strerr_diefu1x(10, " artificially mark a service as essential without --force-essential") ;
-
-  for (unsigned int i = 2 ; i < argc ; i++)
-  {
-    if (argv[i][0] == '.')
-      strerr_dief2x(100, "service names cannot ", "start with a dot") ;
-    if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
-      strerr_dief2x(100, "service names cannot ", "contain / or newlines") ;
-  }
+    strerr_diefu1x(100, " artificially mark a service as essential without --force-essential") ;
+  for (unsigned int i = 2 ; i < argc ; i++) s6rc_repo_sanitize_svname(argv[i]) ;
 
   tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
@@ -146,8 +137,8 @@ int main (int argc, char const *const *argv)
   listn = genalloc_len(s6rc_repo_sv, &svlist) ;
   sabase = storage.len ;
   {
-    int r = s6rc_repo_flattenservices(wgola[GOLA_REPODIR], argv + 2, argc - 2, &storage, &indices) ;
-    if (r) _exit(r) ;
+    int e = s6rc_repo_flattenservices(wgola[GOLA_REPODIR], argv + 2, argc - 2, &storage, &indices) ;
+    if (e) _exit(e) ;
   }
   n = genalloc_len(size_t, &indices) ;
   if (!n) strerr_dief1x(101, "can't happen: 0 services in flattened list!") ;

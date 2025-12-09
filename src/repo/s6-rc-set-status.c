@@ -12,11 +12,13 @@
 #include <skalibs/direntry.h>
 #include <skalibs/buffer.h>
 #include <skalibs/tai.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
 
-#define USAGE "s6-rc-set-status [ -v verbosity ] [ -r repo ] [ -E | -e ] set services..."
+#define USAGE "s6-rc-set-status [ -v verbosity ] [ -r repo ] [ -E | -e ] [ -L ] set services..."
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dieout() strerr_diefu1sys(111, "write to stdout")
 
@@ -46,6 +48,8 @@ int main (int argc, char const **argv)
     { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
     { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR }
   } ;
+  stralloc sa = STRALLOC_ZERO ;
+  genalloc ga = GENALLOC_ZERO ;  /* size_t */
   int fdlock ;
   unsigned int verbosity = 1 ;
   uint64_t wgolb = 0 ;
@@ -59,19 +63,12 @@ int main (int argc, char const **argv)
 
   golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
-  if (argc < 2) dieusage() ;
+  if (!argc) dieusage() ;
   setname = *argv++ ; argc-- ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
-  if (strchr(setname, '/') || strchr(setname, '\n'))
-      strerr_dief2x(100, "set", " names cannot contain / or newlines") ;
-  for (unsigned int i = 0 ; i < argc ; i++)
-  {
-    if (argv[i][0] == '.')
-      strerr_dief2x(100, "service", " names cannot start with a dot") ;
-    if (strchr(argv[i], '/') || strchr(argv[i], '\n'))
-      strerr_dief2x(100, "service", " names cannot contain / or newlines") ;
-  }
+  s6rc_repo_sanitize_setname(setname) ;
+  for (unsigned int i = 0 ; i < argc ; i++) s6rc_repo_sanitize_svname(argv[i]) ;
 
   tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
@@ -82,7 +79,20 @@ int main (int argc, char const **argv)
     if (e) _exit(e) ;
   }
 
-  qsort(argv, argc, sizeof(char const *), &str_cmp) ;
+  if (argc)
+  {
+    int e = s6rc_repo_flattenservices(wgola[GOLA_REPODIR], argv, argc, &sa, &ga) ;
+    if (e) _exit(e) ;
+    argc = genalloc_len(size_t, &ga) ;
+  }
+  char const *flatargv[argc ? argc : 1] ;
+  if (argc)
+  {
+    for (unsigned int i = 0 ; i < argc ; i++)
+      flatargv[i] = sa.s + genalloc_s(size_t, &ga)[i] ;
+    qsort(flatargv, argc, sizeof(char const *), &str_cmp) ;
+    genalloc_free(size_t, &ga) ;
+  }
 
   size_t repolen = strlen(wgola[GOLA_REPODIR]) ;
   size_t setlen = strlen(setname) ;
@@ -105,7 +115,7 @@ int main (int argc, char const **argv)
       d = readdir(dir) ;
       if (!d) break ;
       if (d->d_name[0] == '.') continue ;
-      if (argc && !bsearch(d->d_name, argv, argc, sizeof(char const *), &str_bcmp)) continue ;
+      if (argc && !bsearch(d->d_name, flatargv, argc, sizeof(char const *), &str_bcmp)) continue ;
       if (buffer_puts(buffer_1, d->d_name) < 0) dieout() ;
       if (!(wgolb & GOLB_NOSUB))
         if (buffer_put(buffer_1, "/", 1) < 0

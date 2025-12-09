@@ -29,6 +29,9 @@ extern int s6rc_repo_makestores (char const *, char const *const *, uint16_t, ch
 
 extern int s6rc_repo_fillset (char const *, char const *, char const *const *, uint32_t) ;
 
+extern void s6rc_repo_sanitize_setname (char const *) ;
+extern void s6rc_repo_sanitize_svname (char const *) ;
+
 extern int s6rc_repo_cleanup (char const *) ;
 extern int s6rc_repo_sync (char const *, unsigned int, char const *) ;
 extern int s6rc_repo_syncset (char const *, char const *, unsigned int) ;
@@ -60,6 +63,7 @@ extern int s6rc_repo_makesvlist (char const *, char const *, stralloc *, genallo
 extern int s6rc_repo_makesvlist_byname (char const *, char const *, stralloc *, genalloc *) ;
 extern int s6rc_repo_badsub (char const *, char const *, char const **, uint32_t, uint8_t, uint8_t, s6rc_repo_sv const *, uint32_t, stralloc *, genalloc *) ;
 extern int s6rc_repo_moveservices (char const *, char const *, s6rc_repo_sv const *, uint32_t, uint8_t, char const *, unsigned int) ;
+extern void s6rc_repo_removeinternals (genalloc *, unsigned int, char const *) ;
 
 extern int s6rc_repo_fixset (char const *, char const *, uint32_t, unsigned int, stralloc *, genalloc *, genalloc *) ;
 extern int s6rc_repo_fix (char const *, uint32_t, unsigned int) ;

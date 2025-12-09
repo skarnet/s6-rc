@@ -22,7 +22,7 @@ int s6rc_repo_flattenservices (char const *repo, char const *const *services, ui
   int swasnull = !storage->s ;
   int gwasnull = !indices->s ;
   size_t sabase = storage->len ;
-  size_t gabase = genalloc_len(size_t, indices) ;
+  uint32_t gabase = genalloc_len(size_t, indices) ;
 
   {
     size_t m = 0 ;
@@ -61,9 +61,12 @@ int s6rc_repo_flattenservices (char const *repo, char const *const *services, ui
     if (WEXITSTATUS(wstat)) return WEXITSTATUS(wstat) ;
   }
 
-  if (!string_index(storage->s + sabase, sabase, storage->len, '\n', indices)) goto err ;
+  if (!string_index(storage->s, sabase, storage->len - sabase, '\n', indices)) goto err2 ;
+  s6rc_repo_removeinternals(indices, gabase, storage->s) ;
   return 0 ;
 
+ err2:
+  strerr_warnfu1sys("index services") ;
  err:
   if (gwasnull) genalloc_free(size_t, indices) ;
   else genalloc_setlen(size_t, indices, gabase) ;

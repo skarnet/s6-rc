@@ -56,8 +56,9 @@ int s6rc_repo_listcontents (char const *repo, char const *bundle, stralloc *stor
     return (WEXITSTATUS(wstat) < 99) - 1 ;
   }
 
- if (!string_index(storage->s + sabase, sabase, storage->len, '\n', indices)) goto err ;
- return 1 ;
+  if (!string_index(storage->s, sabase, storage->len - sabase, '\n', indices)) goto err ;
+  s6rc_repo_removeinternals(indices, gabase, storage->s) ;
+  return 1 ;
 
  err:
   if (gwasnull) genalloc_free(size_t, indices) ;
