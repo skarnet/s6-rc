@@ -33,7 +33,7 @@ int s6rc_repo_moveservices (char const *repo, char const *set, s6rc_repo_sv cons
   for (uint32_t i = 0 ; i < n ; i++)
   {
     size_t len = strlen(storage + services[i].pos) ;
-    memcpy(oldfn + repolen + 10, s6rc_repo_subnames[services[i].sub], 6) ;
+    memcpy(oldfn + repolen + setlen + 10, s6rc_repo_subnames[services[i].sub], 6) ;
     memcpy(oldfn + repolen + setlen + 17, storage + services[i].pos, len + 1) ;
     memcpy(newfn + repolen + setlen + 17, storage + services[i].pos, len + 1) ;
     if (access(newfn, F_OK) == 0)

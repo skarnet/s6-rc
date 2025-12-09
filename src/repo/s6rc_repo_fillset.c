@@ -43,10 +43,10 @@ int s6rc_repo_fillset (char const *repo, char const *set, char const *const *exi
     if (d->d_name[0] == '.') continue ;
 
     len = strlen(d->d_name) ;
-    char src[len + 13] ;
+    char src[len + 16] ;
     char dst[repolen + 18 + setlen + len] ;
-    memcpy(src, "../.atomics/", 12) ;
-    memcpy(src + 12, d->d_name, len+1) ;
+    memcpy(src, "../../.atomics/", 15) ;
+    memcpy(src + 15, d->d_name, len+1) ;
     if (n && bsearch(d->d_name, existing, n, sizeof(char const *), &str_bcmp)) continue ;
     if (s6rc_repo_getserviceflags(repo, d->d_name, &flags) <= 0) return 0 ;
     if (flags & 1) subi = 3 ;

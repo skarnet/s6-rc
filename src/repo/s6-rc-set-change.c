@@ -14,6 +14,7 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/lolstdio.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
@@ -174,7 +175,6 @@ int main (int argc, char const *const *argv)
       memcpy(tmpstore + m, storage.s + list[ind[i]].pos, len) ;
       m += len ;
     }
-
     if (!s6rc_repo_badsub(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newsub->sub, 3, list, listn, &storage, &indices)) _exit(111) ;
     if (genalloc_len(uint32_t, &indices))
     {
@@ -213,7 +213,6 @@ int main (int argc, char const *const *argv)
     }
   }
   genalloc_free(uint32_t, &indices) ;
-  stralloc_free(&storage) ;
 
   if (!(wgolb & GOLB_DRYRUN))
   {
