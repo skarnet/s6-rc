@@ -6,7 +6,7 @@
 #include <skalibs/tai.h>
 
 #include <s6-rc/config.h>
-#include <s6-rc/s6rc.h>
+#include <s6-rc/repo.h>
 
 #define USAGE "s6-rc-repo-sync [ -v verbosity ] [ -r repo ] [ -h fdhuser ]"
 #define dieusage() strerr_dieusage(100, USAGE)

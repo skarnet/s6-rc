@@ -22,7 +22,7 @@
 #include <skalibs/unix-transactional.h>
 
 #include <s6-rc/config.h>
-#include <s6-rc/s6rc.h>
+#include <s6-rc/repo.h>
 
 #define USAGE "s6-rc-repo-init [ -v verbosity ] [ -r repo ] [ -h fdhuser ] [ -f ] [ -U ] [ -B ] stores..."
 #define dieusage() strerr_dieusage(100, USAGE)

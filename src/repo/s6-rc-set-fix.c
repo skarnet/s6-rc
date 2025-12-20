@@ -58,8 +58,8 @@ int main (int argc, char const **argv)
     { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR }
   } ;
   stralloc sa = STRALLOC_ZERO ;
-  genalloc svlist = GENALLOC_ZERO ;
-  genalloc badga = GENALLOC_ZERO ;
+  genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
+  genalloc badga = GENALLOC_ZERO ;  /* uint32_t */
   unsigned int verbosity = 1 ;
   int fdlock ;
   uint64_t wgolb = 0 ;
