@@ -19,7 +19,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E ] [ -f | -I fail|pull|warn ] [ -n ] set newsub services..."
+#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] set newsub services..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -45,7 +45,8 @@ struct subname_s
 
 static gol_bool const rgolb[] =
 {
-  { .so = 'E', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
+  { .so = 'E', .lo = "no-force-essential", .clear = GOLB_FORCE_ESSENTIAL, .set = 0 },
+  { .so = 'e', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
   { .so = 'f', .lo = "ignore-dependencies", .clear = 0, .set = GOLB_IGNORE_DEPENDENCIES },
   { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN }
 } ;
@@ -127,7 +128,7 @@ int main (int argc, char const *const *argv)
   newsub = bsearch(argv[1], accepted_subs, sizeof(accepted_subs)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
   if (!newsub) strerr_dief2x(100, "unrecognized state change directive:", argv[1]) ;
   if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
-    strerr_diefu1x(100, " artificially mark a service as essential without --force-essential") ;
+    strerr_diefu1x(100, "artificially mark a service as essential without --force-essential") ;
   for (unsigned int i = 2 ; i < argc ; i++) s6rc_repo_sanitize_svname(argv[i]) ;
 
   tain_now_g() ;

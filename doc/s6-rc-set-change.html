@@ -26,7 +26,7 @@ the <a href="repodefs.html#sub">sub</a> of some services.
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-change [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E ] [ -f | -I fail|pull|warn ] [ -n ] <em>set</em> <em>newsub</em> <em>services...</em>
+     s6-rc-set-change [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] <em>set</em> <em>newsub</em> <em>services...</em>
 </pre>
 
 <ul>
@@ -48,9 +48,17 @@ error messages will be written, and 2 or more adds informational messages. </dd>
 <strong>/var/lib/s6-rc/repository</strong>.
  </dd>
 
- <dt> -E, --force-essential </dt>
- <dd> This option is necessary in order if <em>newsub</em> is <tt>always</tt>.
-Without that option, s6-rc-set-change refuses to set services to <tt>always</tt>. </dd>
+ <dt> -E, --no-force-essential </dt>
+ <dd> If a service needs to be moved to/from the <tt>always</tt> sub, fail and report
+an error. This is the default. Services marked as <em>always</em> are normally defined
+in the stores with <tt>flag-essential</tt>, and inconsistencies between essential
+services should be resolved in the stores. </dd>
+
+ <dt> -e, --force-essential </dt>
+ <dd> Move services to/from the <tt>always</tt> sub if they need to be. This option
+should only be used temporarily until the store inconsistency is fixed. Be aware that
+moving a service from <em>always</em> to <em>usable</em> or <em>masked</em> may
+result in an unbootable set. </dd>
 
  <dt> -f, --ignore-dependencies </dt>
  <dd> Change <em>services...</em> to <em>newsub</em>, but do not change any other

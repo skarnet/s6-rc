@@ -15,7 +15,7 @@
 enum golb_e
 {
   GOLB_FIXUP = 0x01,
-  GOLB_FORCE_ESSENTIALS = 0x02,
+  GOLB_FORCE_ESSENTIAL = 0x02,
   GOLB_DRYRUN = 0x04, 
 } ;
 
@@ -48,8 +48,8 @@ int main (int argc, char const **argv)
   {
     { .so = 'u', .lo = "fix-up", .clear = 0, .set = GOLB_FIXUP },
     { .so = 'd', .lo = "fix-down", .clear = GOLB_FIXUP, .set = 0 },
-    { .so = 'E', .lo = "no-force-essentials", .clear = GOLB_FORCE_ESSENTIALS, .set = 0 },
-    { .so = 'e', .lo = "force-essentials", .clear = 0, .set = GOLB_FORCE_ESSENTIALS },
+    { .so = 'E', .lo = "no-force-essential", .clear = GOLB_FORCE_ESSENTIAL, .set = 0 },
+    { .so = 'e', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
     { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN },
   } ;
   static gol_arg const rgola[] =

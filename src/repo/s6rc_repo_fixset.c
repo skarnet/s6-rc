@@ -28,7 +28,7 @@ static inline int s6rc_repo_fixsub (char const *repo, char const *set, uint8_t s
   {
     tomove[j] = byname[bads[j]] ;
     if (verbosity >= 2)
-      strerr_warni(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": need to ", options & 1 ? "up" : "down", "fix service ", sa->s + tomove[j].pos, " from ", s6rc_repo_subnames[tomove[j].sub], " to ", s6rc_repo_subnames[sub]) ;
+      strerr_warni(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": ", options & 1 ? "up" : "down", "fix service ", sa->s + tomove[j].pos, " from ", s6rc_repo_subnames[tomove[j].sub], " to ", s6rc_repo_subnames[sub]) ;
     if (tomove[j].sub == 0 && verbosity)
       strerr_warnw(options & 4 ? "(dry run) " : "", "service ", sa->s + tomove[j].pos, " will automatically be unmasked by an upfix to ", s6rc_repo_subnames[sub]) ;
     if (tomove[j].sub == 3)
@@ -36,10 +36,10 @@ static inline int s6rc_repo_fixsub (char const *repo, char const *set, uint8_t s
       if (!(options & 2))
       {
         if (options & 4)
-          strerr_warnw(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": service ", sa->s + tomove[j].pos, " is marked as essential and cannot be downfixed. You will need --force-essential") ;
+          strerr_warnw(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": service ", sa->s + tomove[j].pos, " is marked as essential and cannot be downfixed (--no-force-essential") ;
         else
         {
-          strerr_warnf(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": service ", sa->s + tomove[j].pos, " is marked as essential and cannot be downfixed. If you are sure of yourself, try --force-essential") ;
+          strerr_warnf(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": service ", sa->s + tomove[j].pos, " is marked as essential and cannot be downfixed (--no-force-essential") ;
           e = 1 ;
           goto err ;
         }

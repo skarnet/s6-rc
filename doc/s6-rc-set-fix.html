@@ -67,7 +67,7 @@ the situation by making <tt>B</tt> <em>usable</em> (if <tt>A</tt> is <em>usable<
 or <em>masked</em> (if <tt>A</tt> is <em>masked</em>). This means that fewer services
 will be started at boot time than the set initially declared. This is the default. </dd>
 
- <dt> -E, --no-force-essentials </dt>
+ <dt> -E, --no-force-essential </dt>
  <dd> If fixing a dependency inconsistency would imply moving a service down from the
 <em>always</em> sub, or up to the <em>always</em> sub, when its service definition
 directory does not declare it as essential, do not attempt fixing it and fail the operation.
@@ -75,7 +75,7 @@ This is the default. If such a situation occurs, it means that the set of servic
 provided in the <a href="repodefs.html#sub">stores</a> is not consistent, and that
 is what should be fixed. </dd>
 
- <dt> -e, --force-essentials </dt>
+ <dt> -e, --force-essential </dt>
  <dd> If fixing a dependency inconsistency would imply moving a service down from the
 <em>always</em> sub, or up to the <em>always</em> sub, when its service definition
 directory does not declare it as essential, do it, even though it goes against a
