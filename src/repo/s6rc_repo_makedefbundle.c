@@ -69,7 +69,7 @@ int s6rc_repo_makedefbundle (char const *repo, char const *set, char const *bund
     strerr_warnfu2sys("write to ", bfn) ;
     return 0 ;
   }
-  bfn[bfnlen] = '/' ;
+  memcpy(bfn + repolen + setlen + 18 + bundlelen, "contents.d/", 11) ;
 
   memcpy(subfn, bfn, repolen + 10 + setlen) ;
   for (uint8_t sub = 2 ; sub < 4 ; sub++)

@@ -14,7 +14,6 @@
 #include <skalibs/genalloc.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/lolstdio.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
@@ -100,6 +99,7 @@ int main (int argc, char const *const *argv)
   stralloc storage = STRALLOC_ZERO ;
   genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
   genalloc indices = GENALLOC_ZERO ;  /* size_t then uint32_t */
+  genalloc gatmp = GENALLOC_ZERO ;  /* size_t */
   int fdlock ;
   unsigned int verbosity = 1 ;
   unsigned int forcelevel = 1 ;
@@ -176,7 +176,8 @@ int main (int argc, char const *const *argv)
       memcpy(tmpstore + m, storage.s + list[ind[i]].pos, len) ;
       m += len ;
     }
-    if (!s6rc_repo_badsub(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newsub->sub, 3, list, listn, &storage, &indices)) _exit(111) ;
+    if (!s6rc_repo_badsub(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newsub->sub, 3, list, listn, &storage, &indices, &gatmp)) _exit(111) ;
+    // genalloc_free(size_t, &gatmp) ;
     if (genalloc_len(uint32_t, &indices))
     {
       uint32_t const *bads = genalloc_s(uint32_t, &indices) ;
@@ -189,7 +190,7 @@ int main (int argc, char const *const *argv)
         arg[2] = !forcelevel ? "fatal" : "warning" ;
         arg[3] = ": the following services (" ;
         arg[4] = newsub->sub >= 2 ? "dependencies of" : "depending on" ;
-        arg[5] = " the ones given as arguments) " ;
+        arg[5] = " the ones given as arguments, or part of the same pipeline) " ;
         arg[6] = forcelevel == 2 ? "are also being" : "also need to be" ;
         arg[7] = " changed to \"" ;
         arg[8] = s6rc_repo_subnames[newsub->sub] ;
@@ -213,7 +214,7 @@ int main (int argc, char const *const *argv)
       }
     }
   }
-  genalloc_free(uint32_t, &indices) ;
+  // genalloc_free(uint32_t, &indices) ;
 
   if (!(wgolb & GOLB_DRYRUN))
   {

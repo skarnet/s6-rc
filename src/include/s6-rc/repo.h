@@ -61,11 +61,12 @@ extern int s6rc_repo_getserviceflags (char const *, char const *, uint32_t *) ;
 extern int s6rc_repo_flattenservices (char const *, char const *const *, uint32_t n, stralloc *storage, genalloc *indices) ;
 extern int s6rc_repo_makesvlist (char const *, char const *, stralloc *, genalloc *, uint32_t *) ;
 extern int s6rc_repo_makesvlist_byname (char const *, char const *, stralloc *, genalloc *) ;
-extern int s6rc_repo_badsub (char const *, char const *, char const **, uint32_t, uint8_t, uint8_t, s6rc_repo_sv const *, uint32_t, stralloc *, genalloc *) ;
+extern int s6rc_repo_badsub (char const *, char const *, char const **, uint32_t, uint8_t, uint8_t, s6rc_repo_sv const *, uint32_t, stralloc *, genalloc *, genalloc *) ;
+extern int s6rc_repo_badpipeline (char const *, char const *, size_t, s6rc_repo_sv const *, uint32_t, uint8_t, stralloc *, genalloc *) ;
 extern int s6rc_repo_moveservices (char const *, char const *, s6rc_repo_sv const *, uint32_t, uint8_t, char const *, unsigned int) ;
 extern void s6rc_repo_removeinternals (genalloc *, unsigned int, char const *) ;
 
-extern int s6rc_repo_fixset (char const *, char const *, uint32_t, unsigned int, stralloc *, genalloc *, genalloc *) ;
+extern int s6rc_repo_fixset (char const *, char const *, uint32_t, unsigned int, stralloc *, genalloc *, genalloc *, genalloc *) ;
 extern int s6rc_repo_fix (char const *, uint32_t, unsigned int) ;
 
 #endif

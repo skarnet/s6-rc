@@ -106,7 +106,11 @@ from being changed to <em>newsub</em>. </dd>
  <li> s6-rc-set-change is the bread and butter of <em>repo</em> operations. It is how users
 can tailor the set of services they want to be enabled at boot time. </li>
  <li> Once a change has been effected, and the command says that the set is consistent,
-it needs to be <a href="s6-rc-set-commit">committed</a>. </li>
+it can be <a href="s6-rc-set-commit">committed</a>. </li>
+ <li> If you are masking or unmasking services, and you see it pulling services that
+are not dependencies of the service you're unmasking or are not depending on the service
+you're masking, it is because these services are part of the same pipeline. If you mask
+a part of a pipeline, the whole pipeline needs to be masked. </li>
 </ul>
 
 </body>

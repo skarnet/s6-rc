@@ -13,8 +13,6 @@ int s6rc_repo_ls (char const *fn, stralloc *sa, genalloc *ga)
 {
   size_t sabase = sa->len ;
   size_t gabase = genalloc_len(size_t, ga) ;
-  int sawasnull = !sa->s ;
-  int gawasnull = !genalloc_s(size_t, ga) ;
   int n = 0 ;
 
   DIR *dir = opendir(fn) ;
@@ -38,9 +36,7 @@ int s6rc_repo_ls (char const *fn, stralloc *sa, genalloc *ga)
 
  err:
   dir_close(dir) ;
-  if (gawasnull) genalloc_free(size_t, ga) ;
-  else genalloc_setlen(size_t, ga, gabase) ;
-  if (sawasnull) stralloc_free(sa) ;
-  else sa->len = sabase ;
+  genalloc_setlen(size_t, ga, gabase) ;
+  sa->len = sabase ;
   return -1 ;
 }

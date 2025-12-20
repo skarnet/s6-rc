@@ -26,7 +26,7 @@ enum gola_e
   GOLA_N
 } ;
 
-static int fixall (char const *repo, unsigned int options, unsigned int verbosity, stralloc *sa, genalloc *svlist, stralloc *badga)
+static int fixall (char const *repo, unsigned int options, unsigned int verbosity, stralloc *sa, genalloc *svlist, genalloc *badga, genalloc *gatmp)
 {
   stralloc setnames = STRALLOC_ZERO ;
   genalloc setindices = GENALLOC_ZERO ;  /* size_t */
@@ -34,7 +34,7 @@ static int fixall (char const *repo, unsigned int options, unsigned int verbosit
   if (n == -1) { strerr_warnfu2sys("list sets at ", repo) ; return 111 ; }
   for (unsigned int i = 0 ; i < n ; i++)
   {
-    int e = s6rc_repo_fixset(repo, setnames.s + genalloc_s(size_t, &setindices)[i], options, verbosity, sa, svlist, badga) ;
+    int e = s6rc_repo_fixset(repo, setnames.s + genalloc_s(size_t, &setindices)[i], options, verbosity, sa, svlist, badga, gatmp) ;
     if (e) return e ;
   }
   // genalloc_free(size_t, &setindices) ;
@@ -60,6 +60,7 @@ int main (int argc, char const **argv)
   stralloc sa = STRALLOC_ZERO ;
   genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
   genalloc badga = GENALLOC_ZERO ;  /* uint32_t */
+  genalloc gatmp = GENALLOC_ZERO ;  /* size_t whatever */
   unsigned int verbosity = 1 ;
   int fdlock ;
   uint64_t wgolb = 0 ;
@@ -79,7 +80,7 @@ int main (int argc, char const **argv)
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
 
-  if (!argc) _exit(fixall(wgola[GOLA_REPODIR], wgolb & 7, verbosity, &sa, &svlist, &badga)) ;
+  if (!argc) _exit(fixall(wgola[GOLA_REPODIR], wgolb & 7, verbosity, &sa, &svlist, &badga, &gatmp)) ;
 
   for (unsigned int i = 0 ; i < argc ; i++)
   {
@@ -88,7 +89,7 @@ int main (int argc, char const **argv)
   }
   for (unsigned int i = 0 ; i < argc ; i++)
   {
-    int e = s6rc_repo_fixset(wgola[GOLA_REPODIR], argv[i], wgolb & 7, verbosity, &sa, &svlist, &badga) ;
+    int e = s6rc_repo_fixset(wgola[GOLA_REPODIR], argv[i], wgolb & 7, verbosity, &sa, &svlist, &badga, &gatmp) ;
     if (e) _exit(e) ;
   }
   _exit(0) ;

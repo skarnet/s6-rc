@@ -19,8 +19,6 @@
 
 int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, uint32_t n, stralloc *storage, genalloc *indices, uint32_t options)
 {
-  int swasnull = !storage->s ;
-  int gwasnull = !indices->s ;
   size_t sabase = storage->len ;
   size_t gabase = genalloc_len(size_t, indices) ;
 
@@ -67,9 +65,7 @@ int s6rc_repo_listdeps_internal (char const *repo, char const *const *services, 
  return 0 ;
 
  err:
-  if (gwasnull) genalloc_free(size_t, indices) ;
-  else genalloc_setlen(size_t, indices, gabase) ;
-  if (swasnull) stralloc_free(storage) ;
-  else storage->len = sabase ;
+  genalloc_setlen(size_t, indices, gabase) ;
+  storage->len = sabase ;
   return 111 ;
 }

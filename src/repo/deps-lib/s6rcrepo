@@ -1,3 +1,4 @@
+s6rc_repo_badpipeline.o
 s6rc_repo_badsub.o
 s6rc_repo_checkset.o
 s6rc_repo_cleanup.o

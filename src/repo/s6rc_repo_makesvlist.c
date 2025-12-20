@@ -43,8 +43,6 @@ int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genal
   size_t setlen = strlen(set) ;
   size_t sabase = sa->len ;
   size_t gabase = genalloc_len(s6rc_repo_sv, ga) ;
-  int sawasnull = !sa->s ;
-  int gawasnull = !genalloc_s(s6rc_repo_sv, ga) ;
   char subfn[repolen + setlen + 17] ;
 
   memcpy(subfn, repo, repolen) ;
@@ -60,7 +58,7 @@ int s6rc_repo_makesvlist (char const *repo, char const *set, stralloc *sa, genal
   return 1 ;
 
  err:
-  if (sawasnull) stralloc_free(sa) ; else sa->len = sabase ;
-  if (gawasnull) genalloc_free(s6rc_repo_sv, ga) ; else genalloc_setlen(s6rc_repo_sv, ga, gabase) ;
+  sa->len = sabase ;
+  genalloc_setlen(s6rc_repo_sv, ga, gabase) ;
   return 0 ;
 }

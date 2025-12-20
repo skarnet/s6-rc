@@ -177,7 +177,7 @@ static void print_producers_rec (uint32_t n)
     uint32_t m = db->producers[db->services[n].x.longrun.producers + i] ;
     print_producers_rec(m) ;
     if (buffer_puts(buffer_1, db->string + db->services[m].name) < 0
-     || buffer_put(buffer_1, " | ", 3) < 0
+     || buffer_put(buffer_1, "/", 1) < 0
      || buffer_puts(buffer_1, db->string + db->services[n].name) < 0
      || buffer_put(buffer_1, "\n", 1) < 0)
       strerr_diefu1sys(111, "write to stdout") ;
@@ -187,8 +187,7 @@ static void print_producers_rec (uint32_t n)
 static inline void print_pipeline (char const *name)
 {
   unsigned int n = resolve_service(name) ;
-  if (n >= db->nlong)
-    strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " does not represent a longrun") ;
+  if (n >= db->nlong) _exit(5) ;
   for (;;)
   {
     uint32_t j = db->services[n].x.longrun.consumer ;

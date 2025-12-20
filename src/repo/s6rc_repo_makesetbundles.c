@@ -64,7 +64,7 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
     }
     for (;;)
     {
-      int m, i = 0 ;
+      int e, i = 0 ;
       direntry *d ;
       errno = 0 ;
       d = readdir(dir) ;
@@ -73,14 +73,14 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
 
       sa.len = 0 ;
       genalloc_setlen(size_t, &ga, 0) ;
-      m = s6rc_repo_listcontents(repo, d->d_name, &sa, &ga) ;
-      if (m < 0)
+      e = s6rc_repo_listcontents(repo, d->d_name, &sa, &ga) ;
+      if (e)
       {
         dir_close(dir) ;
         goto err0 ;
       }
 
-      for (; i < m ; i++)
+      for (; i < genalloc_len(size_t, &ga) ; i++)
       {
         char const *x = sa.s + genalloc_s(size_t, &ga)[i] ;
         if (bsearch(x, masked, n, sizeof(char const *), &str_bcmp))
@@ -90,7 +90,7 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
           break ;
         }
       }
-      if (i < m) continue ;
+      if (i < genalloc_len(size_t, &ga)) continue ;
 
       size_t len = strlen(d->d_name) ;
       char target[16 + len] ;

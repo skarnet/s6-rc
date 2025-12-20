@@ -88,6 +88,20 @@ int main (int argc, char const *const *argv)
     }
   }
 
+  {
+    stralloc sa = STRALLOC_ZERO ;
+    genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
+    genalloc badga = GENALLOC_ZERO ;  /* uint32_t */
+    genalloc gatmp = GENALLOC_ZERO ;  /* size_t whatever */
+    int e = s6rc_repo_fixset(wgola[GOLA_REPODIR], argv[0], 8, verbosity, &sa, &svlist, &badga, &gatmp) ;
+    if (e == 1) strerr_diefu1x(1, "commit: found inconsistent dependencies") ;
+    if (e) _exit(e) ;
+    // genalloc_free(uint32_t, &badga) ;
+    // genalloc_free(s6rc_repo_sv, &svlist) ;
+    // genalloc_free(&gatmp) ;
+    // stralloc_free(&sa) ;
+  }
+
   size_t oldclen = S6RC_REPO_COMPILE_BUFLEN(strlen(wgola[GOLA_REPODIR]), strlen(argv[0])) ;
   char oldc[oldclen] ;
 

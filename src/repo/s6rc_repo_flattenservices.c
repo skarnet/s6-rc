@@ -19,8 +19,6 @@
 
 int s6rc_repo_flattenservices (char const *repo, char const *const *services, uint32_t n, stralloc *storage, genalloc *indices)
 {
-  int swasnull = !storage->s ;
-  int gwasnull = !indices->s ;
   size_t sabase = storage->len ;
   uint32_t gabase = genalloc_len(size_t, indices) ;
 
@@ -68,9 +66,7 @@ int s6rc_repo_flattenservices (char const *repo, char const *const *services, ui
  err2:
   strerr_warnfu1sys("index services") ;
  err:
-  if (gwasnull) genalloc_free(size_t, indices) ;
-  else genalloc_setlen(size_t, indices, gabase) ;
-  if (swasnull) stralloc_free(storage) ;
-  else storage->len = sabase ;
+  genalloc_setlen(size_t, indices, gabase) ;
+  storage->len = sabase ;
   return 111 ;
 }
