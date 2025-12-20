@@ -17,47 +17,52 @@ static inline int s6rc_repo_fixsub (char const *repo, char const *set, uint8_t s
   uint32_t gabase = genalloc_len(uint32_t, badga) ;
   uint32_t const *bads ;
   uint32_t badn ;
-  if (!s6rc_repo_badsub(repo, set, bysub + subind[sub], subn[sub], sub, options & 1 ? 2 : 1, byname, ntot, sa, badga)) return 0 ;
+  int e = 0 ;
+  if (!s6rc_repo_badsub(repo, set, bysub + subind[sub], subn[sub], sub, options & 1 ? 2 : 1, byname, ntot, sa, badga)) return 111 ;
   bads = genalloc_s(uint32_t, badga) ;
   badn = genalloc_len(uint32_t, badga) ;
-  if (!badn) return 1 ;
+  if (!badn) return 0 ;
 
   s6rc_repo_sv tomove[badn] ;
   for (uint32_t j = 0 ; j < badn ; j++)
   {
     tomove[j] = byname[bads[j]] ;
     if (verbosity >= 2)
-      strerr_warni("in set ", set, " of repository ", repo, ": ", options & 1 ? "up" : "down", "fixing service ", sa->s + tomove[j].pos, " from ", s6rc_repo_subnames[tomove[j].sub], " to ", s6rc_repo_subnames[sub]) ;
+      strerr_warni(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": need to ", options & 1 ? "up" : "down", "fix service ", sa->s + tomove[j].pos, " from ", s6rc_repo_subnames[tomove[j].sub], " to ", s6rc_repo_subnames[sub]) ;
     if (tomove[j].sub == 0 && verbosity)
-      strerr_warnw("service ", sa->s + tomove[j].pos, " is being automatically unmasked by an upfix to ", s6rc_repo_subnames[sub]) ;
+      strerr_warnw(options & 4 ? "(dry run) " : "", "service ", sa->s + tomove[j].pos, " will automatically be unmasked by an upfix to ", s6rc_repo_subnames[sub]) ;
     if (tomove[j].sub == 3)
     {
       if (!(options & 2))
       {
-        strerr_warnf("in set ", set, " of repository ", repo, ": service ", sa->s + tomove[j].pos, " is marked as essential and cannot be downfixed. If you are sure of yourself, try --force-essential") ;
-        goto err ;
+        if (options & 4)
+          strerr_warnw(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": service ", sa->s + tomove[j].pos, " is marked as essential and cannot be downfixed. You will need --force-essential") ;
+        else
+        {
+          strerr_warnf(options & 4 ? "(dry run) " : "", "in set ", set, " of repository ", repo, ": service ", sa->s + tomove[j].pos, " is marked as essential and cannot be downfixed. If you are sure of yourself, try --force-essential") ;
+          e = 1 ;
+          goto err ;
+        }
       }
-      if (verbosity)
-      strerr_warnw("service ", sa->s + tomove[j].pos, " is being automatically marked non-essential by a downfix to ", s6rc_repo_subnames[sub]) ;
+      else if (verbosity)
+      strerr_warnw(options & 4 ? "(dry run) " : "", "service ", sa->s + tomove[j].pos, " will automatically be marked non-essential by a downfix to ", s6rc_repo_subnames[sub]) ;
     }
   }
-  if (!s6rc_repo_moveservices(repo, set, tomove, badn, sub, sa->s, verbosity)) goto err ;
-  for (uint32_t j = 0 ; j < badn ; j++) byname[bads[j]].sub = sub ;
-  genalloc_setlen(uint32_t, badga, gabase) ;
-  sa->len = sabase ;
-  return 1 ;
+  if (!(options & 4))
+  {
+    if (!s6rc_repo_moveservices(repo, set, tomove, badn, sub, sa->s, verbosity)) { e = 111 ; goto err ; }
+    for (uint32_t j = 0 ; j < badn ; j++) byname[bads[j]].sub = sub ;
+  }
 
  err:
   genalloc_setlen(uint32_t, badga, gabase) ;
   sa->len = sabase ;
-  return 0 ;
+  return e ;
 }
 
 int s6rc_repo_fixset (char const *repo, char const *set, uint32_t options, unsigned int verbosity, stralloc *sa, genalloc *svlist, genalloc *badga)
 {
-  int sawasnull = !sa->s ;
-  int svwasnull = !genalloc_s(s6rc_repo_sv, svlist) ;
-  int gawasnull = !genalloc_s(uint32_t, badga) ;
+  int e = 0 ;
   size_t sabase = sa->len ;
   uint32_t svbase = genalloc_len(s6rc_repo_sv, svlist) ;
   uint32_t gabase = genalloc_len(uint32_t, badga) ;
@@ -68,8 +73,8 @@ int s6rc_repo_fixset (char const *repo, char const *set, uint32_t options, unsig
   if (!s6rc_repo_makesvlist(repo, set, sa, svlist, subind)) return 0 ;
   byname = genalloc_s(s6rc_repo_sv, svlist) ;
   ntot = genalloc_len(s6rc_repo_sv, svlist) ;
-  if (!ntot) return 1 ;
-  for (uint8_t i = 0 ; i < 4 ; i++) sublen[i] = (i == 3 ? ntot : subind[i+1]) - subind[i] ;
+  if (!ntot) return 0 ;
+  for (uint8_t sub = 0 ; sub < 4 ; sub++) sublen[sub] = (sub == 3 ? ntot : subind[sub+1]) - subind[sub] ;
 
   char const *bysub[ntot] ;
   char bysub_storage[sa->len - sabase] ;
@@ -77,20 +82,14 @@ int s6rc_repo_fixset (char const *repo, char const *set, uint32_t options, unsig
   for (uint32_t i = 0 ; i < ntot ; i++) bysub[i] = bysub_storage + byname[i].pos - sabase ;
   qsortr(byname, ntot, sizeof(s6rc_repo_sv), &s6rc_repo_sv_cmpr, sa->s) ;
 
-  for (uint8_t i = 0 ; i < 4 ; i++) if (sublen[i])
+  for (uint8_t sub = 0 ; sub < 4 ; sub++) if (sublen[sub])
   {
-    if (!s6rc_repo_fixsub(repo, set, i, byname, bysub, ntot, options, subind, sublen, verbosity, sa, badga))
-      goto err ;
+    e = s6rc_repo_fixsub(repo, set, sub, byname, bysub, ntot, options, subind, sublen, verbosity, sa, badga) ;
+    if (e) break ;
   }
 
   genalloc_setlen(uint32_t, badga, gabase) ;
   genalloc_setlen(s6rc_repo_sv, svlist, svbase) ;
   sa->len = sabase ;
-  return 1 ;
-
- err:
-  if (gawasnull) genalloc_free(uint32_t, badga) ; else genalloc_setlen(uint32_t, badga, gabase) ;
-  if (svwasnull) genalloc_free(s6rc_repo_sv, svlist) ; else genalloc_setlen(s6rc_repo_sv, svlist, svbase) ;
-  if (sawasnull) stralloc_free(sa) ; else sa->len = sabase ;
-  return 0 ;
+  return e ;
 }

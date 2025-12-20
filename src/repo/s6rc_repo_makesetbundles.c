@@ -24,14 +24,14 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
   stralloc sa = STRALLOC_ZERO ;
   genalloc ga = GENALLOC_ZERO ;
   int n ;
-  char src[repolen + 19] ;
+  char src[repolen + 18] ;
   char dst[repolen + 17 + setlen] ;
   memcpy(dst, repo, repolen) ;
   memcpy(dst + repolen, "/sources/", 9) ;
   memcpy(dst + repolen + 9, set, setlen) ;
   memcpy(dst + repolen + 9 + setlen, "/bundle", 8) ;
-  memcpy(src, dst, repolen + 10) ;
-  memcpy(src + repolen + 10, ".bundles", 9) ;
+  memcpy(src, dst, repolen + 9) ;
+  memcpy(src + repolen + 9, ".bundles", 9) ;
   rm_rf_tmp(dst, &sa) ;
 
   n = s6rc_repo_listsub(repo, set, s6rc_repo_subnames[0], &sa, &ga) ;
@@ -114,10 +114,27 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
       goto err0 ;
     }
   }
-  else if (!hiercopy_tmp(src, dst, &sa))
+  else
   {
-    strerr_warnfu4sys("recursively copy ", src, " to ", dst) ;
-    goto err0 ;
+    int r ;
+    char realsrc[repolen + 28] ;
+    memcpy(realsrc, src, repolen + 9) ;
+    r = readlink(src, realsrc + repolen + 9, 17) ;
+    if (r == -1)
+    {
+      strerr_warnfu2sys("readlink ", src) ;
+      goto err0 ;
+    }
+    if (r != 16)
+    {
+      strerr_warnf2x("invalid symlink for ", src) ;
+      goto err0 ;
+    }
+    if (!hiercopy_tmp(realsrc, dst, &sa))
+    {
+      strerr_warnfu4sys("recursively copy ", realsrc, " to ", dst) ;
+      goto err0 ;
+    }
   }
 
   stralloc_free(&sa) ;

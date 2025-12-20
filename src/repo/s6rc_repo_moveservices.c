@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <stdio.h>
 
+#include <skalibs/posixplz.h>
 #include <skalibs/strerr.h>
 
 #include <s6-rc/repo.h>
@@ -55,6 +56,11 @@ int s6rc_repo_moveservices (char const *repo, char const *set, s6rc_repo_sv cons
     {
       strerr_warnt10x("repository ", repo, ", set ", set, ", from subset ", s6rc_repo_subnames[services[i].sub], " to subset ", s6rc_repo_subnames[newsub], ": successfully moved service ", storage + services[i].pos) ;
     }
+  }
+  if (n)
+  {
+    memcpy(oldfn + repolen + 10 + setlen, ".stamp", 7) ;
+    if (!touch(oldfn)) strerr_warnwu2sys("touch ", oldfn) ;
   }
   return 1 ;
 }

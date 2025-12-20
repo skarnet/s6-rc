@@ -1,0 +1,101 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Language" content="en" />
+    <title>s6-rc: the s6-rc-set-fix program</title>
+    <meta name="Description" content="s6-rc: the s6-rc-set-fix program" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-fix repo set check fix consistency dependencies" />
+    <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
+  </head>
+<body>
+
+<p>
+<a href="index.html">s6-rc</a><br />
+<a href="//skarnet.org/software/">Software</a><br />
+<a href="//skarnet.org/">skarnet.org</a>
+</p>
+
+<h1> The s6-rc-set-fix program </h1>
+
+<p>
+ s6-rc-set-fix checks one or more <a href="repodefs.html#set">sets</a> of services for
+dependency inconsistencies, and fixes them.
+</p>
+
+<h2> Interface </h2>
+
+<pre>
+     s6-rc-set-fix [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -u | -d ] [ -E | -e ] [ -n ] [ <em>sets...</em> ]
+</pre>
+
+<ul>
+ <li> s6-rc-set-fix checks all the sets listed in <em>sets...</em> for dependency inconsistencies
+that may prevent <a href="s6-rc-set-commit.html">s6-rc-set-commit</a> from succeeding. If
+<em>sets...</em> is empty, all the sets in the repository are checked. </li>
+ <li> s6-rc-set-fix prints what it finds and changes the <a href="repodefs.html#sub">subs</a>
+of impacted services so the resulting set is consistent. </li>
+</ul>
+
+<h2> Options </h2>
+
+<dl>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less verbose. The default is <strong>1</strong>, which means
+that error messages and warnings will be written to stderr. 0 means that only
+error messages will be written, and 2 or more adds informational messages.
+Dependency inconsistencies are warnings, so will be displayed at the default
+level (but not at 0); more details can be obtained by increasing the verbosity. </dd>
+
+ <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dd> Use the repository in <em>repo</em>, which must exist. Default is
+<strong>/var/lib/s6-rc/repository</strong>.
+ </dd>
+
+ <dt> -u, --fix-up </dt>
+ <dd> When a dependency inconsistency is found, fix it by bringing in <em>more</em>
+services into the starting bundle. If <tt>B</tt> depends on <tt>A</tt>, <tt>B</tt> is
+<em>active</em> but <tt>A</tt> is only <em>usable</em> or even <em>masked</em>, fix
+the situation by making <tt>A</tt> <em>active</em>. This means that more services
+will be started at boot time than the set initially declared. </dd>
+
+ <dt> -d, --fix-down </dt>
+ <dd> When a dependency inconsistency is found, fix it by bringing in <em>fewer</em>
+services into the starting bundle. If <tt>B</tt> depends on <tt>A</tt>, <tt>B</tt> is
+<em>active</em> but <tt>A</tt> is only <em>usable</em> or even <em>masked</em>, fix
+the situation by making <tt>B</tt> <em>usable</em> (if <tt>A</tt> is <em>usable</em>)
+or <em>masked</em> (if <tt>A</tt> is <em>masked</em>). This means that fewer services
+will be started at boot time than the set initially declared. This is the default. </dd>
+
+ <dt> -E, --no-force-essentials </dt>
+ <dd> If fixing a dependency inconsistency would imply moving a service down from the
+<em>always</em> sub, or up to the <em>always</em> sub, when its service definition
+directory does not declare it as essential, do not attempt fixing it and fail the operation.
+This is the default. If such a situation occurs, it means that the set of services
+provided in the <a href="repodefs.html#sub">stores</a> is not consistent, and that
+is what should be fixed. </dd>
+
+ <dt> -e, --force-essentials </dt>
+ <dd> If fixing a dependency inconsistency would imply moving a service down from the
+<em>always</em> sub, or up to the <em>always</em> sub, when its service definition
+directory does not declare it as essential, do it, even though it goes against a
+service definition in a store. This can help you keep a service set consistent
+until the store is fixed. </dd>
+
+ <dt> -n, --dry-run </dt>
+ <dd> Check for inconsistencies, but only print what would be needed to fix the set;
+do not perform the fix. </dd>
+</dl>
+
+<h2> Exit codes </h2>
+
+<dl>
+ <dt> 0 </dt> <dd> Success. </dd>
+ <dt> 1 </dt> <dd> A needed modification could not be made because the <tt>-e</tt> option was not given. </dd>
+ <dt> 100 </dt> <dd> Incorrect usage. </dd>
+ <dt> 102 </dt> <dd> Inconsistent repository. </dd>
+ <dt> 111 </dt> <dd> System call failed. </dd>
+</dl>
+
+</body>
+</html>

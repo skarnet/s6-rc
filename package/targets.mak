@@ -14,6 +14,7 @@ s6-rc-set-new \
 s6-rc-set-copy \
 s6-rc-set-delete \
 s6-rc-set-change \
+s6-rc-set-fix \
 s6-rc-set-commit \
 s6-rc-set-install \
 

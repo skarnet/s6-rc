@@ -119,6 +119,8 @@ int main (int argc, char const *const *argv)
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
   if (argc < 2) dieusage() ;
+  if (!strcmp(argv[0], argv[1]))
+    strerr_dief1x(100, "source and destination sets are the same") ;
   s6rc_repo_sanitize_setname(argv[0]) ;
   s6rc_repo_sanitize_setname(argv[1]) ;
 
