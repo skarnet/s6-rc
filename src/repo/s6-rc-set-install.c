@@ -1,7 +1,10 @@
 /* ISC license. */
 
 #include <skalibs/bsdsnowflake.h>
+#include <skalibs/nonposix.h>
 
+#include <skalibs/stat.h>
+#include <time.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -9,7 +12,6 @@
 #include <errno.h>
 
 #include <skalibs/uint64.h>
-#include <skalibs/stat.h>
 #include <skalibs/types.h>
 #include <skalibs/posixplz.h>
 #include <skalibs/prog.h>
@@ -44,23 +46,22 @@ enum gola_e
   GOLA_N
 } ;
 
-static gol_bool const rgolb[] =
-{
-  { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
-  { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD }
-} ;
-
-static gol_arg const rgola[] =
-{
-  { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
-  { .so = 'c', .lo = "bootdb", .i = GOLA_BOOTDB },
-  { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
-  { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
-  { .so = 'f', .lo = "conversion-file", .i = GOLA_CONVFILE }
-} ;
-
 int main (int argc, char const *const *argv)
 {
+  static gol_bool const rgolb[] =
+  {
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
+    { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD }
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+    { .so = 'c', .lo = "bootdb", .i = GOLA_BOOTDB },
+    { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
+    { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
+    { .so = 'f', .lo = "conversion-file", .i = GOLA_CONVFILE }
+  } ;
+
   int fdlock ;
   unsigned int verbosity = 1 ;
   char const *wgola[GOLA_N] = { 0 } ;
@@ -78,6 +79,10 @@ int main (int argc, char const *const *argv)
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
+  if (wgola[GOLA_BOOTDB][0] != '/')
+    strerr_dief2x(100, "bootdb", " needs to be an absolute path") ;
+  if (wgola[GOLA_LIVEDIR][0] != '/')
+    strerr_dief2x(100, "livedir", " needs to be an absolute path") ;
   if (!argc) dieusage() ;
   s6rc_repo_sanitize_setname(argv[0]) ;
 
@@ -122,13 +127,19 @@ int main (int argc, char const *const *argv)
     memcpy(dstfn + sa.len + 1, cfull + repolen + 10, l+1) ;
     l = 0 ;
     {    
-      struct stat st ;
-      if (stat(dstfn, &st) == -1)
+      struct stat stsource, stdest ;
+      if (stat(cfull, &stsource) == -1) strerr_diefu2sys(111, "stat ", cfull) ;
+      if (stat(dstfn, &stdest) == -1)
       {
         if (errno != ENOENT)
           strerr_diefu2sys(111, "stat ", dstfn) ;
       }
-      else strerr_dief2x(102, dstfn, " already exists") ;
+      else if (stdest.st_mtim.tv_sec > stsource.st_mtim.tv_sec || (stdest.st_mtim.tv_sec == stsource.st_mtim.tv_sec && stdest.st_mtim.tv_nsec >= stsource.st_mtim.tv_nsec))
+      {
+        strerr_warni(0, "set ", argv[0], " is already installed as ", dstfn) ;
+        _exit(0) ;
+      }
+      else strerr_dief(102, "huh? ", dstfn, " already exists") ;
     }
     {
       size_t llen = strlen(wgola[GOLA_LIVEDIR]) ;
@@ -206,8 +217,8 @@ int main (int argc, char const *const *argv)
       fmt[int_fmt(fmt, r)] = 0 ;
       strerr_dief4x(r, uargv[0], " exited with code ", fmt, " (live database switch was performed") ;
     }
-    if (!atomic_symlink4(dstfn + sa.len + 1, argv[1], 0, 0))
-      strerr_diefu6sys(111, "symlink ", dstfn + sa.len + 1, " to ", argv[1], " (live database switch was performed)", " (update that link manually or next boot might fail)") ;
+    if (!atomic_symlink4(dstfn + sa.len + 1, wgola[GOLA_BOOTDB], 0, 0))
+      strerr_diefu6sys(111, "symlink ", dstfn + sa.len + 1, " to ", wgola[GOLA_BOOTDB], " (live database switch was performed)", " (update that link manually or next boot might fail)") ;
   }
   // stralloc_free(&sa) ;
   _exit(0) ;

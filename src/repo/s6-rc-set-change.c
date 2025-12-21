@@ -42,53 +42,6 @@ struct subname_s
   uint8_t sub ;
 } ;
 
-static gol_bool const rgolb[] =
-{
-  { .so = 'E', .lo = "no-force-essential", .clear = GOLB_FORCE_ESSENTIAL, .set = 0 },
-  { .so = 'e', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
-  { .so = 'f', .lo = "ignore-dependencies", .clear = 0, .set = GOLB_IGNORE_DEPENDENCIES },
-  { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN }
-} ;
-
-static gol_arg const rgola[] =
-{
-  { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
-  { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
-  { .so = 'I', .lo = "if-dependencies-found", .i = GOLA_FORCELEVEL }
-} ;
-
-static struct subname_s const accepted_forcelevels[] =
-{
-  { .name = "fail", .sub = 0 },
-  { .name = "pull", .sub = 2 },
-  { .name = "warn", .sub = 1 }
-} ;
-
-static uint64_t wgolb = 0 ;
-
-static struct subname_s const accepted_subs[] =
-{
-  { .name = "activate", .sub = 2 },
-  { .name = "active", .sub = 2 },
-  { .name = "always", .sub = 3 },
-  { .name = "deactivate", .sub = 1 },
-  { .name = "disable", .sub = 1 },
-  { .name = "disabled", .sub = 1 },
-  { .name = "enable", .sub = 2 },
-  { .name = "enabled", .sub = 2 },
-  { .name = "essential", .sub = 3 },
-  { .name = "inactive", .sub = 1 },
-  { .name = "latent", .sub = 1 },
-  { .name = "make-essential", .sub = 3 },
-  { .name = "mask", .sub = 0 },
-  { .name = "masked", .sub = 0 },
-  { .name = "onboot", .sub = 2 },
-  { .name = "suppress", .sub = 0 },
-  { .name = "unmask", .sub = 1 },
-  { .name = "unmasked", .sub = 1 },
-  { .name = "usable", .sub = 1 }
-} ;
-
 static int subname_cmp (void const *a, void const *b)
 {
   return strcmp((char const *)a, ((struct subname_s const *)b)->name) ;
@@ -96,14 +49,56 @@ static int subname_cmp (void const *a, void const *b)
 
 int main (int argc, char const *const *argv)
 {
+  static gol_bool const rgolb[] =
+  {
+    { .so = 'E', .lo = "no-force-essential", .clear = GOLB_FORCE_ESSENTIAL, .set = 0 },
+    { .so = 'e', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
+    { .so = 'f', .lo = "ignore-dependencies", .clear = 0, .set = GOLB_IGNORE_DEPENDENCIES },
+    { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN }
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+    { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
+    { .so = 'I', .lo = "if-dependencies-found", .i = GOLA_FORCELEVEL }
+  } ;
+  static struct subname_s const accepted_forcelevels[] =
+  {
+    { .name = "fail", .sub = 0 },
+    { .name = "pull", .sub = 2 },
+    { .name = "warn", .sub = 1 }
+  } ;
+  static struct subname_s const accepted_subs[] =
+  {
+    { .name = "activate", .sub = 2 },
+    { .name = "active", .sub = 2 },
+    { .name = "always", .sub = 3 },
+    { .name = "deactivate", .sub = 1 },
+    { .name = "disable", .sub = 1 },
+    { .name = "disabled", .sub = 1 },
+    { .name = "enable", .sub = 2 },
+    { .name = "enabled", .sub = 2 },
+    { .name = "essential", .sub = 3 },
+    { .name = "inactive", .sub = 1 },
+    { .name = "latent", .sub = 1 },
+    { .name = "make-essential", .sub = 3 },
+    { .name = "mask", .sub = 0 },
+    { .name = "masked", .sub = 0 },
+    { .name = "onboot", .sub = 2 },
+    { .name = "suppress", .sub = 0 },
+    { .name = "unmask", .sub = 1 },
+    { .name = "unmasked", .sub = 1 },
+    { .name = "usable", .sub = 1 }
+  } ;
   stralloc storage = STRALLOC_ZERO ;
   genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
   genalloc indices = GENALLOC_ZERO ;  /* size_t then uint32_t */
-  genalloc gatmp = GENALLOC_ZERO ;  /* size_t */
+  genalloc gatmp = GENALLOC_ZERO ;  /* size_t whatever */
   int fdlock ;
   unsigned int verbosity = 1 ;
   unsigned int forcelevel = 1 ;
   char const *wgola[GOLA_N] = { 0 } ;
+  uint64_t wgolb = 0 ;
   unsigned int golc ;
   struct subname_s *newsub ;
   size_t max = 0, sabase ;
@@ -126,7 +121,7 @@ int main (int argc, char const *const *argv)
   if (argc < 3) dieusage() ;
   s6rc_repo_sanitize_setname(argv[0]) ;
   newsub = bsearch(argv[1], accepted_subs, sizeof(accepted_subs)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
-  if (!newsub) strerr_dief2x(100, "unrecognized state change directive:", argv[1]) ;
+  if (!newsub) strerr_dief2x(100, "unrecognized state change directive: ", argv[1]) ;
   if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
     strerr_diefu1x(100, "artificially mark a service as essential without --force-essential") ;
   for (unsigned int i = 2 ; i < argc ; i++) s6rc_repo_sanitize_svname(argv[i]) ;

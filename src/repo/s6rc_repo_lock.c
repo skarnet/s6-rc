@@ -13,7 +13,7 @@ int s6rc_repo_lock (char const *repo, int w)
   char fn[repolen + 13] ;
   memcpy(fn, repo, repolen) ;
   memcpy(fn + repolen, "/lock", 6) ;
-  fd = openc_write(fn) ;
+  fd = w ? openc_write(fn) : openc_read(fn) ;
   if (fd == -1) return -1 ;
   if (fd_lock(fd, w, 0) < 1) return -1 ;
   return fd ;
