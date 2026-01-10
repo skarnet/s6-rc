@@ -25,7 +25,7 @@ Fine tuning of the installation directories:
   --includedir=DIR              C header files [PREFIX/include]
   --sysconfdir=DIR              global configuration files [PREFIX/etc]
   --pkgconfdir=DIR              pkg-config .pc files [PREFIX/lib/pkgconfig]
-  --bootdb=PATH                 default path for the boot database [/etc/s6-rc/compiled/current]
+  --bootdb=PATH                 default path for the boot database [SYSCONFDIR/s6-rc/compiled/current]
   --livedir=DIR                 default live directory [/run/s6-rc]
   --repodir=DIR                 default repo directory [/var/lib/s6-rc/repository]
 
@@ -172,7 +172,7 @@ deplibpath=''
 vpaths=''
 vpathd=''
 build=
-bootdb=/etc/s6-rc/compiled/current
+bootdb='$sysconfdir/etc/s6-rc/compiled/current'
 livedir=/run/s6-rc
 repodir=/var/lib/s6-rc/repository
 defaultbundle=default
@@ -246,7 +246,7 @@ fi
 
 # Expand installation directories
 stripdir prefix
-for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir pkgconfdir sysdeps sproot livedir repodir ; do
+for i in exec_prefix dynlibdir libexecdir bindir libdir includedir sysconfdir pkgconfdir sysdeps sproot bootdb livedir repodir ; do
   eval tmp=\${$i}
   eval $i=$tmp
   stripdir $i
