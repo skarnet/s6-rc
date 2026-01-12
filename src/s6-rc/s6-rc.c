@@ -6,19 +6,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdlib.h>
 
 #include <skalibs/posixplz.h>
-#include <skalibs/types.h>
-#include <skalibs/cdb.h>
-#include <skalibs/sgetopt.h>
-#include <skalibs/buffer.h>
-#include <skalibs/strerr.h>
-#include <skalibs/tai.h>
-#include <skalibs/sig.h>
-#include <skalibs/cspawn.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/selfpipe.h>
-#include <skalibs/iopause.h>
+#include <skalibs/envexec.h>
+#include <skalibs/stddjb.h>
 #include <skalibs/unix-transactional.h>
 
 #include <s6/config.h>
@@ -27,7 +19,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -b ] [ -u | -d | -D ] [ -p ] [ -a ] help|list|listall|diff|start|stop|change [ servicenames... ]"
+#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -b ] [ -E | -e ] [ -u | -d | -D ] [ -p ] [ -a ] help|list|listall|diff|start|stop|change [ servicenames... ]"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 typedef struct pidindex_s pidindex_t ;
@@ -37,6 +29,43 @@ struct pidindex_s
   unsigned int i ;
 } ;
 
+enum what_e
+{
+  WHAT_HELP,
+  WHAT_LIST,
+  WHAT_LISTALL,
+  WHAT_DIFF,
+  WHAT_CHANGE,
+  WHAT_START,
+  WHAT_STOP,
+} ;
+
+struct what_s
+{
+  char const *s ;
+  enum what_e e ;
+} ;
+
+enum golb_e
+{
+  GOLB_DOWN = 0x01,
+  GOLB_HIDEESSENTIALS = 0x02,
+  GOLB_PRUNE = 0x04,
+  GOLB_SELECTLIVE = 0x08,
+  GOLB_BLOCK = 0x10,
+  GOLB_NOLOCK = 0x80
+} ;
+
+enum gola_e
+{
+  GOLA_VERBOSITY,
+  GOLA_DRYRUN,
+  GOLA_TIMEOUT,
+  GOLA_LIVEDIR,
+  GOLA_N
+} ;
+
+static uint64_t wgolb = 0 ;
 static unsigned int verbosity = 1 ;
 static char const *live = S6RC_LIVEDIR ;
 static size_t livelen ;
@@ -46,9 +75,8 @@ static s6rc_db_t *db ;
 static unsigned int n ;
 static unsigned char *state ;
 static unsigned int *pendingdeps ;
-static tain deadline ;
+static tain deadline = TAIN_INFINITE_RELATIVE ;
 static int lameduck = 0 ;
-static int forcestop = 0 ;
 static char dryrun[UINT_FMT] = "" ;
 
 static inline void announce (void)
@@ -66,13 +94,15 @@ static inline void announce (void)
 
 static inline int print_services (void)
 {
-  unsigned int i = 0 ;
-  for (; i < n ; i++)
+  for (unsigned int i = 0 ; i < n ; i++)
+  {
+    if (wgolb & GOLB_HIDEESSENTIALS && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL) continue ;
     if (state[i] & 2)
     {
       if (buffer_puts(buffer_1, db->string + db->services[i].name) < 0
        || buffer_put(buffer_1, "\n", 1) < 0) goto err ;
     }
+  }
   if (!buffer_flush(buffer_1)) goto err ;
   return 0 ;
 
@@ -218,13 +248,13 @@ static inline void success_longrun (unsigned int i, int h)
     memcpy(fn + livelen + 13 + svdlen, "/down", 6) ;
     if (h)
     {
-      if (unlink(fn) < 0 && verbosity)
+      if (unlink(fn) == -1 && verbosity)
         strerr_warnwu2sys("unlink ", fn) ;
     }
     else
     {
       int fd = open_trunc(fn) ;
-      if (fd < 0)
+      if (fd == -1)
       {
         if (verbosity)
           strerr_warnwu2sys("touch ", fn) ;
@@ -263,7 +293,7 @@ static void examine (unsigned int i, int h)
         strerr_warni4x("service ", name, ": already ", h ? "up" : "down") ;
       broadcast_success(i, h) ;
     }
-    else if (!h && !forcestop && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL)
+    else if (!h && !(wgolb & GOLB_HIDEESSENTIALS) && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL)
     {
       if (verbosity)
         strerr_warnw3x("service ", name, " is marked as essential, not stopping it") ;
@@ -427,29 +457,21 @@ static void invert_selection (void)
   while (i--) state[i] ^= 2 ;
 }
 
-static inline unsigned int lookup (char const *const *table, char const *command)
+static inline enum what_e parse_command (char const *command)
 {
-  unsigned int i = 0 ;
-  for (; table[i] ; i++) if (!strcmp(command, table[i])) break ;
-  return i ;
-}
-
-static inline unsigned int parse_command (char const *command)
-{
-  static char const *const command_table[] =
+  static struct what_s const command_table[] =
   {
-    "help",
-    "list",
-    "listall",
-    "diff",
-    "change",
-    "start",
-    "stop",
-    0
+    { .s = "change", .e = WHAT_CHANGE },
+    { .s = "diff", .e = WHAT_DIFF },
+    { .s = "help", .e = WHAT_HELP },
+    { .s = "list", .e = WHAT_LIST },
+    { .s = "listall", .e = WHAT_LISTALL },
+    { .s = "start", .e = WHAT_START },
+    { .s = "stop", .e = WHAT_STOP },
   } ;
-  unsigned int i = lookup(command_table, command) ;
-  if (!command_table[i]) dieusage() ;
-  return i ;
+  struct what_s const *p = bsearch(command, command_table, sizeof(command_table)/sizeof(struct what_s), sizeof(struct what_s), &stringkey_bcmp) ;
+  if (!p) strerr_dief2x(100, "unknown command: ", command) ;
+  return p->e ;
 }
 
 static inline void print_help (void)
@@ -466,56 +488,66 @@ static inline void print_help (void)
 
 int main (int argc, char const *const *argv)
 {
-  int up = 1, prune = 0, selectlive = 0, takelocks = 1, blocking = 0 ;
-  unsigned int what ;
-  PROG = "s6-rc" ;
+  static gol_bool const rgolb[] =
   {
-    unsigned int t = 0 ;
-    subgetopt l = SUBGETOPT_ZERO ;
-    for (;;)
-    {
-      int opt = subgetopt_r(argc, argv, "v:n:t:l:uDdpaXb", &l) ;
-      if (opt == -1) break ;
-      switch (opt)
-      {
-        case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
-        case 'n' :
-        {
-          unsigned int d ;
-          if (!uint0_scan(l.arg, &d)) dieusage() ;
-          dryrun[uint_fmt(dryrun, d)] = 0 ;
-          break ;
-        }
-        case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
-        case 'l' : live = l.arg ; break ;
-        case 'u' : up = 1 ; break ;
-        case 'D' : forcestop = 1 ;
-        case 'd' : up = 0 ; break ;
-        case 'p' : prune = 1 ; break ;
-        case 'a' : selectlive = 1 ; break ;
-        case 'X' : takelocks = 0 ; break ;
-        case 'b' : blocking = 1 ; break ;
-        default : dieusage() ;
-      }
-    }
-    argc -= l.ind ; argv += l.ind ;
-    if (t) tain_from_millisecs(&deadline, t) ;
-    else deadline = tain_infinite_relative ;
+    { .so = 'u', .lo = "up", .clear = GOLB_DOWN, .set = 0 },
+    { .so = 'd', .lo = "down", .clear = 0, .set = GOLB_DOWN },
+    { .so = 'D', .lo = "all-down", .clear = 0, .set = GOLB_DOWN | GOLB_HIDEESSENTIALS },
+    { .so = 'p', .lo = "prune", .clear = 0, .set = GOLB_PRUNE },
+    { .so = 'a', .lo = "add", .clear = 0, .set = GOLB_SELECTLIVE },
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
+    { .so = 'E', .lo = "with-essentials", .clear = GOLB_HIDEESSENTIALS, .set = 0 },
+    { .so = 'e', .lo = "without-essentials", .clear = 0, .set = GOLB_HIDEESSENTIALS },
+    { .so = 'X', .lo = "no-lock", .clear = 0, .set = GOLB_NOLOCK },
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+    { .so = 'n', .lo = "dry-run", .i = GOLA_DRYRUN },
+    { .so = 't', .lo = "timeout", .i = GOLA_TIMEOUT },
+    { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
+  } ;
+  char const *wgola[GOLA_N] = { 0 } ;
+  enum what_e what ;
+  PROG = "s6-rc" ;
+
+  {
+    unsigned int golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+    argc -= golc ; argv += golc ;
   }
+
+  if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
+    strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+  if (wgola[GOLA_DRYRUN])
+  {
+    unsigned int d ;
+    if (!uint0_scan(wgola[GOLA_DRYRUN], &d))
+      strerr_dief1x(100, "dry-run must be an unsigned integer") ;
+    dryrun[uint_fmt(dryrun, d)] = 0 ;
+  }
+  if (wgola[GOLA_TIMEOUT])
+  {
+    unsigned int t ;
+    if (!uint0_scan(wgola[GOLA_TIMEOUT], &t))
+      strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+    if (t) tain_from_millisecs(&deadline, t) ;
+  }
+  if (wgola[GOLA_LIVEDIR]) live = wgola[GOLA_LIVEDIR] ;
+
   if (!argc) dieusage() ;
   what = parse_command(*argv++) ;
-  if (!what)
+  if (what == WHAT_HELP)
   {
     print_help() ;
-    return 0 ;
+    _exit(0) ;
   }
-  if (what == 5)
+  if (what == WHAT_START)
   {
-    what = 4 ; up = 1 ; prune = 0 ;
+    what = WHAT_CHANGE ; wgolb &= ~(GOLB_DOWN | GOLB_PRUNE) ;
   }
-  else if (what == 6)
+  else if (what == WHAT_STOP)
   {
-    what = 4 ; up = 0 ; prune = 0 ;
+    what = WHAT_CHANGE ; wgolb &= ~GOLB_PRUNE ; wgolb |= GOLB_DOWN ;
   }
 
   livelen = strlen(live) ;
@@ -531,10 +563,10 @@ int main (int argc, char const *const *argv)
 
    /* Take the locks on live and compiled */
 
-    if (takelocks)
+    if (!(wgolb & GOLB_NOLOCK))
     {
       int livelock, compiledlock ;
-      if (!s6rc_lock(live, 1 + (what >= 4), &livelock, dbfn, 1, &compiledlock, blocking))
+      if (!s6rc_lock(live, 1 + (what >= 4), &livelock, dbfn, 1, &compiledlock, !!(wgolb & GOLB_BLOCK)))
         strerr_diefu1sys(111, "take locks") ;
       if (coe(livelock) < 0)
         strerr_diefu3sys(111, "coe ", live, "/lock") ;
@@ -595,7 +627,7 @@ int main (int argc, char const *const *argv)
 
      /* s6-rc diff */
 
-      if (what == 3) return print_diff() ;
+      if (what == WHAT_DIFF) _exit(print_diff()) ;
 
 
      /* Resolve the args and add them to the selection */
@@ -630,7 +662,7 @@ int main (int argc, char const *const *argv)
 
      /* Add live state to selection */
 
-      if (selectlive)
+      if (wgolb & GOLB_SELECTLIVE)
       {
         unsigned int i = n ;
         while (i--) if (state[i] & 1) state[i] |= 2 ;
@@ -639,18 +671,18 @@ int main (int argc, char const *const *argv)
 
      /* Print the selection before closure */
 
-      if (what == 1)
+      if (what == WHAT_LIST)
       {
-        if (!up) invert_selection() ;
-        return print_services() ;
+        if (wgolb & GOLB_DOWN) invert_selection() ;
+        _exit(print_services()) ;
       }
 
-      s6rc_graph_closure(db, state, 1, up) ;
+      s6rc_graph_closure(db, state, 1, !(wgolb & GOLB_DOWN)) ;
 
 
      /* Print the selection after closure */
 
-      if (what == 2) return print_services() ;
+      if (what == WHAT_LISTALL) _exit(print_services()) ;
 
       tain_now_set_stopwatch_g() ;
       tain_add_g(&deadline, &deadline) ;
@@ -658,7 +690,9 @@ int main (int argc, char const *const *argv)
 
      /* Perform a state change */
 
-      if (selfpipe_init() == -1) strerr_diefu1sys(111, "init selfpipe") ;
+      if (selfpipe_init() == -1)
+        strerr_diefu1sys(111, "init selfpipe") ;
+
       {
         sigset_t set ;
         sigemptyset(&set) ;
@@ -669,16 +703,16 @@ int main (int argc, char const *const *argv)
           strerr_diefu1sys(111, "trap signals") ;
       }
 
-      if (prune)
+      if (wgolb & GOLB_PRUNE)
       {
         int r ;
-        if (up) invert_selection() ;
+        if (!(wgolb & GOLB_DOWN)) invert_selection() ;
         r = doit(0) ;
         if (r) return r ;
         invert_selection() ;
-        return doit(1) ;
+        _exit(doit(1)) ;
       }
-      else return doit(up) ;
+      else _exit(doit(!(wgolb & GOLB_DOWN))) ;
     }
   }
 }

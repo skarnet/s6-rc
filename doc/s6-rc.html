@@ -47,8 +47,8 @@ root privileges.
 
 <pre>
      s6-rc help
-     s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] list <em>servicenames...</em>
-     s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] listall <em>servicenames...</em>
+     s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] [ -E | -e ] list <em>servicenames...</em>
+     s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d ] [ -E | -e ] listall <em>servicenames...</em>
      s6-rc [ -l live ] [ -b ] diff
      s6-rc [ -l live ] [ -b ] [ -a ] [ -u | -d | -D ] [ -p ] [ -v <em>verbosity</em> ] [ -n <em>dryrunthrottle</em> ] [ -t timeout ] change [ <em>servicenames...</em> ]
 </pre>
@@ -184,6 +184,12 @@ the list of currently active services. <tt>s6-rc -da list</tt>
 will print the list of currently down services.
 </p>
 
+<p>
+ If the <tt>-e</tt> option has been given, the services marked as
+essential (i.e. which have the <tt>flag-essential</tt> file in
+their source definition directories) will not be printed.
+</p>
+
 <h3> s6-rc listall <em>servicenames...</em> </h3>
 
 <ul>
@@ -196,6 +202,9 @@ called the <em>closed selection</em>. </li>
  <li> It prints the closed selection to its standard output.
 Note that the closed selection may be a very long list of services,
 including the most basic ones. </li>
+ <li> If the <tt>-e</tt> option has been given, the services marked as
+essential (i.e. which have the <tt>flag-essential</tt> file in
+their source definition directories) will not be printed. </li>
 </ul>
 
 <h3> s6-rc diff </h3>
