@@ -8,18 +8,8 @@
 #include <errno.h>
 #include <stdlib.h>  /* qsort */
 
-#include <skalibs/types.h>
-#include <skalibs/bitarray.h>
-#include <skalibs/strerr.h>
-#include <skalibs/sgetopt.h>
-#include <skalibs/allreadwrite.h>
-#include <skalibs/buffer.h>
-#include <skalibs/cdbmake.h>
-#include <skalibs/direntry.h>
-#include <skalibs/djbunix.h>
-#include <skalibs/stralloc.h>
-#include <skalibs/genalloc.h>
-#include <skalibs/skamisc.h>
+#include <skalibs/envexec.h>
+#include <skalibs/stddjb.h>
 #include <skalibs/avltree.h>
 #include <skalibs/unix-transactional.h>
 
@@ -37,9 +27,17 @@
 
 #define S6RC_INTERNALS "s6-rc-compile internals"
 
-static unsigned int verbosity = 1 ;
-static stralloc keep = STRALLOC_ZERO ;
-static stralloc data = STRALLOC_ZERO ;
+enum golb_e
+{
+  GOLB_BLOCK = 0x01,
+} ;
+
+enum gola_e
+{
+  GOLA_VERBOSITY,
+  GOLA_FDHUSER,
+  GOLA_N
+} ;
 
 typedef enum servicetype_e servicetype_t, *servicetype_t_ref ;
 enum servicetype_e
@@ -49,6 +47,10 @@ enum servicetype_e
   SVTYPE_LONGRUN = 2,
   SVTYPE_BUNDLE = 4
 } ;
+
+static unsigned int verbosity = 1 ;
+static stralloc keep = STRALLOC_ZERO ;
+static stralloc data = STRALLOC_ZERO ;
 
 
  /* The names tree */
@@ -254,7 +256,7 @@ static unsigned int add_internal_longrun (before_t *be, char const *name)
     {
       .ndeps = 0,
       .depindex = genalloc_len(unsigned int, &be->indices),
-      .annotation_flags = 0,
+      .annotation_flags = S6RC_DB_FLAG_ESSENTIAL,
       .timeout = { 0, 0 }
     },
     .srcdir = 0,
@@ -554,11 +556,6 @@ static inline void add_source (before_t *be, int dfd, char const *srcdir, char c
   }
 }
 
-static int qsort_cannot_use_strcmp_directly (void const *a, void const *b)
-{
-  return strcmp(*(char const *const *)a, *(char const *const *)b) ;
-}
-
 static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
 {
   unsigned int n = 0 ;
@@ -593,7 +590,7 @@ static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
       names[i] = sa->s + pos ;
       pos += strlen(sa->s + pos) + 1 ;
     }
-    qsort(names, n, sizeof(char const *), &qsort_cannot_use_strcmp_directly) ;
+    qsort(names, n, sizeof(char const *), &str_cmp) ;
     for (unsigned int i = 0 ; i < n ; i++)
     {
       int fd = open_readatb(fdsrc, names[i]) ;
@@ -1550,29 +1547,32 @@ static inline void write_compiled (
 
 int main (int argc, char const *const *argv)
 {
-  before_t before = BEFORE_ZERO ;
-  char const *compiled ;
-  char const *fdhuser = 0 ;
-  int blocking = 0 ;
-  PROG = "s6-rc-compile" ;
+  static gol_bool const rgolb[] =
   {
-    subgetopt l = SUBGETOPT_ZERO ;
-    for (;;)
-    {
-      int opt = subgetopt_r(argc, argv, "v:u:g:h:b", &l) ;
-      if (opt == -1) break ;
-      switch (opt)
-      {
-        case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
-        case 'h' : fdhuser = l.arg ; break ;
-        case 'b' : blocking = 1 ; break ;
-        default : dieusage() ;
-      }
-    }
-    argc -= l.ind ; argv += l.ind ;
-  }
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+    { .so = 'h', .lo = "fdholder-user", .i = GOLA_FDHUSER },
+  } ;
+  before_t before = BEFORE_ZERO ;
+  uint64_t wgolb = 0 ;
+  char const *wgola[GOLA_N] = { 0 } ;
+  char const *compiled ;
+  unsigned int golc ;
+  PROG = "s6-rc-compile" ;
+
+  golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+  argc -= golc ; argv += golc ;
   if (argc < 2) dieusage() ;
+  if (wgola[GOLA_VERBOSITY])
+  {
+    if (!uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
+      strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+  }
   compiled = *argv++ ;
+
   before.specialdeps[0] = add_internal_longrun(&before, S6RC_ONESHOT_RUNNER) ;
   before.specialdeps[1] = add_internal_longrun(&before, S6RC_FDHOLDER) ;
   {
@@ -1619,9 +1619,9 @@ int main (int argc, char const *const *argv)
       db.deps = deps ;
       flatlist_services(&db, sarray) ;
       propagate_bundle_flags(&db, bundles, nbundles, bdeps) ;
-      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, fdhuser, blocking) ;
+      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, wgola[GOLA_FDHUSER], wgolb & GOLB_BLOCK) ;
     }
   }
 
-  return 0 ;
+  _exit(0) ;
 }
