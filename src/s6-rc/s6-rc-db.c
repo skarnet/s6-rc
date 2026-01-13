@@ -3,11 +3,12 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <skalibs/uint32.h>
-#include <skalibs/sgetopt.h>
+#include <skalibs/bytestr.h>
 #include <skalibs/buffer.h>
-#include <skalibs/strerr.h>
+#include <skalibs/envexec.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/cdb.h>
 #include <skalibs/unix-transactional.h>
@@ -15,14 +16,59 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-db [ -u | -d ] [ -l live ] [ -c compiled ] [ -b ] command... (use s6-rc-db help for more information)"
+#define USAGE "s6-rc-db [ -u | -d ] [ -l live ] [ -c compiled ] [ -b ] [ -E | -e ] command... (use s6-rc-db help for more information)"
 #define dieusage() strerr_dieusage(100, USAGE)
+
+enum rgolb_e
+{
+  GOLB_DOWN = 0x01,
+  GOLB_BLOCK = 0x02,
+  GOLB_HIDE_ESSENTIALS = 0x04,
+} ;
+
+enum rgola_e
+{
+  GOLA_LIVEDIR,
+  GOLA_DB,
+  GOLA_N
+} ;
+
+enum what_e
+{
+  WHAT_HELP,
+  WHAT_CHECK,
+  WHAT_LIST,
+  WHAT_TYPE,
+  WHAT_TIMEOUT,
+  WHAT_CONTENTS,
+  WHAT_DEPS,
+  WHAT_PIPELINE,
+  WHAT_SCRIPT,
+  WHAT_FLAGS,
+  WHAT_ATOMICS,
+  WHAT_ALLDEPS
+} ;
+
+enum subwhat_e
+{
+  SUBWHAT_ALL,
+  SUBWHAT_SERVICES,
+  SUBWHAT_ONESHOTS,
+  SUBWHAT_LONGRUNS,
+  SUBWHAT_BUNDLES
+} ;
+
+struct what_s
+{
+  char const *s ;
+  uint8_t e ;
+} ;
 
 static char const *compiled = 0 ;
 static int fdcompiled = -1 ;
 static s6rc_db_t *db ;
 
-static void print_bundle_contents (char const *name)
+static void print_bundle_contents (char const *name, int hidee)
 {
   cdb c = CDB_ZERO ;
   cdb_data data ;
@@ -40,9 +86,12 @@ static void print_bundle_contents (char const *name)
       strerr_dief2x(4, "invalid database in ", compiled) ;
     if (!strcmp(name, db->string + db->services[x].name))
       strerr_dief5x(5, "in database ", compiled, ": identifier ", name, " represents an atomic service") ;
-    if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
-     || buffer_put(buffer_1, "\n", 1) < 0)
-      strerr_diefu1sys(111, "write to stdout") ;
+    if (!(hidee && db->services[x].flags & S6RC_DB_FLAG_ESSENTIAL))
+    {
+      if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
+       || buffer_put(buffer_1, "\n", 1) < 0)
+        strerr_diefu1sys(111, "write to stdout") ;
+    }
   }
   else
   {
@@ -54,9 +103,13 @@ static void print_bundle_contents (char const *name)
       uint32_unpack_big(data.s, &x) ; data.s += 4 ; data.len -= 4 ;
       if (x >= db->nshort + db->nlong)
         strerr_dief2x(4, "invalid database in ", compiled) ;
-      if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
-       || buffer_put(buffer_1, "\n", 1) < 1)
-        strerr_diefu1sys(111, "write to stdout") ;
+
+      if (!(hidee && db->services[x].flags & S6RC_DB_FLAG_ESSENTIAL))
+      {
+        if (buffer_puts(buffer_1, db->string + db->services[x].name) < 0
+         || buffer_put(buffer_1, "\n", 1) < 1)
+          strerr_diefu1sys(111, "write to stdout") ;
+      }
     }
   }
   cdb_free(&c) ;
@@ -64,14 +117,15 @@ static void print_bundle_contents (char const *name)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static void print_services (unsigned int from, unsigned int to)
+static void print_services (unsigned int from, unsigned int to, int hidee)
 {
   for (; from < to ; from++)
-  {
-    if (buffer_puts(buffer_1, db->string + db->services[from].name) < 0
-     || buffer_put(buffer_1, "\n", 1) < 1)
-      strerr_diefu1sys(111, "write to stdout") ;
-  }
+    if (!(hidee && db->services[from].flags & S6RC_DB_FLAG_ESSENTIAL))
+    {
+      if (buffer_puts(buffer_1, db->string + db->services[from].name) < 0
+       || buffer_put(buffer_1, "\n", 1) < 1)
+        strerr_diefu1sys(111, "write to stdout") ;
+    }
   if (!buffer_flush(buffer_1))
     strerr_diefu1sys(111, "write to stdout") ;
 }
@@ -210,7 +264,7 @@ static inline void print_flags (char const *name)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static void print_union (char const *const *argv, int h, int isdeps, int doclosure)
+static void print_union (char const *const *argv, int h, int isdeps, int doclosure, int hidee)
 {
   unsigned int n = db->nshort + db->nlong ;
   cdb c = CDB_ZERO ;
@@ -244,7 +298,7 @@ static void print_union (char const *const *argv, int h, int isdeps, int doclosu
   }
   cdb_free(&c) ;
   if (doclosure) s6rc_graph_closure(db, state, 0, h) ;
-  while (n--) if (state[n])
+  while (n--) if (state[n] && !(hidee && db->services[n].flags & S6RC_DB_FLAG_ESSENTIAL))
     if (buffer_puts(buffer_1, db->string + db->services[n].name) < 0
      || buffer_put(buffer_1, "\n", 1) < 0)
       strerr_diefu1sys(111, "write to stdout") ;
@@ -271,103 +325,94 @@ static inline void print_help (void)
     strerr_diefu1sys(111, "write to stdout") ;
 }
 
-static unsigned int lookup (char const *const *table, char const *command)
+static inline enum what_e parse_command (char const *command)
 {
-  unsigned int i = 0 ;
-  for (; table[i] ; i++) if (!strcmp(command, table[i])) break ;
-  return i ;
+  static struct what_s const command_table[] =
+  {
+    { .s = "all-dependencies", .e = WHAT_ALLDEPS },
+    { .s = "atomics", .e = WHAT_ATOMICS },
+    { .s = "check", .e = WHAT_CHECK },
+    { .s = "contents", .e = WHAT_CONTENTS },
+    { .s = "dependencies", .e = WHAT_DEPS },
+    { .s = "flags", .e = WHAT_FLAGS },
+    { .s = "help", .e = WHAT_HELP },
+    { .s = "list", .e = WHAT_LIST },
+    { .s = "pipeline", .e = WHAT_PIPELINE },
+    { .s = "script", .e = WHAT_SCRIPT },
+    { .s = "timeout", .e = WHAT_TIMEOUT },
+    { .s = "type", .e = WHAT_TYPE },
+  } ;
+  struct what_s const *p = bsearch(command, command_table, sizeof(command_table)/sizeof(struct what_s), sizeof(struct what_s), &stringkey_bcmp) ;
+  if (!p) strerr_dief2x(100, "unknown command: ", command) ;
+  return p->e ;
 }
 
-static inline unsigned int parse_command (char const *command)
+static inline enum subwhat_e parse_subcommand (char const *subcommand)
 {
-  static char const *const command_table[13] =
+  static struct what_s const subcommand_table[] =
   {
-    "help",
-    "check",
-    "list",
-    "type",
-    "timeout",
-    "contents",
-    "dependencies",
-    "pipeline",
-    "script",
-    "flags",
-    "atomics",
-    "all-dependencies",
-    0
+    { .s = "all", .e = SUBWHAT_ALL },
+    { .s = "bundles", .e = SUBWHAT_BUNDLES },
+    { .s = "longruns", .e = SUBWHAT_LONGRUNS },
+    { .s = "oneshots", .e = SUBWHAT_ONESHOTS },
+    { .s = "services", .e = SUBWHAT_SERVICES },
   } ;
-  unsigned int i = lookup(command_table, command) ;
-  if (!command_table[i]) dieusage() ;
-  return i ;
-}
-
-static inline unsigned int parse_list (char const *command)
-{
-  static char const *const list_table[6] =
-  {
-    "all",
-    "services",
-    "oneshots",
-    "longruns",
-    "bundles",
-    0
-  } ;
-  unsigned int i = lookup(list_table, command) ;
-  if (!list_table[i]) dieusage() ;
-  return i ;
+  struct what_s const *p = bsearch(subcommand, subcommand_table, sizeof(subcommand_table)/sizeof(struct what_s), sizeof(struct what_s), &stringkey_bcmp) ;
+  if (!p) strerr_dief2x(100, "unknown subcommand: ", subcommand) ;
+  return p->e ;
 }
 
 int main (int argc, char const *const *argv)
 {
-  char const *live = S6RC_LIVEDIR ;
-  unsigned int what, subwhat = 0 ;
-  int up = 1 ;
-  int blocking = 0 ;
-  PROG = "s6-rc-db" ;
+  static gol_bool const rgolb[] =
   {
-    subgetopt l = SUBGETOPT_ZERO ;
-    for (;;)
-    {
-      int opt = subgetopt_r(argc, argv, "udl:c:b", &l) ;
-      if (opt == -1) break ;
-      switch (opt)
-      {
-        case 'l' : live = l.arg ; break ;
-        case 'c' : compiled = l.arg ; break ;
-        case 'u' : up = 1 ; break ;
-        case 'd' : up = 0 ; break ;
-        case 'b' : blocking = 1 ; break ;
-        default : dieusage() ;
-      }
-    }
-    argc -= l.ind ; argv += l.ind ;
-  }
+    { .so = 'u', .lo = "up", .clear = GOLB_DOWN, .set = 0 },
+    { .so = 'd', .lo = "down", .clear = 0, .set = GOLB_DOWN },
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
+    { .so = 'E', .lo = "with-essentials", .clear = GOLB_HIDE_ESSENTIALS, .set = 0 },
+    { .so = 'e', .lo = "without-essentials", .clear = 0, .set = GOLB_HIDE_ESSENTIALS },
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
+    { .so = 'c', .lo = "compiled", .i = GOLA_DB },
+  } ;
+  uint64_t wgolb = 0 ;
+  char const *wgola[GOLA_N] = { 0 } ;
+  unsigned int golc ;
+  enum what_e what ;
+  enum subwhat_e subwhat = 0 ;
 
+  PROG = "s6-rc-db" ;
+  wgola[GOLA_LIVEDIR] = S6RC_LIVEDIR ;
+  golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+  argc -= golc ; argv += golc ;
   if (!argc) dieusage() ;
   what = parse_command(argv[0]) ;
-  if (!what)
+  if (what == WHAT_HELP)
   {
     print_help() ;
-    return 0 ;
+    _exit(0) ;
   }
-  if (what >= 2 && argc < 2) dieusage() ;
-  if (what == 2) subwhat = 1 + parse_list(argv[1]) ;
+  if (what != WHAT_HELP && what != WHAT_CHECK && argc < 2) dieusage() ;
+  if (what == WHAT_LIST) subwhat = parse_subcommand(argv[1]) ;
 
   {
-    size_t livelen = strlen(live) ;
+    size_t livelen = strlen(wgola[GOLA_LIVEDIR]) ;
     int compiledlock ;
     s6rc_db_t dbblob ;
-    char compiledblob[compiled ? strlen(compiled) : livelen + 10] ;
+    char compiledblob[wgola[GOLA_DB] ? 1 : livelen + 10] ;
     db = &dbblob ;
 
-    if (!compiled)
+    if (wgola[GOLA_DB]) compiled = wgola[GOLA_DB] ;
+    else
     {
-      memcpy(compiledblob, live, livelen) ;
+      memcpy(compiledblob, wgola[GOLA_LIVEDIR], livelen) ;
       memcpy(compiledblob + livelen, "/compiled", 10) ;
       compiled = compiledblob ;
     }
 
-    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock, blocking))
+    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock, !!(wgolb & GOLB_BLOCK)))
       strerr_diefu2sys(111, "take lock on ", compiled) ;
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)
@@ -409,7 +454,8 @@ int main (int argc, char const *const *argv)
 
       switch (what)
       {
-        case 1 : /* check */
+        case WHAT_HELP : break ;  /* can't happen */
+        case WHAT_CHECK :
         {
           diuint32 problem ;
           if (s6rc_db_check_revdeps(&dbblob))
@@ -426,45 +472,45 @@ int main (int argc, char const *const *argv)
           }
           break ;
         }
-        case 2 : /* list */
+        case WHAT_LIST :
           switch (subwhat)
           {
-            case 1 : print_all(0) ; break ;
-            case 2 : print_services(0, n) ; break ;
-            case 3 : print_services(dbblob.nlong, n) ; break ;
-            case 4 : print_services(0, dbblob.nlong) ; break ;
-            case 5 : print_all(1) ; break ;
+            case SUBWHAT_ALL : print_all(0) ; break ;
+            case SUBWHAT_SERVICES : print_services(0, n, !!(wgolb & GOLB_HIDE_ESSENTIALS)) ; break ;
+            case SUBWHAT_ONESHOTS : print_services(dbblob.nlong, n, !!(wgolb & GOLB_HIDE_ESSENTIALS)) ; break ;
+            case SUBWHAT_LONGRUNS : print_services(0, dbblob.nlong, !!(wgolb & GOLB_HIDE_ESSENTIALS)) ; break ;
+            case SUBWHAT_BUNDLES : print_all(1) ; break ;
           }
           break ;
-        case 3 : /* type */
+        case WHAT_TYPE :
           print_type(argv[1]) ;
           break ;
-        case 4 : /* timeout */
-          print_timeout(argv[1], up) ;
+        case WHAT_TIMEOUT :
+          print_timeout(argv[1], !(wgolb & GOLB_DOWN)) ;
           break ;
-        case 5 : /* contents */
-          print_bundle_contents(argv[1]) ;
+        case WHAT_CONTENTS :
+          print_bundle_contents(argv[1], !!(wgolb & GOLB_HIDE_ESSENTIALS)) ;
           break ;
-        case 6 : /* dependencies */
-          print_union(argv + 1, up, 1, 0) ;
+        case WHAT_DEPS :
+          print_union(argv + 1, !(wgolb & GOLB_DOWN), 1, 0, !!(wgolb & GOLB_HIDE_ESSENTIALS)) ;
           break ;
-        case 7 : /* pipeline */
+        case WHAT_PIPELINE :
           print_pipeline(argv[1]) ;
           break ;
-        case 8 : /* script */
-          print_script(argv[1], up) ;
+        case WHAT_SCRIPT :
+          print_script(argv[1], !(wgolb & GOLB_DOWN)) ;
           break ;
-        case 9 : /* flags */
+        case WHAT_FLAGS :
           print_flags(argv[1]) ;
           break ;
-        case 10 : /* atomics */
-          print_union(argv + 1, 1, 0, 0) ;
+        case WHAT_ATOMICS :
+          print_union(argv + 1, 1, 0, 0, !!(wgolb & GOLB_HIDE_ESSENTIALS)) ;
           break ;
-        case 11 : /* all-dependencies */
-          print_union(argv + 1, up, 0, 1) ;
+        case WHAT_ALLDEPS :
+          print_union(argv + 1, !(wgolb & GOLB_DOWN), 0, 1, !!(wgolb & GOLB_HIDE_ESSENTIALS)) ;
           break ;
       }
     }
   }
-  return 0 ;
+  _exit(0) ;
 }

@@ -27,11 +27,11 @@ static inline int s6rc_db_read_sizes_buffer (buffer *b, s6rc_db_t *db)
 
 int s6rc_db_read_sizes (int fdcompiled, s6rc_db_t *db)
 {
-  char buf[24] ;
+  char buf[25] ;
   buffer b ;
   int fd = open_readatb(fdcompiled, "n") ;
   if (fd < 0) return 0 ;
-  buffer_init(&b, &buffer_read, fd, buf, 24) ;
+  buffer_init(&b, &buffer_read, fd, buf, 25) ;
   if (!s6rc_db_read_sizes_buffer(&b, db))
   {
     fd_close(fd) ;

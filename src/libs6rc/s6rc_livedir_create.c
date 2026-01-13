@@ -29,13 +29,13 @@ int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, cha
   if (!mkdtemp(sa->s + sabase)) { umask(m) ; goto err ; }
   newlen = sa->len-- ;
   if (!stralloc_catb(sa, "/servicedirs", 13)) { umask(m) ; goto delerr ; }  /* allocates enough for the next strcpys */
-  if (mkdir(sa->s + sabase, 0755) < 0) { umask(m) ; goto delerr ; }
+  if (mkdir(sa->s + sabase, 0755) == -1) { umask(m) ; goto delerr ; }
   umask(m) ;
-  if (chmod(sa->s + sabase, 0755) < 0) goto delerr ;
+  if (chmod(sa->s + sabase, 0755) == -1) goto delerr ;
   strcpy(sa->s + newlen, "compiled") ;
-  if (symlink(compiled, sa->s + sabase) < 0) goto delerr ;
+  if (symlink(compiled, sa->s + sabase) == -1) goto delerr ;
   strcpy(sa->s + newlen, "scandir") ;
-  if (symlink(scdir, sa->s + sabase) < 0) goto delerr ;
+  if (symlink(scdir, sa->s + sabase) == -1) goto delerr ;
   strcpy(sa->s + newlen, "prefix") ;
   if (!openwritenclose_unsafe(sa->s + sabase, prefix, strlen(prefix))) goto delerr ;
   strcpy(sa->s + newlen, "state") ;
@@ -44,13 +44,14 @@ int s6rc_livedir_create (stralloc *sa, char const *live, char const *suffix, cha
   if (!openwritenclose_unsafe(sa->s + sabase, "", 0)) goto delerr ;
   sa->len = newlen-1 ;
   sa->s[newlen-1] = 0 ;
+  if (chmod(sa->s + sabase, 0755) == -1) goto delerr ;
   *dirlen = ddirlen ;
   return 1 ;
 
  delerr:
   {
     int e = errno ;
-    sa->s[newlen] = 0 ;
+    sa->s[newlen-1] = 0 ;
     rm_rf_in_tmp(sa, sabase) ;
     errno = e ;
   }
