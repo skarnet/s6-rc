@@ -12,6 +12,9 @@ brings services up or down to reach the desired state.
 supervised, and that short-lived instructions are run in a reproducible
 manner.
 
+ It also provides commands to help distributions organize service
+definitions automatically installed by a package manager.
+
  See https://skarnet.org/software/s6-rc/ for details.
 
 
