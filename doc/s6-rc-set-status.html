@@ -19,18 +19,18 @@
 <h1> The s6-rc-set-status program </h1>
 
 <p>
- s6-rc-set-list lists some of, or all, the services of a <a href="repodefs.html#set">set</a>,
+ s6-rc-set-status lists some of, or all, the services of a <a href="repodefs.html#set">set</a>,
 along with the <a href="repodefs.html#sub">sub</a> each service is on.
 </p>
 
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-list [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -L ] <em>set</em> [ <em>services...</em> ]
+     s6-rc-set-status [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -L ] <em>set</em> [ <em>services...</em> ]
 </pre>
 
 <ul>
- <li> s6-rc-set-list prints the services in set <em>set</em> of repository
+ <li> s6-rc-set-status prints the services in set <em>set</em> of repository
 <em>repo</em>, one per line, to stdout. If some <em>services...</em> are specified,
 it only prints the ones listed; if <em>services...</em> is empty, it prints all the
 services in the set. Each line consists of:
