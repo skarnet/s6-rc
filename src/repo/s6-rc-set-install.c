@@ -33,7 +33,8 @@
 enum golb_e
 {
   GOLB_BLOCK = 0x01,
-  GOLB_KEEPOLD = 0x02
+  GOLB_KEEPOLD = 0x02,
+  GOLB_NOUPDATE = 0x04,
 } ;
 
 enum gola_e
@@ -51,7 +52,8 @@ int main (int argc, char const *const *argv)
   static gol_bool const rgolb[] =
   {
     { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
-    { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD }
+    { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD },
+    { .so = 0, .lo = "--no-update", .set = GOLB_NOUPDATE },
   } ;
   static gol_arg const rgola[] =
   {
@@ -158,65 +160,69 @@ int main (int argc, char const *const *argv)
       strerr_diefu4sys(111, "recursively copy ", cfull, " to ", dstfn) ;
     }
 
-    uargv[l++] = S6RC_BINPREFIX "s6-rc-update" ;
-    if (wgolb & GOLB_BLOCK) uargv[l++] = "-b" ;
-    uargv[l++] = "-v" ;
-    uargv[l++] = fmtv ;
-    uargv[l++] = "-l" ;
-    uargv[l++] = wgola[GOLA_LIVEDIR] ;
-    if (wgola[GOLA_CONVFILE])
+    if (!(wgolb & GOLB_NOUPDATE))
     {
-      uargv[l++] = "-f" ;
-      uargv[l++] = wgola[GOLA_CONVFILE] ;
-    }
-    uargv[l++] = "--" ;
-    uargv[l++] = dstfn ;
-    uargv[l++] = 0 ;
-
-    pid = cspawn(uargv[0], uargv, (char const *const *)environ, 0, 0, 0) ;
-    if (!pid)
-    {
-      int e = errno ;
-      rm_rf(dstfn) ;
-      errno = e ;
-      strerr_diefu2sys(111, "spawn ", uargv[0]) ;
-    }
-    r = wait_pid(pid, &wstat) ;
-    if (r == -1) strerr_diefu3sys(111, "wait for the ", uargv[0], " process (updating may yet succeed)") ;
-    if (WIFSIGNALED(wstat))
-    {
-      char fmt[INT_FMT] ;
-      fmt[int_fmt(fmt, WTERMSIG(wstat))] = 0 ;
-      strerr_dief3x(wait_estatus(wstat), uargv[0], " crashed with signal ", fmt) ;
-    }
-    r = WEXITSTATUS(wstat) ;
-    if (r == 111)
-      strerr_dief2x(111, uargv[0], " exited 111, unable to know the state of the live db or clean up") ;
-    if ((r >= 3 && r <= 10) || r == 100)
-    {
-      int e = errno ;
-      char fmt[INT_FMT] ;
-      fmt[int_fmt(fmt, r)] = 0 ;
-      rm_rf(dstfn) ;
-      errno = e ;
-      strerr_dief4x(r, uargv[0], " exited with code ", fmt, " (live database switch was NOT performed)") ;
-    }
-    if (olddb)
-    {
-      if (wgolb & GOLB_KEEPOLD)
+      uargv[l++] = S6RC_BINPREFIX "s6-rc-update" ;
+      if (wgolb & GOLB_BLOCK) uargv[l++] = "-b" ;
+      uargv[l++] = "-v" ;
+      uargv[l++] = fmtv ;
+      uargv[l++] = "-l" ;
+      uargv[l++] = wgola[GOLA_LIVEDIR] ;
+      if (wgola[GOLA_CONVFILE])
       {
-        if (buffer_puts(buffer_1small, olddb) == -1
-         || !buffer_putflush(buffer_1small, "\n", 1))
-          strerr_diefu2sys(111, "write to stdout", " (live database switch was performed)") ;
+        uargv[l++] = "-f" ;
+        uargv[l++] = wgola[GOLA_CONVFILE] ;
       }
-      else rm_rf(olddb) ;
+      uargv[l++] = "--" ;
+      uargv[l++] = dstfn ;
+      uargv[l++] = 0 ;
+
+      pid = cspawn(uargv[0], uargv, (char const *const *)environ, 0, 0, 0) ;
+      if (!pid)
+      {
+        int e = errno ;
+        rm_rf(dstfn) ;
+        errno = e ;
+        strerr_diefu2sys(111, "spawn ", uargv[0]) ;
+      }
+      r = wait_pid(pid, &wstat) ;
+      if (r == -1) strerr_diefu3sys(111, "wait for the ", uargv[0], " process (updating may yet succeed)") ;
+      if (WIFSIGNALED(wstat))
+      {
+        char fmt[INT_FMT] ;
+        fmt[int_fmt(fmt, WTERMSIG(wstat))] = 0 ;
+        strerr_dief3x(wait_estatus(wstat), uargv[0], " crashed with signal ", fmt) ;
+      }
+      r = WEXITSTATUS(wstat) ;
+      if (r == 111)
+        strerr_dief2x(111, uargv[0], " exited 111, unable to know the state of the live db or clean up") ;
+      if ((r >= 3 && r <= 10) || r == 100)
+      {
+        int e = errno ;
+        char fmt[INT_FMT] ;
+        fmt[int_fmt(fmt, r)] = 0 ;
+        rm_rf(dstfn) ;
+        errno = e ;
+        strerr_dief4x(r, uargv[0], " exited with code ", fmt, " (live database switch was NOT performed)") ;
+      }
+      if (olddb)
+      {
+        if (wgolb & GOLB_KEEPOLD)
+        {
+          if (buffer_puts(buffer_1small, olddb) == -1
+           || !buffer_putflush(buffer_1small, "\n", 1))
+            strerr_diefu2sys(111, "write to stdout", " (live database switch was performed)") ;
+        }
+        else rm_rf(olddb) ;
+      }
+      if (r)
+      {
+        char fmt[INT_FMT] ;
+        fmt[int_fmt(fmt, r)] = 0 ;
+        strerr_dief4x(r, uargv[0], " exited with code ", fmt, " (live database switch was performed") ;
+      }
     }
-    if (r)
-    {
-      char fmt[INT_FMT] ;
-      fmt[int_fmt(fmt, r)] = 0 ;
-      strerr_dief4x(r, uargv[0], " exited with code ", fmt, " (live database switch was performed") ;
-    }
+
     if (!atomic_symlink4(dstfn + sa.len + 1, wgola[GOLA_BOOTDB], 0, 0))
       strerr_diefu6sys(111, "symlink ", dstfn + sa.len + 1, " to ", wgola[GOLA_BOOTDB], " (live database switch was performed)", " (update that link manually or next boot might fail)") ;
   }

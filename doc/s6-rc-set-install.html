@@ -88,6 +88,13 @@ is the path to that old database. It can e.g. be used by automation to keep
 the possibility of rollbacks.
 By default, s6-rc-set-install will delete the old live database after
 successfully updating to the new one. </dd>
+
+ <dt> --no-update </dt>
+ <dd> Only copy the database from the repository and link it as boot database;
+do not run <a href="s6-rc-update.html">s6-rc-update</a>. This should <em>only</em>
+be used for a first installation, never when services are already managed with
+s6-rc &mdash; else it bypasses the check that the default enabled service set
+is actually viable, and might give an unpleasant surprise at next boot. </dd>
 </dl>
 
 <h2> Exit codes </h2>
