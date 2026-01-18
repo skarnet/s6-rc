@@ -1,4 +1,4 @@
-if { s6-echo "init-stage2 starting." }
-if { s6-clock @40000000681859f30cfd4561 }
-backtick -E hostname { redirfd -r 0 /etc/hostname s6-cat }
+if { s6-clock @40000000696c50533a13bb53 }
+redirfd -r 0 /etc/hostname
+withstdinas -E hostname
 s6-hostname $hostname

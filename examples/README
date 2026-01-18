@@ -3,7 +3,9 @@
  It is a real life example, used for the configuration of
 a router with 4 ethernet interfaces and 2 wifi ones, behind
 two ISPs (one fiber, one DSL), running a few services such
-as a DNS cache and a web server for a local network.
+as a DNS cache and a web server for a local network. Each
+interface has one IPv4 and two IPv6.
+
  All the scripts are genuine, only specific values such as
 IP addresses are not present (machine-specific data is stored
 in /etc, not in the s6-rc source directories).
@@ -11,10 +13,11 @@ in /etc, not in the s6-rc source directories).
 skarnet.org tools, and some specialized Linux tools such as
 iproute2, iw, etc.
 
- ok-all is the entry point, the "top" bundle containing all
-the services used for normal operation of the machine.
-The stage 2 init script of this machine is basically
-"s6-rc-init && s6-rc change ok-all".
+ default is the entry point, i.e. the default bundle containing
+all the services that are to be started at boot time. If
+you are using s6-frontend, this bundle should not be defined
+manually, it will be automatically computed by s6-frontend
+from the enabled and essential services in your set.
 
- Don't look too much into the weird ipv6 stuff, this is mostly
-a bunch of workarounds for a very broken ISP-provided device.
+ Don't look too much into the weird ipv6 stuff, this is a bunch
+of workarounds for a very broken ISP-provided device.

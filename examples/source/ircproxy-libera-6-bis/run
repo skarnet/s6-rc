@@ -8,5 +8,5 @@ export CADIR /etc/ssl/ca/hashed
 fdmove 1 3
 s6-tcpserver -v -1 -U -c 255 -- ${ETH0_IP6_BIS} 1001
 s6-tcpserver-access -DHl0 --
-s6-tcpclient -6 -v -l0 -- irc.libera.chat. 6697
+s6-tcpclient -v -l0 -- irc.libera.chat. 6697
 s6-tlsc-io -k irc.libera.chat -- 6 7

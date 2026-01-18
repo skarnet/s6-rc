@@ -1,5 +1,0 @@
-init-lan
-mount-rwfs
-udhcpc6-eth2
-hostapd-wlan0
-hostapd-wlan1

@@ -8,5 +8,5 @@ export CADIR /etc/ssl/ca/hashed
 fdmove 1 3
 s6-tcpserver -v -1 -U -c 255 -- ${ETH0_IP6} 1000
 s6-tcpserver-access -DHl0 --
-s6-tcpclient -6 -v -l0 -- irc6.oftc.net. 6697
-s6-tlsc-io -k irc6.oftc.net -- 6 7
+s6-tcpclient -v -l0 -- irc.oftc.net. 6697
+s6-tlsc-io -k irc.oftc.net -- 6 7
