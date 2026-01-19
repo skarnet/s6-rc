@@ -53,7 +53,7 @@ int main (int argc, char const *const *argv)
   {
     { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
     { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD },
-    { .so = 0, .lo = "--no-update", .set = GOLB_NOUPDATE },
+    { .so = 0, .lo = "no-update", .set = GOLB_NOUPDATE },
   } ;
   static gol_arg const rgola[] =
   {
