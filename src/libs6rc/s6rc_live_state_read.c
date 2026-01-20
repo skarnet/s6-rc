@@ -14,7 +14,7 @@ int s6rc_live_state_read (char const *live, unsigned char *state, uint32_t n)
   size_t livelen = strlen(live) ;
   char fn[livelen + 7] ;
   memcpy(fn, live, livelen) ;
-  memcpy(fn + livelen, "/state", n) ;
+  memcpy(fn + livelen, "/state", 7) ;
   ssize_t r = openreadnclose(fn, (char *)state, n) ;
   if (r == -1) return 0 ;
   if (r < n) return (errno = EINVAL, 0) ;
