@@ -306,7 +306,7 @@ static void examine (unsigned int i, int h)
         pidindex[npids++].i = i ;
         if (verbosity >= 2)
         {
-          strerr_warni4x("service ", name, ": ", h ? "starting" : "stopping") ;
+          strerr_warni5x(dryrun[0] ? "dry run: " : "", "service ", name, ": ", h ? "starting" : "stopping") ;
         }
       }
       else
@@ -337,7 +337,7 @@ static inline void on_success (unsigned int i, int h)
   if (h) state[i] |= 1 ; else state[i] &= 254 ;
   announce() ;
   if (verbosity >= 2)
-    strerr_warni5x(dryrun[0] ? "simulation: " : "", "service ", db->string + db->services[i].name, " successfully st", h ? "arted" : "opped") ;
+    strerr_warni5x(dryrun[0] ? "dry run: " : "", "service ", db->string + db->services[i].name, " successfully st", h ? "arted" : "opped") ;
   if (!lameduck) broadcast_success(i, h) ;
 }
 
@@ -348,7 +348,7 @@ static inline void on_failure (unsigned int i, int h, int crashed, unsigned int 
   {
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, code)] = 0 ;
-    strerr_warnwu7x(dryrun[0] ? "pretend to " : "", h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
+    strerr_warnwu7x(dryrun[0] ? "(dry run) " : "", h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
   }
 }
 
