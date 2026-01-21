@@ -498,7 +498,7 @@ int main (int argc, char const *const *argv)
     { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
     { .so = 'E', .lo = "with-essentials", .clear = GOLB_HIDEESSENTIALS, .set = 0 },
     { .so = 'e', .lo = "without-essentials", .clear = 0, .set = GOLB_HIDEESSENTIALS },
-    { .so = 'X', .lo = "no-lock", .clear = 0, .set = GOLB_NOLOCK },
+    { .so = 0, .lo = "no-lock", .clear = 0, .set = GOLB_NOLOCK },
   } ;
   static gol_arg const rgola[] =
   {

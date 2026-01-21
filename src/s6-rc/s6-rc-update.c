@@ -735,7 +735,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        if (!dryrun) newargv[m++] = "-X" ;
+        if (!dryrun) newargv[m++] = "--no-lock" ;
         newargv[m++] = "-d" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
@@ -819,7 +819,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        if (!dryrun) newargv[m++] = "-X" ;
+        if (!dryrun) newargv[m++] = "--no-lock" ;
         newargv[m++] = "-u" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
