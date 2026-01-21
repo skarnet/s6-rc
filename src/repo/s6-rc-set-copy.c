@@ -6,9 +6,7 @@
 
 #include <skalibs/uint64.h>
 #include <skalibs/posixplz.h>
-#include <skalibs/prog.h>
-#include <skalibs/strerr.h>
-#include <skalibs/gol.h>
+#include <skalibs/envexec.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
@@ -68,19 +66,14 @@ static inline void docopy (char const *repo, char const *srcname, char const *ds
   memcpy(src + repolen + 9, srcname, srclen + 1) ;
   memcpy(dst, src, repolen + 9) ;
   memcpy(dst + repolen + 9, dstname, dstlen + 1) ;
-  olddst[0] = 0 ;
+  memcpy(olddst, dst, repolen + 9) ;
+  olddst[repolen + 9] = 0 ;
   if (access(dst, F_OK) == -1)
   {
     if (errno != ENOENT) strerr_diefu2sys(111, "access ", dst) ;
   }
-  else if (wgolb & GOLB_FORCE)
-  {
-    memcpy(olddst, dst, repolen + 9) ;
-    r = readlink(dst, olddst + repolen + 9, dstlen + 9) ;
-    if (r == -1) strerr_diefu2sys(111, "readlink ", dst) ;
-    if (r != dstlen + 8) strerr_dief3x(102, "symlink ", dst, "doesn't point to a valid name") ;
-  }
-  else strerr_dief4x(1, "set ", dstname, " already exists in repository ", repo) ;
+  else if (!(wgolb & GOLB_FORCE))
+    strerr_dief4x(1, "set ", dstname, " already exists in repository ", repo) ;
 
   memcpy(realsrc, src, repolen + 9) ;
   r = readlink(src, realsrc + repolen + 9, srclen + 9) ;
@@ -88,20 +81,21 @@ static inline void docopy (char const *repo, char const *srcname, char const *ds
   if (r != srclen + 8) strerr_dief3x(102, "symlink ", src, "doesn't point to a valid name") ;
   realsrc[repolen + srclen + 17] = 0 ;
   memcpy(realdst, dst, repolen + 9) ;
-  dst[repolen + 9] = '.' ;
+  realdst[repolen + 9] = '.' ;
   memcpy(realdst + repolen + 10, dstname, dstlen) ;
-  memcpy(realdst + repolen + 10 + dstlen, realsrc + repolen + 10 + srclen, 8) ;
+  memcpy(realdst + repolen + 10 + dstlen, ":XXXXXX", 8) ;
+  if (mkntemp(realdst) == -1) strerr_diefu2sys(111, "mkntemp ", realdst) ;
   if (!hiercopy(realsrc, realdst))
   {
     cleanup(realdst) ;
     strerr_diefu4sys(111, "copy ", realsrc, " to ", realdst) ;
   }
-  if (!atomic_symlink4(realdst + repolen + 9, dst, 0, 0))
+  if (!atomic_symlink4(realdst + repolen + 9, dst, olddst + repolen + 9, dstlen + 9))
   {
     cleanup(realdst) ;
     strerr_diefu4sys(111, "symlink ", realdst + repolen + 9, " to ", dst) ;
   }
-  if (olddst[0]) cleanup(olddst) ;
+  if (olddst[repolen + 9]) cleanup(olddst) ;
 }
 
 int main (int argc, char const *const *argv)
