@@ -142,7 +142,7 @@ int main (int argc, char const *const *argv)
 
     if (rename(repotmp, wgola[GOLA_REPODIR]) == -1)
     {
-      if (errno != EEXIST || !(wgolb & GOLB_FORCE))
+      if ((errno != EEXIST && errno != ENOTEMPTY) || !(wgolb & GOLB_FORCE))
       {
         cleanup(repotmp) ;
         strerr_diefu4sys(111, "rename ", repotmp, " to ", wgola[GOLA_REPODIR]) ;
