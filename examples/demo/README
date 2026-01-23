@@ -1,0 +1,15 @@
+0 and 1 are two stores, containing a manually constructed set of
+services. They are meant to be used with the repo commands of s6-rc,
+or with the s6-frontend package, to help you get familiar with the
+commands.
+
+ An uppercase service name means the service is a longrun. A
+lowercase one means the service is a oneshot.
+ Services named E*|e* are essential.
+ Services named R*|r* are recommended, i.e. they should appear as
+"active" rather than "usable" by default.
+ Services named N*|n* are only "usable" by default.
+ Foo-log means the service is a logger for Foo.
+ "essentials" is a bundle that every non-essential service should
+depend on, in order to only start after all the essential services
+are up.

@@ -1,25 +1,11 @@
  Example sets of service definition directories.
 
-demo:
-
- It is a manually constructed set of services, separated
-into two stores, meant to be used with the repo commands
-of s6-rc, or with the s6-frontend package, so that users
-can test the commands in a sandbox.
- demo/0 and demo/1 should be the stores, hosting the service definitions.
- Uppercase means the service is a longrun. Lowercase means the
-service is a oneshot.
- Services named E*|e* are essential.
- Services named R*|r* are recommended, i.e. they should appear as
-"active" rather than "usable" by default.
- Services named N*|n* are only "usable" by default.
- The number identifies the service.
- Foo-log means the service is a logger for Foo.
- Services that don't follow the format are bundles.
+demo: a manually constructed set of services, hosted
+in two stores, to test and familiarize yourself with the
+repo commands and s6-frontend. See demo/README.
 
 
 source-router:
-
  It is a real life example, used for the configuration of
 a router with 4 ethernet interfaces and 2 wifi ones, behind
 two ISPs (one fiber, one DSL), running a few services such
