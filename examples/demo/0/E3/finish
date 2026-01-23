@@ -1,0 +1,5 @@
+#!/usr/bin/execlineb -S4
+
+ifelse { eltest $1 -eq 256 }
+{ echo "E3 finishing: killed by signal $2" }
+echo "E3 finishing: exited $1"

@@ -1,0 +1,3 @@
+#!/usr/bin/execlineb -S0
+
+s6-log -d3 t /tmp/s6-rc-demo/E3

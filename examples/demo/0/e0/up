@@ -1,0 +1,2 @@
+if { mkdir -p /tmp/s6-rc-demo }
+echo e0

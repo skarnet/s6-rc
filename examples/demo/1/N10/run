@@ -1,0 +1,5 @@
+#!/usr/bin/execlineb -S0
+
+if { echo N10 starting }
+if { fdmove 1 3 echo }
+exec sleep 1000000
