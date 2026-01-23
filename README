@@ -13,7 +13,8 @@ supervised, and that short-lived instructions are run in a reproducible
 manner.
 
  It also provides commands to help distributions organize service
-definitions automatically installed by a package manager.
+definitions automatically installed by a package manager, and meant to
+be a backend to the s6-frontend package.
 
  See https://skarnet.org/software/s6-rc/ for details.
 

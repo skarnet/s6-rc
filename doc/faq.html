@@ -76,7 +76,7 @@ after <tt>-- change</tt>.
 </a>
 
 <h3> The source format for
-<a href="s6-rc-compile.html">s6-rc-compile</a> is not very convenient.
+<a href="s6-rc-compile.html#source">s6-rc-compile</a> is not very convenient.
 Why not put all the information for a service in a single file&nbsp;? </h3>
 
 <p>
@@ -115,7 +115,9 @@ s6-rc source format will make it easy on those tools.
 indubitably easier to do in other languages than C), and want to write
 a program that takes a text file, parses it and outputs a service
 definition directory in the s6-rc-compile source format, it should also be
-rather easy - please, feel free!
+rather easy - please, feel free! (There are talks in the community of an
+initiative to design a common declarative syntax for service files, with
+backends for OpenRC, s6-rc, and systemd. It may happen at some point.)
 </p>
 
 <h3> There are no "Provides:", no virtual services. What do I do
@@ -184,14 +186,14 @@ according to your preferences, but keep the same idea)
 
 <ul>
  <li> Make sure your <a href="s6-rc-init.html">s6-rc-init</a> invocation,
-in your init scripts, always uses the <tt>/etc/s6-rc/compiled</tt> name
+in your init scripts, always uses the <tt>/etc/s6-rc/compiled/current</tt> name
 to refer to the database to use at boot time. </li>
- <li> Make sure <tt>/etc/s6-rc/compiled</tt> is a <em>symbolic link</em>
+ <li> Make sure <tt>/etc/s6-rc/compiled/current</tt> is a <em>symbolic link</em>
 that points to your current compiled database. For instance, the first
 time you compile a service database, you could run:
 <pre>
- s6-rc-compile /etc/s6-rc/compiled-initial /etc/s6-rc/source-initial
- ln -sf compiled-initial /etc/s6-rc/compiled
+ s6-rc-compile /etc/s6-rc/compiled/initial /etc/s6-rc/source-initial
+ ln -sf initial /etc/s6-rc/compiled/current
 </pre> </li>
  <li> When you compile a new service database, always compile it to a
 unique name, preferrably in the same directory as your current compiled
@@ -200,22 +202,22 @@ database. You can for instance use a TAI64N timestamp, obtained by
 to create such a name:
 <pre>
  stamp=`s6-clock`
- s6-rc-compile /etc/s6-rc/compiled-$stamp /etc/s6-rc/source-current
+ s6-rc-compile /etc/s6-rc/compiled/$stamp /etc/s6-rc/source-current
 </pre> </li>
  <li> To replace your current compiled database with the one you just
 created, run <a href="s6-rc-update.html">s6-rc-update</a> on the new
 name:
 <pre>
- s6-rc-update /etc/s6-rc/compiled-$stamp
+ s6-rc-update /etc/s6-rc/compiled/$stamp
 </pre> </li>
  <li> At this point, your current database is the new one, but if
 your machine reboots, it will still use the old one (because
-the <tt>/etc/s6-rc/compiled</tt> link is still pointing to the old one).
+the <tt>/etc/s6-rc/compiled/current</tt> link is still pointing to the old one).
 To ensure that the
 new database will be used on the next boot, atomically update the link:
 <pre>
- olddb=`s6-linkname -f /etc/s6-rc/compiled`
- s6-ln -nsf compiled-$stamp /etc/s6-rc/compiled
+ olddb=`s6-linkname -f /etc/s6-rc/compiled/current`
+ s6-ln -nsf $stamp /etc/s6-rc/compiled/current
 </pre>
  The use of the
 <a href="//skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>
@@ -223,23 +225,22 @@ utility is recommended, because the
 <a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/ln.html">ln</a>
 standard actually <em>forbids</em> an atomic replacement, so utilities that
 follow it to the letter, for instance, <tt>ln</tt> from GNU coreutils, cannot
-be atomic: they first remove the old link, then create the new one. If you
-do not have
-<a href="//skarnet.org/software/s6-portable-utils/s6-ln.html">s6-ln</a>,
-you need to perform an unintuitive workaround to get POSIX-compliant tools to
-do the right thing:
- <tt>ln -sf compiled-$stamp /etc/s6-rc/compiled/compiled &amp;&amp;
-mv -f /etc/s6-rc/compiled/compiled /etc/s6-rc</tt> </li>
+be atomic: they first remove the old link, then create the new one. </li>
  <li> Your current compiled database, stored in
-<tt>/etc/s6-rc/compiled-$stamp</tt>, is now accessible via the
-<tt>/etc/s6-rc/compiled</tt> symlink and will be used at boot time. You do
+<tt>/etc/s6-rc/compiled/$stamp</tt>, is now accessible via the
+<tt>/etc/s6-rc/compiled/current</tt> symlink and will be used at boot time. You do
 not need to modify your init scripts. If you wish, you can dispose of the
 old database you just replaced:
 <pre>
  rm -rf $olddb
 </pre> </li>
+ <li> All of these operations are now automated in the
+<a href="//skarnet.org/software/s6-frontend/">s6-frontend</a> package:
+<a href="//skarnet.org/software/s6-frontend/s6_live.html#install"><tt>s6 live install</tt></a>
+will do all this for you, if you create your service database via
+<a href="//skarnet.org/software/s6-frontend/s6_set.html"><tt>s6 set</tt></a>
+commands. </li>
 </ul>	
-
 
 <a name="switching">
 <h2> Switching from another service manager </h2>
@@ -441,6 +442,12 @@ developers did not have to think much about separating mechanism from policy.
 It works very well for Gentoo and Gentoo-derived distributions; but it
 requires adaptation and more work for the admin to use OpenRC outside of
 that frame.
+</p>
+
+<p>
+<a href="//skarnet.org/software/s6-frontend/">s6-frontend</a> makes s6-rc
+more accessible, but does not provide policy files either. Work is underway
+on a policy package that will provide a turnkey bootable s6 ecosystem.
 </p>
 
 </body>
