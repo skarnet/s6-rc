@@ -81,7 +81,7 @@ int s6rc_repo_syncset_tmp (char const *repo, char const *set, stralloc *sa, gena
   size_t gabase = genalloc_len(size_t, ga) ;
 
   for (unsigned int i = 0 ; i < 4 ; i++)
-    if (unlink_stales_in_sub(repo, repolen, set, s6rc_repo_subnames[i], i, sa, ga, verbosity)) goto err ;
+    if (!unlink_stales_in_sub(repo, repolen, set, s6rc_repo_subnames[i], i, sa, ga, verbosity)) goto err ;
 
   {
     uint32_t n = genalloc_len(size_t, ga) ;
