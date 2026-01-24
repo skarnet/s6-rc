@@ -75,34 +75,46 @@ live compiled service database. </li>
 
 <h2> Options </h2>
 
+<dl>
 <ul>
- <li> <tt>-n</tt>&nbsp;: dry run. s6-rc-update will compute the service
+ <dt> -n, --dry-run </dt>
+ <dd> Dry run. s6-rc-update will compute the service
 transitions, and print the <a href="s6-rc.html">s6-rc</a> command lines
 it would execute to perform those transitions. It will not actually
-run them or modify the live database. </li>
- <li> <tt>-v&nbsp;<em>verbosity</em></tt>&nbsp;: be more or less
+run them or modify the live database. </dd>
+ <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dd> Be more or less
 verbose. Default is 1: warning and error messages will be printed to
 stderr. 0 silences warnings. 2 adds a bit more information about
-what s6-rc-update is doing. 3 or more is heavy debug output. </li>
- <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: if s6-rc-update cannot
+what s6-rc-update is doing. 3 or more is heavy debug output. </dd>
+ <dt> -t <em>timeout</em>, --timeout=<em>timeout</em> </dt>
+ <dd> If s6-rc-update cannot
 perform its job within <em>timeout</em> milliseconds, it will exit.
 The default is 0, meaning infinite (no timeout). Be aware that timing
 out and exiting may leave the live database in an inconsistent state,
-so use of this option is not recommended. </li>
- <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: look for the
-live state in <em>live</em>. It must be an absolute path.
+so use of this option is not recommended. </dd>
+ <dt> -l <em>live</em>, --livedir=<em>live</em> </dt>
+ <dd> Look for the live state in <em>live</em>. It must be an absolute path.
 Default is <tt>/run/s6-rc</tt>.
 The default can be changed at compile-time by giving the
-<tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. </li>
- <li> <tt>-f&nbsp;<em>convfile</em></tt>&nbsp;: use the conversion
+<tt>--livedir=<em>live</em></tt> option to <tt>./configure</tt>. </dd>
+ <dt> -f <em>convfile</em>, --conversion-file=<em>convfile</em> </dt>
+ <dd> Use the conversion
 file located at <em>convfile</em>. Default is <tt>/dev/null</tt>,
-meaning no special instructions. </li>
- <li> <tt>-b</tt>&nbsp;: blocking lock. If the database is currently
+meaning no special instructions. </dd>
+ <dt> -b, --block </dt>
+ <dd> Blocking lock. If the database is currently
 being used by another program, s6-rc-update will wait until that
 other program has released its lock on the database, then proceed.
 By default, s6-rc-update fails with an error message if the database
-is currently in use. </li>
-</ul>
+is currently in use. </dd>
+ <dt> -E, --no-force-essentials </dt>
+ <dd> If essential services are scheduled to be stopped for the transition,
+ignore them, i.e. keep them alive. This is the default. </dd>
+ <dt> -e, --force-essentials </dt>
+ <dd> If essential services are scheduled to be stopped for the transition,
+stop them just like any other service. </dd>
+</dl>
 
 <h2> Transition details </h2>
 

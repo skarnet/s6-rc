@@ -545,7 +545,7 @@ static inline void add_bundle (before_t *be, int dfd, char const *srcdir, char c
 
 static inline void add_source (before_t *be, int dfd, char const *srcdir, char const *name)
 {
-  if (verbosity >= 2) strerr_warni4x("parsing ", srcdir, "/", name) ;
+  if (verbosity >= 3) strerr_warni4x("parsing ", srcdir, "/", name) ;
   switch (type_check(dfd))
   {
     case 0 : strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
@@ -562,6 +562,7 @@ static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
   int fdsrc ;
   DIR *dir = opendir(srcdir) ;
   if (!dir) strerr_diefu2sys(111, "opendir ", srcdir) ;
+  if (verbosity >= 2) strerr_warni("adding sources from ", srcdir) ;
   fdsrc = dir_fd(dir) ;
   for (;;)
   {

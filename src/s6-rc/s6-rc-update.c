@@ -13,15 +13,13 @@
 #include <skalibs/types.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/buffer.h>
-#include <skalibs/strerr.h>
-#include <skalibs/sgetopt.h>
+#include <skalibs/envexec.h>
 #include <skalibs/bitarray.h>
 #include <skalibs/cdb.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/tai.h>
 #include <skalibs/cspawn.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/exec.h>
 #include <skalibs/skamisc.h>
 #include <skalibs/unix-transactional.h>
 
@@ -37,7 +35,7 @@
 
 #include <skalibs/posixishard.h>
 
-#define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] [ -b ] newdb"
+#define USAGE "s6-rc-update [ -n ] [ -v verbosity ] [ -t timeout ] [ -l live ] [ -f conversion_file ] [ -E | -e ] [ -b ] newdb"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "build string") ;
 
@@ -560,36 +558,61 @@ static unsigned int want_count (unsigned char const *state, unsigned int n)
   return count ;
 }
 
+enum golb_e
+{
+  GOLB_DRYRUN = 0x01,
+  GOLB_BLOCK = 0x02,
+  GOLB_FORCEESSENTIALS = 0x04,
+} ;
+
+enum gola_e
+{
+  GOLA_VERBOSITY,
+  GOLA_TIMEOUT,
+  GOLA_LIVEDIR,
+  GOLA_CONVFILE,
+  GOLA_N
+} ;
+
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-  char const *convfile = "/dev/null" ;
-  tain deadline ;
-  int dryrun = 0 ;
-  int blocking = 0 ;
-  PROG = "s6-rc-update" ;
+  static gol_bool const rgolb[] =
   {
-    unsigned int t = 0 ;
-    subgetopt l = SUBGETOPT_ZERO ;
-    for (;;)
-    {
-      int opt = subgetopt_r(argc, argv, "v:t:nl:f:b", &l) ;
-      if (opt == -1) break ;
-      switch (opt)
-      {
-        case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
-        case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
-        case 'n' : dryrun = 1 ; break ;
-        case 'l' : live = l.arg ; break ;
-        case 'f' : convfile = l.arg ; break ;
-        case 'b' : blocking = 1 ; break ;
-        default : dieusage() ;
-      }
-    }
-    argc -= l.ind ; argv += l.ind ;
-    if (t) tain_from_millisecs(&deadline, t) ;
-    else deadline = tain_infinite_relative ;
+    { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN },
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
+    { .so = 'E', .lo = "no-force-essentials", .clear = GOLB_FORCEESSENTIALS, .set = 0 },
+    { .so = 'e', .lo = "force-essentials", .clear = 0, .set = GOLB_FORCEESSENTIALS },
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+    { .so = 't', .lo = "timeout", .i = GOLA_TIMEOUT },
+    { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
+    { .so = 'f', .lo = "conversion-file", .i = GOLA_CONVFILE },
+  } ;
+  uint64_t wgolb = 0 ;
+  char const *wgola[GOLA_N] = { 0 } ;
+  tain deadline = TAIN_INFINITE_RELATIVE ;
+  PROG = "s6-rc-update" ;
+  wgola[GOLA_CONVFILE] = "/dev/null" ;
+
+  {
+    unsigned int golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+    argc -= golc ; argv += golc ;
+    if (!argc) dieusage() ;
   }
-  if (!argc) dieusage() ;
+
+  if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
+    strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+  if (wgola[GOLA_TIMEOUT])
+  {
+    unsigned int t ;
+    if (!uint0_scan(wgola[GOLA_TIMEOUT], &t))
+      strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+    if (t) tain_from_millisecs(&deadline, t) ;
+  }
+  if (wgola[GOLA_LIVEDIR]) live = wgola[GOLA_LIVEDIR] ;
+
   if (live[0] != '/')
     strerr_dief2x(100, live, " is not an absolute path") ;
   if (argv[0][0] != '/')
@@ -615,9 +638,9 @@ int main (int argc, char const *const *argv, char const *const *envp)
 
     memcpy(dbfn, live, livelen) ;
     memcpy(dbfn + livelen, "/compiled", 10) ;
-    if (!s6rc_lock(live, 2, &livelock, dbfn, 1, &oldlock, blocking))
+    if (!s6rc_lock(live, 2, &livelock, dbfn, 1, &oldlock, !!(wgolb & GOLB_BLOCK)))
       strerr_diefu4sys(111, "take lock on ", live, " and ", dbfn) ;
-    if (!s6rc_lock(0, 0, 0, argv[0], 1, &newlock, blocking))
+    if (!s6rc_lock(0, 0, 0, argv[0], 1, &newlock, !!(wgolb & GOLB_BLOCK)))
       strerr_diefu2sys(111, "take lock on ", argv[0]) ;
 
 
@@ -705,7 +728,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Read the conversion file and compute what to do */
 
       if (verbosity >= 2) strerr_warni1x("computing state adjustments") ;
-      compute_transitions(convfile, oldstate, fdoldc, &olddb, newstate, invimage, fdnewc, argv[0], &newdb, &sa) ;
+      compute_transitions(wgola[GOLA_CONVFILE], oldstate, fdoldc, &olddb, newstate, invimage, fdnewc, argv[0], &newdb, &sa) ;
       tain_now_g() ;
       if (!tain_future(&deadline)) strerr_dief1x(10, "timed out while computing state adjutments") ;
 
@@ -713,14 +736,14 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Down transition */
 
       {
-        char const *newargv[12 + (dryrun * 4) + want_count(oldstate, oldn)] ;
+        char const *newargv[12 + (!!(wgolb & GOLB_DRYRUN) * 4) + want_count(oldstate, oldn)] ;
         unsigned int m = 0, i = oldn ;
         int wstat ;
         char vfmt[UINT_FMT] ;
         char tfmt[UINT_FMT] ;
         vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
         fill_tfmt(tfmt, &deadline) ;
-        if (dryrun)
+        if (wgolb & GOLB_DRYRUN)
         {
           newargv[m++] = S6RC_BINPREFIX "s6-rc-dryrun" ;
           newargv[m++] = "-v" ;
@@ -735,8 +758,8 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        if (!dryrun) newargv[m++] = "--no-lock" ;
-        newargv[m++] = "-d" ;
+        if (!(wgolb & GOLB_DRYRUN)) newargv[m++] = "--no-lock" ;
+        newargv[m++] = wgolb & GOLB_FORCEESSENTIALS ? "-D" : "-d" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
         while (i--) if (oldstate[i] & 2)
@@ -756,7 +779,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         }
       }
 
-      if (!dryrun)
+      if (!(wgolb & GOLB_DRYRUN))
       {
        /* Update state and service directories */
 
@@ -798,13 +821,13 @@ int main (int argc, char const *const *argv, char const *const *envp)
      /* Up transition */
 
       {
-        char const *newargv[12 + (dryrun * 4) + want_count(newstate, newn)] ;
+        char const *newargv[12 + (!!(wgolb & GOLB_DRYRUN) * 4) + want_count(newstate, newn)] ;
         unsigned int m = 0, i = newn ;
         char vfmt[UINT_FMT] ;
         char tfmt[UINT_FMT] ;
         vfmt[uint_fmt(vfmt, verbosity)] = 0 ;
         fill_tfmt(tfmt, &deadline) ;
-        if (dryrun)
+        if (wgolb & GOLB_DRYRUN)
         {
           newargv[m++] = S6RC_BINPREFIX "s6-rc-dryrun" ;
           newargv[m++] = "-v" ;
@@ -819,7 +842,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
         newargv[m++] = tfmt ;
         newargv[m++] = "-l" ;
         newargv[m++] = live ;
-        if (!dryrun) newargv[m++] = "--no-lock" ;
+        if (!(wgolb & GOLB_DRYRUN)) newargv[m++] = "--no-lock" ;
         newargv[m++] = "-u" ;
         newargv[m++] = "--" ;
         newargv[m++] = "change" ;
