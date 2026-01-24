@@ -31,7 +31,7 @@ the <em>live database</em> of the currently running system.
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-install [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -c <em>bootdb</em> ] [ -l <em>livedir</em> ] [ -f <em>convfile</em> ] [ -b ] [ -K ] <em>set</em>
+     s6-rc-set-install [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -c <em>bootdb</em> ] [ -l <em>livedir</em> ] [ -f <em>convfile</em> ] [ -b ] [ -K ] [ -e | -E ] <em>set</em>
 </pre>
 
 <ul>
@@ -88,6 +88,16 @@ is the path to that old database. It can e.g. be used by automation to keep
 the possibility of rollbacks.
 By default, s6-rc-set-install will delete the old live database after
 successfully updating to the new one. </dd>
+
+ <dt> -e, --force-essentials </dt>
+ <dd> If essential services running in the live database need to be stopped
+before the new set is installed, stop them. This is the default, even though
+it is <em>not</em> the default in <a href="s6-rc-update.html">s6-rc-update</a>. </dd>
+
+ <dt> -E, --no-force-essentials </dt>
+ <dd> If essential services running in the live database need to be stopped
+before the new set is installed, treat them as really essential and do not
+stop them. This may put the machine in an inconsistent state. </dd>
 
  <dt> --no-update </dt>
  <dd> Only copy the database from the repository and link it as boot database;

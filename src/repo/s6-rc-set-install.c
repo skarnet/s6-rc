@@ -27,7 +27,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-install [ -v verbosity ] [ -c bootdb ] [ -l livedir ] [ -r repo ] [ -f convfile ] [ -b ] [ -K ] set"
+#define USAGE "s6-rc-set-install [ -v verbosity ] [ -c bootdb ] [ -l livedir ] [ -r repo ] [ -f convfile ] [ -b ] [ -K ] [ -e | -E ] set"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -35,6 +35,7 @@ enum golb_e
   GOLB_BLOCK = 0x01,
   GOLB_KEEPOLD = 0x02,
   GOLB_NOUPDATE = 0x04,
+  GOLB_NOFORCEESSENTIALS = 0x08,
 } ;
 
 enum gola_e
@@ -54,6 +55,8 @@ int main (int argc, char const *const *argv)
     { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
     { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD },
     { .so = 0, .lo = "no-update", .set = GOLB_NOUPDATE },
+    { .so = 'e', .lo = "force-essentials", .clear = GOLB_NOFORCEESSENTIALS, .set = 0 },
+    { .so = 'E', .lo = "no-force-essentials", .clear = 0, .set = GOLB_NOFORCEESSENTIALS },
   } ;
   static gol_arg const rgola[] =
   {
@@ -110,7 +113,7 @@ int main (int argc, char const *const *argv)
     pid_t pid ;
     int wstat ;
     char *olddb = 0 ;
-    char const *uargv[11] ;
+    char const *uargv[12] ;
     char fmtv[UINT_FMT] ;
     char clink[repolen + setlen + 11] ;
     char cfull[clen] ;
@@ -164,6 +167,7 @@ int main (int argc, char const *const *argv)
     {
       uargv[l++] = S6RC_BINPREFIX "s6-rc-update" ;
       if (wgolb & GOLB_BLOCK) uargv[l++] = "-b" ;
+      uargv[l++] = wgolb & GOLB_NOFORCEESSENTIALS ? "-E" : "-e" ;
       uargv[l++] = "-v" ;
       uargv[l++] = fmtv ;
       uargv[l++] = "-l" ;
