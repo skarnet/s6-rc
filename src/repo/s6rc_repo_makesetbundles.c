@@ -57,10 +57,10 @@ int s6rc_repo_makesetbundles (char const *repo, char const *set, unsigned int ve
     return 0 ;
   }
 
-  n = s6rc_repo_listsub(repo, set, s6rc_repo_subnames[0], &sa, &ga) ;
+  n = s6rc_repo_listrx(repo, set, s6rc_repo_rxnames[0], &sa, &ga) ;
   if (n < 0)
   {
-    strerr_warnfu6sys("list sub ", s6rc_repo_subnames[0], " of set ", set, " in repository ", repo) ;
+    strerr_warnfu6sys("list rx ", s6rc_repo_rxnames[0], " of set ", set, " in repository ", repo) ;
     goto err ;
   }
 

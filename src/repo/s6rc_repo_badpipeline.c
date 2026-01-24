@@ -21,7 +21,7 @@ static int notfound (uint32_t k, uint32_t const *tab, uint32_t n)
   return 1 ;
 }
 
-int s6rc_repo_badpipeline (char const *repo, char const *set, size_t svind, s6rc_repo_sv const *svlist, uint32_t ntot, uint8_t newsub, stralloc *sa, genalloc *badga)
+int s6rc_repo_badpipeline (char const *repo, char const *set, size_t svind, s6rc_repo_sv const *svlist, uint32_t ntot, uint8_t newrx, stralloc *sa, genalloc *badga)
 {
   size_t sabase = sa->len ;
   size_t gabase = genalloc_len(uint32_t, badga) ;
@@ -74,7 +74,7 @@ int s6rc_repo_badpipeline (char const *repo, char const *set, size_t svind, s6rc
           goto err ;
         }
         k = p - svlist ;
-        if (!newsub != !p->sub && notfound(k, genalloc_s(uint32_t, badga), genalloc_len(uint32_t, badga)))
+        if (!newrx != !p->rx && notfound(k, genalloc_s(uint32_t, badga), genalloc_len(uint32_t, badga)))
         {
           if (!genalloc_append(uint32_t, badga, &k))
           {

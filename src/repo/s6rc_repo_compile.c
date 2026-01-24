@@ -16,11 +16,11 @@
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_compile (char const *repo, char const *set, char const *const *subs, uint8_t nsubs, char *oldc, unsigned int verbosity, char const *fdhuser)
+int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs, uint8_t nrxs, char *oldc, unsigned int verbosity, char const *fdhuser)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
-  size_t totsublen = 0 ;
+  size_t totrxlen = 0 ;
   int needprefix = strcmp(set, ".ref") ;
   char newc[repolen + setlen + 45] ;
   memcpy(newc, repo, repolen) ;
@@ -31,15 +31,15 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
   memcpy(newc + repolen + 37 + setlen, ":XXXXXX", 8) ;
   memcpy(oldc, newc, repolen + 10) ;
   if (mkntemp(newc) == -1) { strerr_warnfu2sys("mkntemp ", newc) ; return -1 ; }
-  for (uint8_t i = 0 ; i < nsubs ; i++) totsublen += strlen(subs[i]) + 1 ;
+  for (uint8_t i = 0 ; i < nrxs ; i++) totrxlen += strlen(rxs[i]) + 1 ;
 
   {
     pid_t pid ;
     size_t m = 0 ;
     int wstat ;
-    char const *argv[9 + nsubs] ;
+    char const *argv[9 + nrxs] ;
     char fmtv[UINT_FMT] ;
-    char src[nsubs * (repolen + 10 + (needprefix ? setlen + 1 : 0)) + totsublen] ;
+    char src[nrxs * (repolen + 10 + (needprefix ? setlen + 1 : 0)) + totrxlen] ;
     char *w = src ;
     fmtv[uint_fmt(fmtv, verbosity)] = 0 ;
     argv[m++] = S6RC_BINPREFIX "s6-rc-compile" ;
@@ -53,9 +53,9 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
     }
     argv[m++] = "--" ;
     argv[m++] = newc ;
-    for (uint8_t i = 0 ; i < nsubs ; i++)
+    for (uint8_t i = 0 ; i < nrxs ; i++)
     {
-      size_t sublen = strlen(subs[i]) ;
+      size_t rxlen = strlen(rxs[i]) ;
       argv[m++] = w ;
       memcpy(w, repo, repolen) ; w += repolen ;
       memcpy(w, "/sources/", 9) ; w += 9 ;
@@ -64,7 +64,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *sub
         memcpy(w, set, setlen) ; w += setlen ;
         *w++ = '/' ;
       }
-      memcpy(w, subs[i], sublen+1) ; w += sublen + 1 ;
+      memcpy(w, rxs[i], rxlen+1) ; w += rxlen + 1 ;
     }
     argv[m++] = 0 ;
     pid = cspawn(argv[0], argv, (char const *const *)environ, 0, 0, 0) ;

@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Language" content="en" />
     <title>s6-rc: the s6-rc-set-new program</title>
     <meta name="Description" content="s6-rc: the s6-rc-set-new program" />
-    <meta name="Keywords" content="s6-rc s6-rc-set-new repo set sub new services" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-new repo set rx new services" />
     <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
@@ -33,12 +33,12 @@ in a <a href="repodefs.html#repository">repository</a>.
  <li> For every argument in <em>setname...</em>, s6-rc-set-new creates a
 <a href="repodefs.html#set">set</a> with that name, in the repository
 <em>repo</em>. Under that set name, it attributes a default
-<a href="repodefs.html#sub">sub</a> to every service listed in the
+<a href="repodefs.html#rx">rx</a> to every service listed in the
 <a href="repodefs.html#store">stores</a>:
   <ul>
-   <li> Services with the <em>essential</em> flag are added to the <tt>always</tt> sub </li>
-   <li> Services with the <em>recommended</em> flag are added to the <tt>active</tt> sub </li>
-   <li> Others are added to the <tt>usable</tt> sub. </li>
+   <li> Services with the <em>essential</em> flag are added to the <tt>always</tt> rx </li>
+   <li> Services with the <em>recommended</em> flag are added to the <tt>active</tt> rx </li>
+   <li> Others are added to the <tt>usable</tt> rx. </li>
   </ul> </li>
  <li> It exits 0. </li>
 </ul>

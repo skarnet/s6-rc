@@ -18,7 +18,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] set newsub services..."
+#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] set newrx services..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -36,15 +36,15 @@ enum gola_e
   GOLA_N
 } ;
 
-struct subname_s
+struct rxname_s
 {
   char const *name ;
-  uint8_t sub ;
+  uint8_t rx ;
 } ;
 
-static int subname_cmp (void const *a, void const *b)
+static int rxname_cmp (void const *a, void const *b)
 {
-  return strcmp((char const *)a, ((struct subname_s const *)b)->name) ;
+  return strcmp((char const *)a, ((struct rxname_s const *)b)->name) ;
 }
 
 int main (int argc, char const *const *argv)
@@ -62,33 +62,33 @@ int main (int argc, char const *const *argv)
     { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
     { .so = 'I', .lo = "if-dependencies-found", .i = GOLA_FORCELEVEL }
   } ;
-  static struct subname_s const accepted_forcelevels[] =
+  static struct rxname_s const accepted_forcelevels[] =
   {
-    { .name = "fail", .sub = 0 },
-    { .name = "pull", .sub = 2 },
-    { .name = "warn", .sub = 1 }
+    { .name = "fail", .rx = 0 },
+    { .name = "pull", .rx = 2 },
+    { .name = "warn", .rx = 1 }
   } ;
-  static struct subname_s const accepted_subs[] =
+  static struct rxname_s const accepted_rxs[] =
   {
-    { .name = "activate", .sub = 2 },
-    { .name = "active", .sub = 2 },
-    { .name = "always", .sub = 3 },
-    { .name = "deactivate", .sub = 1 },
-    { .name = "disable", .sub = 1 },
-    { .name = "disabled", .sub = 1 },
-    { .name = "enable", .sub = 2 },
-    { .name = "enabled", .sub = 2 },
-    { .name = "essential", .sub = 3 },
-    { .name = "inactive", .sub = 1 },
-    { .name = "latent", .sub = 1 },
-    { .name = "make-essential", .sub = 3 },
-    { .name = "mask", .sub = 0 },
-    { .name = "masked", .sub = 0 },
-    { .name = "onboot", .sub = 2 },
-    { .name = "suppress", .sub = 0 },
-    { .name = "unmask", .sub = 1 },
-    { .name = "unmasked", .sub = 1 },
-    { .name = "usable", .sub = 1 }
+    { .name = "activate", .rx = 2 },
+    { .name = "active", .rx = 2 },
+    { .name = "always", .rx = 3 },
+    { .name = "deactivate", .rx = 1 },
+    { .name = "disable", .rx = 1 },
+    { .name = "disabled", .rx = 1 },
+    { .name = "enable", .rx = 2 },
+    { .name = "enabled", .rx = 2 },
+    { .name = "essential", .rx = 3 },
+    { .name = "inactive", .rx = 1 },
+    { .name = "latent", .rx = 1 },
+    { .name = "make-essential", .rx = 3 },
+    { .name = "mask", .rx = 0 },
+    { .name = "masked", .rx = 0 },
+    { .name = "onboot", .rx = 2 },
+    { .name = "suppress", .rx = 0 },
+    { .name = "unmask", .rx = 1 },
+    { .name = "unmasked", .rx = 1 },
+    { .name = "usable", .rx = 1 }
   } ;
   stralloc storage = STRALLOC_ZERO ;
   genalloc svlist = GENALLOC_ZERO ;  /* s6rc_repo_sv */
@@ -100,7 +100,7 @@ int main (int argc, char const *const *argv)
   char const *wgola[GOLA_N] = { 0 } ;
   uint64_t wgolb = 0 ;
   unsigned int golc ;
-  struct subname_s *newsub ;
+  struct rxname_s *newrx ;
   size_t max = 0, sabase ;
   s6rc_repo_sv *list ;
   uint32_t listn, n ;
@@ -114,15 +114,15 @@ int main (int argc, char const *const *argv)
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
   if (wgola[GOLA_FORCELEVEL])
   {
-    struct subname_s *p = bsearch(wgola[GOLA_FORCELEVEL], accepted_forcelevels, sizeof(accepted_forcelevels)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
+    struct rxname_s *p = bsearch(wgola[GOLA_FORCELEVEL], accepted_forcelevels, sizeof(accepted_forcelevels)/sizeof(struct rxname_s), sizeof(struct rxname_s), &rxname_cmp) ;
     if (!p) strerr_dief1x(100, "if-dependencies-found needs to be fail, warn or pull") ;
-    forcelevel = p->sub ;
+    forcelevel = p->rx ;
   }
   if (argc < 3) dieusage() ;
   s6rc_repo_sanitize_setname(argv[0]) ;
-  newsub = bsearch(argv[1], accepted_subs, sizeof(accepted_subs)/sizeof(struct subname_s), sizeof(struct subname_s), &subname_cmp) ;
-  if (!newsub) strerr_dief2x(100, "unrecognized state change directive: ", argv[1]) ;
-  if (newsub->sub == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
+  newrx = bsearch(argv[1], accepted_rxs, sizeof(accepted_rxs)/sizeof(struct rxname_s), sizeof(struct rxname_s), &rxname_cmp) ;
+  if (!newrx) strerr_dief2x(100, "unrecognized state change directive: ", argv[1]) ;
+  if (newrx->rx == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
     strerr_diefu1x(100, "artificially mark a service as essential without --force-essential") ;
   for (unsigned int i = 2 ; i < argc ; i++) s6rc_repo_sanitize_svname(argv[i]) ;
 
@@ -165,13 +165,13 @@ int main (int argc, char const *const *argv)
     for (uint32_t i = 0 ; i < n ; i++)
     {
       size_t len ;
-      list[ind[i]].sub = newsub->sub ;
+      list[ind[i]].rx = newrx->rx ;
       tmpstart[i] = tmpstore + m ;
       len = strlen(storage.s + list[ind[i]].pos) + 1 ;
       memcpy(tmpstore + m, storage.s + list[ind[i]].pos, len) ;
       m += len ;
     }
-    if (!s6rc_repo_badsub(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newsub->sub, 3, list, listn, &storage, &indices, &gatmp)) _exit(111) ;
+    if (!s6rc_repo_badrx(wgola[GOLA_REPODIR], argv[0], tmpstart, n, newrx->rx, 3, list, listn, &storage, &indices, &gatmp)) _exit(111) ;
     // genalloc_free(size_t, &gatmp) ;
     if (genalloc_len(uint32_t, &indices))
     {
@@ -184,11 +184,11 @@ int main (int argc, char const *const *argv)
         arg[1] = ": " ;
         arg[2] = !forcelevel ? "fatal" : "warning" ;
         arg[3] = ": the following services (" ;
-        arg[4] = newsub->sub >= 2 ? "dependencies of" : "depending on" ;
+        arg[4] = newrx->rx >= 2 ? "dependencies of" : "depending on" ;
         arg[5] = " the ones given as arguments, or part of the same pipeline) " ;
         arg[6] = forcelevel == 2 ? "are also being" : "also need to be" ;
         arg[7] = " changed to \"" ;
-        arg[8] = s6rc_repo_subnames[newsub->sub] ;
+        arg[8] = s6rc_repo_rxnames[newrx->rx] ;
         arg[9] = "\": " ;
         for (uint32_t i = 0 ; i < badn ; i++)
         {
@@ -204,7 +204,7 @@ int main (int argc, char const *const *argv)
         s6rc_repo_sv full[n + badn] ;
         for (uint32_t i = 0 ; i < n ; i++) full[i] = starting[i] ;
         for (uint32_t i = 0 ; i < badn ; i++) full[n + i] = list[bads[i]] ;
-        if (!s6rc_repo_moveservices(wgola[GOLA_REPODIR], argv[0], full, n + badn, newsub->sub, storage.s, verbosity)) _exit(111) ;
+        if (!s6rc_repo_moveservices(wgola[GOLA_REPODIR], argv[0], full, n + badn, newrx->rx, storage.s, verbosity)) _exit(111) ;
         _exit(0) ;
       }
     }
@@ -213,7 +213,7 @@ int main (int argc, char const *const *argv)
 
   if (!(wgolb & GOLB_DRYRUN))
   {
-    if (!s6rc_repo_moveservices(wgola[GOLA_REPODIR], argv[0], starting, n, newsub->sub, storage.s, verbosity)) _exit(111) ;
+    if (!s6rc_repo_moveservices(wgola[GOLA_REPODIR], argv[0], starting, n, newrx->rx, storage.s, verbosity)) _exit(111) ;
   }
   _exit(0) ;
 }

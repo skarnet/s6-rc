@@ -56,7 +56,7 @@ int main (int argc, char const **argv)
   char const *setname ;
   char const *wgola[GOLA_N] = { 0 } ;
   unsigned int golc ;
-  uint8_t sub ;
+  uint8_t rx ;
 
   PROG = "s6-rc-set-status" ;
   wgola[GOLA_REPODIR] = S6RC_REPODIR ;
@@ -102,10 +102,10 @@ int main (int argc, char const **argv)
   memcpy(fn + repolen + 9, setname, setlen) ;
   fn[repolen + 9 + setlen] = '/' ;
 
-  sub = wgolb & GOLB_IGNORE_ESSENTIALS ? 3 : 4 ;
-  while (sub--)
+  rx = wgolb & GOLB_IGNORE_ESSENTIALS ? 3 : 4 ;
+  while (rx--)
   {
-    memcpy(fn + repolen + 10 + setlen, s6rc_repo_subnames[sub], 7) ;
+    memcpy(fn + repolen + 10 + setlen, s6rc_repo_rxnames[rx], 7) ;
     DIR *dir = opendir(fn) ;
     if (!dir) strerr_diefu2sys(111, "opendir ", fn) ;
     for (;;)
@@ -119,7 +119,7 @@ int main (int argc, char const **argv)
       if (buffer_puts(buffer_1, d->d_name) < 0) dieout() ;
       if (!(wgolb & GOLB_NOSUB))
         if (buffer_put(buffer_1, "/", 1) < 0
-         || buffer_put(buffer_1, s6rc_repo_subnames[sub], 6) < 0) dieout() ;
+         || buffer_put(buffer_1, s6rc_repo_rxnames[rx], 6) < 0) dieout() ;
       if (buffer_put(buffer_1, "\n", 1) < 0) dieout() ;
     }
     if (errno) strerr_diefu2sys(111, "readdir ", fn) ;

@@ -14,10 +14,10 @@
 
 #include <s6-rc/repo.h>
 
-static inline int sub_cleanup (char const *sub)
+static inline int rx_cleanup (char const *rx)
 {
-  size_t sublen = strlen(sub) ;
-  DIR *dir = opendir(sub) ;
+  size_t rxlen = strlen(rx) ;
+  DIR *dir = opendir(rx) ;
   if (!dir) return 0 ;
   for (;;)
   {
@@ -29,10 +29,10 @@ static inline int sub_cleanup (char const *sub)
     if (d->d_name[0] == '.') continue ;
     len = strlen(d->d_name) ;
     {
-      char fn[sublen + len + 2] ;
-      memcpy(fn, sub, sublen) ;
-      fn[sublen] = '/' ;
-      memcpy(fn + sublen + 1, d->d_name, len + 1) ;
+      char fn[rxlen + len + 2] ;
+      memcpy(fn, rx, rxlen) ;
+      fn[rxlen] = '/' ;
+      memcpy(fn + rxlen + 1, d->d_name, len + 1) ;
       if (access(fn, F_OK) == 0)
       {
         struct stat st ;
@@ -77,7 +77,7 @@ static inline int set_cleanup (char const *set)
       memcpy(fn, set, setlen) ;
       fn[setlen] = '/' ;
       memcpy(fn + setlen + 1, d->d_name, len + 1) ;
-      if (!sub_cleanup(fn)) break ;
+      if (!rx_cleanup(fn)) break ;
     }
   }
   dir_close(dir) ;

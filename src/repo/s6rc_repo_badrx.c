@@ -14,7 +14,7 @@
 
 #include <s6-rc/repo.h>
 
-int s6rc_repo_badsub (char const *repo, char const *set, char const **services, uint32_t n, uint8_t newsub, uint8_t what, s6rc_repo_sv const *svlist, uint32_t ntot, stralloc *sa, genalloc *badga, genalloc *fulldeps)
+int s6rc_repo_badrx (char const *repo, char const *set, char const **services, uint32_t n, uint8_t newrx, uint8_t what, s6rc_repo_sv const *svlist, uint32_t ntot, stralloc *sa, genalloc *badga, genalloc *fulldeps)
 {
   size_t sabase = sa->len ;
   size_t gabase = genalloc_len(uint32_t, badga) ;
@@ -22,9 +22,9 @@ int s6rc_repo_badsub (char const *repo, char const *set, char const **services, 
   size_t const *ind ;
   uint32_t mid ;
 
-  if (newsub < 3 && (what & 1) && s6rc_repo_listalldeps(repo, services, n, sa, fulldeps, 0)) return 0 ;
+  if (newrx < 3 && (what & 1) && s6rc_repo_listalldeps(repo, services, n, sa, fulldeps, 0)) return 0 ;
   mid = genalloc_len(size_t, fulldeps) ;
-  if (newsub > 0 && (what & 2) && s6rc_repo_listalldeps(repo, services, n, sa, fulldeps, 1)) goto err ;
+  if (newrx > 0 && (what & 2) && s6rc_repo_listalldeps(repo, services, n, sa, fulldeps, 1)) goto err ;
 
   qsort(services, n, sizeof(char const *), &str_cmp) ;
   fulln = genalloc_len(size_t, fulldeps) ;
@@ -41,22 +41,22 @@ int s6rc_repo_badsub (char const *repo, char const *set, char const **services, 
       strerr_warnfu6x("find service ", cur, " in set ", set, " of repository ", repo) ;
       goto err ;
     }
-    if (i >= mid ? p->sub < newsub : p->sub > newsub)
+    if (i >= mid ? p->rx < newrx : p->rx > newrx)
     {
       uint32_t k = p - svlist ;
       if (!genalloc_append(uint32_t, badga, &k))
       {
-        strerr_warnfu1sys("make bad sub list") ;
+        strerr_warnfu1sys("make bad rx list") ;
         goto err ;
       }
     }
   }
 
-  if ((!newsub && (what & 1)) || (newsub && (what & 2)))
+  if ((!newrx && (what & 1)) || (newrx && (what & 2)))
   {
     for (uint32_t i = 0 ; i < fulln ; i++)
     {
-      int e = s6rc_repo_badpipeline(repo, set, ind[i], svlist, ntot, newsub, sa, badga) ;
+      int e = s6rc_repo_badpipeline(repo, set, ind[i], svlist, ntot, newrx, sa, badga) ;
       if (e) goto err ;
     }
   }

@@ -33,7 +33,7 @@ dependency inconsistencies, and fixes them.
  <li> s6-rc-set-fix checks all the sets listed in <em>sets...</em> for dependency inconsistencies
 that may prevent <a href="s6-rc-set-commit.html">s6-rc-set-commit</a> from succeeding. If
 <em>sets...</em> is empty, all the sets in the repository are checked. </li>
- <li> s6-rc-set-fix prints what it finds and changes the <a href="repodefs.html#sub">subs</a>
+ <li> s6-rc-set-fix prints what it finds and changes the <a href="repodefs.html#rx">rxs</a>
 of impacted services so the resulting set is consistent. </li>
 </ul>
 
@@ -69,15 +69,15 @@ will be started at boot time than the set initially declared. This is the defaul
 
  <dt> -E, --no-force-essential </dt>
  <dd> If fixing a dependency inconsistency would imply moving a service down from the
-<em>always</em> sub, or up to the <em>always</em> sub, when its service definition
+<em>always</em> rx, or up to the <em>always</em> rx, when its service definition
 directory does not declare it as essential, do not attempt fixing it and fail the operation.
 This is the default. If such a situation occurs, it means that the set of services
-provided in the <a href="repodefs.html#sub">stores</a> is not consistent, and that
+provided in the <a href="repodefs.html#rx">stores</a> is not consistent, and that
 is what should be fixed. </dd>
 
  <dt> -e, --force-essential </dt>
  <dd> If fixing a dependency inconsistency would imply moving a service down from the
-<em>always</em> sub, or up to the <em>always</em> sub, when its service definition
+<em>always</em> rx, or up to the <em>always</em> rx, when its service definition
 directory does not declare it as essential, do it, even though it goes against a
 service definition in a store. This can help you keep a service set consistent
 until the store is fixed. </dd>

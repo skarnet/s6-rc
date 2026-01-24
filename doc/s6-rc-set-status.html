@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Language" content="en" />
     <title>s6-rc: the s6-rc-set-status program</title>
     <meta name="Description" content="s6-rc: the s6-rc-set-status program" />
-    <meta name="Keywords" content="s6-rc s6-rc-set-status repo set sub list services status" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-status repo set rx list services status" />
     <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
@@ -20,7 +20,7 @@
 
 <p>
  s6-rc-set-status lists some of, or all, the services of a <a href="repodefs.html#set">set</a>,
-along with the <a href="repodefs.html#sub">sub</a> each service is on.
+along with the <a href="repodefs.html#rx">rx</a> each service is on.
 </p>
 
 <h2> Interface </h2>
@@ -37,7 +37,7 @@ services in the set. Each line consists of:
   <ul>
    <li> The name of the service </li>
    <li> A slash (<tt>/</tt>) character </li>
-   <li> The canonical name for the sub the service is in. </li>
+   <li> The canonical name for the rx the service is in. </li>
   </ul> </li>
  <li> It exits 0. </li>
 </ul>
@@ -56,14 +56,14 @@ error messages will be written, and 2 or more adds informational messages. </dd>
  </dd>
 
  <dt> -E, --with-essentials </dt>
- <dd> Do not ignore services in the <tt>always</tt> sub, i.e. services marked as
+ <dd> Do not ignore services in the <tt>always</tt> rx, i.e. services marked as
 essential. This is the default. </dd>
 
  <dt> -e, --without-essentials </dt>
- <dd> Ignore services in the <tt>always</tt> sub: do not print them. </dd>
+ <dd> Ignore services in the <tt>always</tt> rx: do not print them. </dd>
 
  <dt> -L. --list </dt>
- <dd> Do not print <tt>/<em>sub</em></tt> at the end of each line: only print the service names. </dd>
+ <dd> Do not print <tt>/<em>rx</em></tt> at the end of each line: only print the service names. </dd>
 </dl>
 
 <h2> Exit codes </h2>
@@ -81,7 +81,7 @@ essential. This is the default. </dd>
 <ul>
  <li> s6-rc-set-status is meant to be used with automation such as
 util-linux's <a href="https://man7.org/linux/man-pages/man1/column.1.html">column</a>
-for formatting. A slash is used to separate the service name for the sub because
+for formatting. A slash is used to separate the service name for the rx because
 slashes cannot appear in service names. </li>
 </ul>
 

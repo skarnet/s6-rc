@@ -37,7 +37,7 @@ directory with them. It includes all the bundles defined in the <a href="repodef
 as none of the atomic services composing a bundle is masked. If any service in a bundle is masked,
 the bundle does not appear in the database. </li>
  <li> It makes an additional bundle, <em>defaultbundle</em>, based on the
-services' <a href="repodefs.html#sub">subs</a>:
+services' <a href="repodefs.html#rx">rxs</a>:
   <ul>
    <li> If a service is <em>masked</em>, it will not appear in the database at all,
 and neither will any bundle it's a part of. </li>
@@ -107,7 +107,7 @@ change to the source version, s6-rc-set-commit notices it and does nothing. </dd
 <ul>
  <li> s6-rc-set-commit is essentially a wrapper around <a href="s6-rc-compile.html">s6-rc-compile</a>,
 that translates a user-oriented view of services ("which services do I want available, and
-which do I want started at boot time?"), implemented via subs, into the source format for
+which do I want started at boot time?"), implemented via rxs, into the source format for
 <a href="s6-rc-compile.html">s6-rc-compile</a>, then builds the corresponding service
 database. </li>
  <li> s6-rc-set-commit is the ultimate verification step for consistency. When it passes,

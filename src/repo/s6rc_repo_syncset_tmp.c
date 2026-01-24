@@ -15,20 +15,20 @@
 
 #include <s6-rc/repo.h>
 
-static int unlink_stales_in_sub (char const *repo, size_t repolen, char const *set, uint8_t sub, stralloc *sa, genalloc *ga, unsigned int verbosity)
+static int unlink_stales_in_rx (char const *repo, size_t repolen, char const *set, uint8_t rx, stralloc *sa, genalloc *ga, unsigned int verbosity)
 {
   size_t setlen = strlen(set) ;
-  size_t subfnlen = repolen + setlen + 16 ;
-  char subfn[subfnlen + 1] ;
-  memcpy(subfn, repo, repolen) ;
-  memcpy(subfn + repolen, "/sources/", 9) ;
-  memcpy(subfn + repolen + 9, set, setlen) ;
-  subfn[repolen + 9 + setlen] = '/' ;
-  memcpy(subfn + repolen + 10 + setlen, s6rc_repo_subnames[sub], 7) ;
-  DIR *dir = opendir(subfn) ;
+  size_t rxfnlen = repolen + setlen + 16 ;
+  char rxfn[rxfnlen + 1] ;
+  memcpy(rxfn, repo, repolen) ;
+  memcpy(rxfn + repolen, "/sources/", 9) ;
+  memcpy(rxfn + repolen + 9, set, setlen) ;
+  rxfn[repolen + 9 + setlen] = '/' ;
+  memcpy(rxfn + repolen + 10 + setlen, s6rc_repo_rxnames[rx], 7) ;
+  DIR *dir = opendir(rxfn) ;
   if (!dir)
   {
-    strerr_warnfu2sys("opendir ", subfn) ;
+    strerr_warnfu2sys("opendir ", rxfn) ;
     return 0 ;
   }
   for (;;)
@@ -40,10 +40,10 @@ static int unlink_stales_in_sub (char const *repo, size_t repolen, char const *s
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
     len = strlen(d->d_name) ;
-    char fn[subfnlen + len + 2] ;
-    memcpy(fn, subfn, subfnlen) ;
-    fn[subfnlen] = '/' ;
-    memcpy(fn + subfnlen + 1, d->d_name, len+1) ;
+    char fn[rxfnlen + len + 2] ;
+    memcpy(fn, rxfn, rxfnlen) ;
+    fn[rxfnlen] = '/' ;
+    memcpy(fn + rxfnlen + 1, d->d_name, len+1) ;
     if (access(fn, F_OK) == -1)
     {
       if (errno != ENOENT)
@@ -53,7 +53,7 @@ static int unlink_stales_in_sub (char const *repo, size_t repolen, char const *s
       }
       unlink_void(fn) ;
       if (verbosity >= 3)
-        strerr_warni6x("service ", d->d_name, " does not exist anymore, removed from sub ", s6rc_repo_subnames[sub], " of set ", set) ;
+        strerr_warni6x("service ", d->d_name, " does not exist anymore, removed from rx ", s6rc_repo_rxnames[rx], " of set ", set) ;
     }
     else
     {
@@ -63,7 +63,7 @@ static int unlink_stales_in_sub (char const *repo, size_t repolen, char const *s
   }
   if (errno)
   {
-    strerr_warnfu2sys("readdir ", subfn) ;
+    strerr_warnfu2sys("readdir ", rxfn) ;
     goto err ;
   }
 
@@ -81,8 +81,8 @@ int s6rc_repo_syncset_tmp (char const *repo, char const *set, stralloc *sa, gena
   size_t sabase = sa->len ;
   size_t gabase = genalloc_len(size_t, ga) ;
 
-  for (uint8_t sub = 0 ; sub < 4 ; sub++)
-    if (!unlink_stales_in_sub(repo, repolen, set, sub, sa, ga, verbosity)) goto err ;
+  for (uint8_t rx = 0 ; rx < 4 ; rx++)
+    if (!unlink_stales_in_rx(repo, repolen, set, rx, sa, ga, verbosity)) goto err ;
 
   {
     uint32_t n = genalloc_len(size_t, ga) ;

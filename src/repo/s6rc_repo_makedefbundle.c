@@ -24,7 +24,7 @@ int s6rc_repo_makedefbundle (char const *repo, char const *set, char const *bund
   mode_t m ;
   DIR *dir ;
   char bfn[bfnlen + 1] ;
-  char subfn[repolen + setlen + 17] ;
+  char rxfn[repolen + setlen + 17] ;
 
   memcpy(bfn, repo, repolen) ;
   memcpy(bfn + repolen, "/sources/.atomics/", 18) ;
@@ -71,14 +71,14 @@ int s6rc_repo_makedefbundle (char const *repo, char const *set, char const *bund
   }
   memcpy(bfn + repolen + setlen + 18 + bundlelen, "contents.d/", 11) ;
 
-  memcpy(subfn, bfn, repolen + 10 + setlen) ;
-  for (uint8_t sub = 2 ; sub < 4 ; sub++)
+  memcpy(rxfn, bfn, repolen + 10 + setlen) ;
+  for (uint8_t rx = 2 ; rx < 4 ; rx++)
   {
-    memcpy(subfn + repolen + 10 + setlen, s6rc_repo_subnames[sub], 7) ;
-    dir = opendir(subfn) ;
+    memcpy(rxfn + repolen + 10 + setlen, s6rc_repo_rxnames[rx], 7) ;
+    dir = opendir(rxfn) ;
     if (!dir)
     {
-      strerr_warnfu2sys("opendir ", subfn) ;
+      strerr_warnfu2sys("opendir ", rxfn) ;
       return 0 ;
     }
 
@@ -104,7 +104,7 @@ int s6rc_repo_makedefbundle (char const *repo, char const *set, char const *bund
     dir_close(dir) ;
     if (errno)
     {
-      strerr_warnfu2sys("readdir ", subfn) ;
+      strerr_warnfu2sys("readdir ", rxfn) ;
       return 0 ;
     }
   }

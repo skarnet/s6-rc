@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Language" content="en" />
     <title>s6-rc: the s6-rc-set-change program</title>
     <meta name="Description" content="s6-rc: the s6-rc-set-change program" />
-    <meta name="Keywords" content="s6-rc s6-rc-set-change repo set sub change services" />
+    <meta name="Keywords" content="s6-rc s6-rc-set-change repo set rx change services" />
     <!-- <link rel="stylesheet" type="text/css" href="//skarnet.org/default.css" /> -->
   </head>
 <body>
@@ -20,18 +20,18 @@
 
 <p>
  s6-rc-set-change modifies a <a href="repodefs.html#set">set</a> by changing
-the <a href="repodefs.html#sub">sub</a> of some services.
+the <a href="repodefs.html#rx">rx</a> of some services.
 </p>
 
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-change [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] <em>set</em> <em>newsub</em> <em>services...</em>
+     s6-rc-set-change [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] <em>set</em> <em>newrx</em> <em>services...</em>
 </pre>
 
 <ul>
  <li> s6-rc-set-change operates on <a href="repodefs.html#set">set</a> <em>set</em> in <a href="repodefs.html#repository">repository</a> <em>repo</em>. </li>
- <li> It attempts to move all the services listed in <em>services...</em> into <a href="repodefs.html#sub">sub</a> <em>newsub</em>. </li>
+ <li> It attempts to move all the services listed in <em>services...</em> into <a href="repodefs.html#rx">rx</a> <em>newrx</em>. </li>
  <li> It exits 0. </li>
 </ul>
 
@@ -49,19 +49,19 @@ error messages will be written, and 2 or more adds informational messages. </dd>
  </dd>
 
  <dt> -E, --no-force-essential </dt>
- <dd> If a service needs to be moved to/from the <tt>always</tt> sub, fail and report
+ <dd> If a service needs to be moved to/from the <tt>always</tt> rx, fail and report
 an error. This is the default. Services marked as <em>always</em> are normally defined
 in the stores with <tt>flag-essential</tt>, and inconsistencies between essential
 services should be resolved in the stores. </dd>
 
  <dt> -e, --force-essential </dt>
- <dd> Move services to/from the <tt>always</tt> sub if they need to be. This option
+ <dd> Move services to/from the <tt>always</tt> rx if they need to be. This option
 should only be used temporarily until the store inconsistency is fixed. Be aware that
 moving a service from <em>always</em> to <em>usable</em> or <em>masked</em> may
 result in an unbootable set. </dd>
 
  <dt> -f, --ignore-dependencies </dt>
- <dd> Change <em>services...</em> to <em>newsub</em>, but do not change any other
+ <dd> Change <em>services...</em> to <em>newrx</em>, but do not change any other
 services, even if the dependency graph would normally mandate it. This may result
 in an inconsistent set that you cannot commit. </dd>
 </dl>
@@ -69,7 +69,7 @@ in an inconsistent set that you cannot commit. </dd>
  <dt> -I <em>action</em>, --if-dependencies-found=<em>action</em> </dt>
  <dd> Determine what to do if a dependency would make the set inconsistent.
 For instance, if service <tt>A</tt> depends on service <tt>B</tt>, they are both
-in the <tt>latent</tt> sub, and you are trying to change <tt>A</tt> to <tt>active</tt>
+in the <tt>latent</tt> rx, and you are trying to change <tt>A</tt> to <tt>active</tt>
 without mentioning <tt>B</tt>, this would not work: in order to be brought up at
 boot time, <tt>A</tt> would first need <tt>B</tt> to also be brought up at boot time,
 so <tt>A</tt> can only be <tt>active</tt> if <tt>B</tt> also is. In that situation,
@@ -78,7 +78,7 @@ what s6-rc-set-change does depends on the value of <em>action</em>:
    <li> <tt>fail</tt>: print an error message and exit 1. </li>
    <li> <tt>warn</tt>: print a warning message and proceed. This is the default. </li>
    <li> <tt>pull</tt>: print a warning message and pull the dependencies of
-<em>services...</em> into <em>newsub</em>. (Or the reverse dependencies, if
+<em>services...</em> into <em>newrx</em>. (Or the reverse dependencies, if
 you're trying to disable or mask services. </li>
   </ul>
  The warning messages are not printed if <em>verbosity</em> is 0. </dd>
@@ -92,7 +92,7 @@ appropriate, but do not perform the actual modifications. </dd>
 <dl>
  <dt> 0 </dt> <dd> Success. </dd>
  <dt> 1 </dt> <dd> <tt>-I fail</tt> was given and dependencies prevented <em>services...</em>
-from being changed to <em>newsub</em>. </dd>
+from being changed to <em>newrx</em>. </dd>
  <dt> 3 </dt> <dd> A service in <em>services...</em> was not found in the reference database. </dt>
  <dt> 4 </dt> <dd> Invalid or corrupted reference database. </dd>
  <dt> 100 </dt> <dd> Incorrect usage. </dd>

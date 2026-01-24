@@ -39,7 +39,7 @@ static inline void newset (char const *repo, char const *setname)
   char atomics[repolen + 18] ;
   char fn[repolen + 10 + setlen] ;
   char tmp[repolen + 18 + setlen] ;
-  char sub[repolen + 25 + setlen] ;
+  char rx[repolen + 25 + setlen] ;
   memcpy(atomics, repo, repolen) ;
   memcpy(atomics + repolen, "/sources/.atomics", 18) ;
   memcpy(fn, atomics, repolen + 9) ;
@@ -55,16 +55,16 @@ static inline void newset (char const *repo, char const *setname)
   memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
   m = umask(0) ;
   if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
-  memcpy(sub, tmp, repolen + 17 + setlen) ;
-  sub[repolen + 17 + setlen] = '/' ;
+  memcpy(rx, tmp, repolen + 17 + setlen) ;
+  rx[repolen + 17 + setlen] = '/' ;
   for (size_t i = 0 ; i < 4 ; i++)
   {
-    memcpy(sub + repolen + 18 + setlen, s6rc_repo_subnames[i], 7) ;
-    if (mkdir(sub, 02755) == -1)
+    memcpy(rx + repolen + 18 + setlen, s6rc_repo_rxnames[i], 7) ;
+    if (mkdir(rx, 02755) == -1)
     {
       umask(m) ;
       cleanup(tmp) ;
-      strerr_diefu2sys(111, "mkdir ", sub) ;
+      strerr_diefu2sys(111, "mkdir ", rx) ;
     }
   }
   umask(m) ;

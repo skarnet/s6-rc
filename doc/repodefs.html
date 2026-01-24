@@ -51,9 +51,7 @@ simply because they manage a <em>repository</em> of services.
 
 <h2> Definitions </h2>
 
-<div id="store">
-<h3> Store </h3>
-</div>
+<h3 id="store"> Store </h3>
 
 <p>
 <em> Store: place where service definitions are stored </em>
@@ -81,9 +79,7 @@ an administrator could be <tt>/etc/s6-rc/sources</tt>.
 </p>
 
 
-<div id="repository">
-<h3> Repository </h3>
-</div>
+<h3 id="repository"> Repository </h3>
 
 <p>
 <em> Repository: place in the filesystem where the repo commands work,
@@ -118,9 +114,7 @@ instance, what non-root users would do in order to manage their own sets
 of services.
 </p>
 
-<div id="refdb">
-<h3> Reference database </h3>
-</div>
+<h3 id="refdb"> Reference database </h3>
 
 <p>
  <em>Reference database: the dependency graph between all the services
@@ -140,9 +134,7 @@ the unions of all the stores is consistent: if not, the initialization
 fails, so the problem is reported as early as possible.
 </p>
 
-<div id="set">
-<h3> Set </h3>
-</div>
+<h3 id="set"> Set </h3>
 
 <p>
  <em> Set: a set of services with all the states the user wants them
@@ -156,9 +148,8 @@ and what users will interact the most with. A set contains all the
 services defined in the <a href="#refdb">reference database</a>
 (so, each service listed in all the <a href="#store">stores</a> used by the
 repository) and associates, to each service, a given state that the user
-wants this service to be in when the system boots. This target state is also
-called a <a href="#sub">sub</a>, because target states are implemented by
-subdirectories of the directory holding a set.
+wants this service to be in when the system boots. This target state is
+called a <a href="#rx">prescription</a>, or rx for shirt.
 </p>
 
 <p>
@@ -169,17 +160,15 @@ target states are reachable. When satisfied with the states, the user
 can <a href="#commit">commit</a> the set, then <a href="#install">install</a> it.
 </p>
 
-<div id="sub">
-<h3> Subs </h3>
-</div>
+<h3 id="rx"> Prescriptions </h3>
 
 <p>
- <em> Sub: the state the user wants a service to reach at boot time. </em>
+ <em> Prescription (or rx): the state the user wants a service to reach at boot time. </em>
 </p>
 
 <p>
- A <em>sub</em> is the target state for every service in a set. At all times,
-each service is in one and only one sub. The list of subs the service can be in
+ A <em>prescription</em> is the target state for every service in a set. At all times,
+each service is in one and only one rx. The list of rxs the service can be in
 is the following:
 </p>
 
@@ -187,7 +176,7 @@ is the following:
  <li> <em>masked</em>: when the set is committed, masked services <em>will not</em>
 be included in the compiled set database. They will be completely absent; if
 the set database is installed, <a href="s6-rc.html">s6-rc</a> will not know them.
-A service in another sub cannot depend on a masked service. Users typically mask
+A service in another rx cannot depend on a masked service. Users typically mask
 services that are included in a store but are superfluous to them, services they
 just do not want to interact with. </li>
  <li> <em>disabled</em>: these services will appear in the compiled set database,
@@ -202,20 +191,18 @@ Other names for <em>enabled</em> are: <em>active</em>. </li>
  <li> <em>essential</em>, aka <em>always</em>: these services have been marked
 as essential in their source definition directories, so they will always be
 enabled. They cannot be disabled or masked. They cannot depend on non-essential
-services. This sub is typically used by early boot services that should always
+services. This rx is typically used by early boot services that should always
 run. </li>
 </ul>
 
 <p>
- Working on a set basically means moving services from one of these subs to
+ Working on a set basically means moving services from one of these rxs to
 another, mostly choosing what services to enable or disable, and sometimes
 masking services the user does not want to see at all. Once the user is happy
 with a set, they should commit it.
 </p>
 
-<div id="commit">
-<h3> Commit </h3>
-</div>
+<h3 id="commit"> Commit </h3>
 
 <p>
  <em>Committing</em> a set means assembling a subset of all the source
@@ -224,9 +211,7 @@ definition directories in the set and compiling them into a
 set. This set database can then be <em>installed</em>.
 </p>
 
-<div id="install">
-<h3> Install </h3>
-</div>
+<h3 id="install"> Install </h3>
 
 <p>
  <em>Installing</em> a committed set means copying the compiled set
@@ -278,14 +263,14 @@ here. </li>
 
  <li> <strong>Whenever the admin wants to customize their startup process</strong>:
   <ul>
-   <li> They can create new sets (with default subs coming from policy that's
+   <li> They can create new sets (with default prescriptions coming from policy that's
 hardcoded in the stores) with <a href="s6-rc-set-new.html">s6-rc-set-new</a>,
 make a copy of an existing set with <a href="s6-rc-set-copy.html">s6-rc-set-copy</a>,
 or delete sets with <a href="s6-rc-set-delete.html">s6-rc-set-delete</a>. </li>
    <li> They can list the existing sets with <a href="s6-rc-repo-list.html">s6-rc-repo-list</a>. </li>
    <li> They can mask, unmask, enable or disable services in their favorite set with
 <a href="s6-rc-set-change.html">s6-rc-set-change</a>. </li>
-   <li> They can check the list of services and their subs with
+   <li> They can check the list of services and their prescriptions with
 <a href="s6-rc-set-status.html">s6-rc-set-status</a>. </li>
    <li> They can check for inconsistencies and fix them with
 <a href="s6-rc-set-fix.html">s6-rc-set-fix</a>. </li>
@@ -302,9 +287,8 @@ commands are involved. </li>
 </ul>
 
 <p>
- Note that all these steps will be made easier in the near future by the higher-level
-user interface provided by
-<a href="s6-frontend.html">s6-frontend</a>.
+ All these steps can be done manually, but they are made easier by the higher-level
+user interface provided by <a href="s6-frontend.html">s6-frontend</a>.
 </p>
 
 </body>

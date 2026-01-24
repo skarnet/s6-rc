@@ -159,9 +159,9 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
  /* Compile the reference db - also checks consistency of new stores */
 
   {
-    char const *subs[2] = { ato + repolen + 9, bun + repolen + 9 } ;
+    char const *rxs[2] = { ato + repolen + 9, bun + repolen + 9 } ;
     char oldc[repolen + 49] ;
-    int r = s6rc_repo_compile(repo, ".ref", subs, 2, oldc, verbosity, fdhuser) ;
+    int r = s6rc_repo_compile(repo, ".ref", rxs, 2, oldc, verbosity, fdhuser) ;
     if (r < 0) goto err ;
     if (!r) { cleanup(ato, bun) ; return 0 ; }
     if (r == 2) rm_rf(oldc) ;
