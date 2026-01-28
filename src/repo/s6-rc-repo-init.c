@@ -88,6 +88,17 @@ int main (int argc, char const *const *argv)
     if (strchr(argv[i], '\n'))
       strerr_dief1x(100, "stores cannot contain newlines in their path") ;
   }
+  for (uint16_t i = 0 ; i < argc ; i++)
+  {
+    struct stat st ;
+    if (stat(argv[i], &st) == -1)
+      strerr_diefu2sys(111, "stat ", argv[i]) ;
+    if (!S_ISDIR(st.st_mode))
+      strerr_dief2x(111, argv[i], " is not a directory") ;
+    if (access(argv[i], X_OK) == -1)
+      strerr_diefu2sys(111, "access ", argv[i]) ;
+  }
+
   repolen = strlen(wgola[GOLA_REPODIR]) ;
   tain_now_g() ;
 
