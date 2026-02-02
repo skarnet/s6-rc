@@ -99,7 +99,9 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
         char const *x ;
         char dst[repolen + 27 + len] ;
         char src[19 + len] ;
+        char oldsrc[19 + len] ;
         char fn[repolen + 14 + len] ;
+        oldsrc[0] = 0 ;
         memcpy(src, "../../stores/", 13) ;
         memcpy(src + 13, store + repolen + 8, 4) ;
         src[17] = '/' ;
@@ -124,26 +126,16 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
         memcpy(dst, x, repolen + 25) ;
         dst[repolen + 25] = '/' ;
         memcpy(dst + repolen + 26, d->d_name, len+1) ;
-        if (symlink(src, dst) == -1)
+        if (!atomic_symlink4(src, dst, oldsrc, 19 + len))
         {
-          if (errno != EEXIST)
-          {
-            strerr_warnfu4sys("symlink ", src, " to ", dst) ;
-            dir_close(dir) ;
-            goto err ;
-          }
-          if (verbosity)
-          {
-            if (!sareadlink(&satmp, dst) || !stralloc_0(&satmp))
-            {
-              strerr_warnwu2sys("readlink ", dst) ;
-              errno = EEXIST ;
-              strerr_warnwu4sys("symlink ", src, " to ", dst) ;
-            }
-            else
-              strerr_warnwu6x("symlink ", src, " to ", dst, ": already provided by ", satmp.s) ;
-            satmp.len = 0 ;
-          }
+          strerr_warnfu4sys("symlink ", src, " to ", dst) ;
+          dir_close(dir) ;
+          goto err ;
+        }
+        if (oldsrc[0] && verbosity)
+        {
+          oldsrc[17] = 0 ;
+          strerr_warnw6x("service ", d->d_name, " provided in store ", oldsrc + 13, "; overridden by new definition in store ", store + repolen + 8) ;
         }
       }
     }
