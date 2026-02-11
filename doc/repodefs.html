@@ -182,7 +182,9 @@ just do not want to interact with. </li>
  <li> <em>disabled</em>: these services will appear in the compiled set database,
 and will be startable by <a href="s6-rc.html">s6-rc</a> if the database is installed.
 However, they will not be included in the default bundle, i.e. they will not be
-automatically started at boot time. Other names for <em>disabled</em> are:
+started at boot time, and their state will be <em>down</em> until manually started
+by a <tt>s6-rc start</tt> command addressing them or a service that depends on them.
+ Other names for <em>disabled</em> are:
 <em>inactive</em>, <em>unmasked</em>, <em>latent</em>, <em>usable</em>. (Tooling
 will likely report these services as <em>latent</em> or <em>usable</em>.) </li>
  <li> <em>enabled</em>: these services will appear in the compiled set database,
