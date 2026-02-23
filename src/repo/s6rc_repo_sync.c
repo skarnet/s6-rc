@@ -82,7 +82,6 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
     dir = opendir(store) ;
     if (!dir)
     {
-      if (errno == ENOENT) break ;
       strerr_warnfu2sys("opendir ", store) ;
       goto err ;
     }
