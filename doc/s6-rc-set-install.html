@@ -40,7 +40,7 @@ has been <a href="repodefs.html#commit">committed</a> and that no changes have o
  <li> It takes the corresponding service database and copies it to the same directory as <em>bootdb</em>. </li>
  <li> It calls <a href="s6-rc-update.html">s6-rc-update</a> on that copy of the compiled service
 database, which makes it the new <em>live</em> database. Some services may be stopped, and
-other started, in the process. </li>
+others started, in the process. </li>
  <li> It updates the <em>bootdb</em> link to point to the new database, so that
 next boot uses it. </li>
 </ul>
@@ -78,12 +78,12 @@ a conversion file, which should be correct in most cases. </dd>
  <dt> -b, --block </dt>
  <dd> Pass the <tt>-b</tt> option to <a href="s6-rc-update.html">s6-rc-update</a>,
 which makes it block rather than fail when the live database is currently being
-used by another program - typically when an <a href="s6-rc.html">s6-rc change</a>
+used by another program &mdash; typically when an <a href="s6-rc.html">s6-rc change</a>
 transition is under way. </dd>
 
  <dt> -K, --keep-old </dt>
  <dd> If this option is given, the old live database, after it has been
-replaced, is kapt around, and s6-rc-set-install prints a line to stdout that
+replaced, is kept around, and s6-rc-set-install prints a line to stdout that
 is the path to that old database. It can e.g. be used by automation to keep
 the possibility of rollbacks.
 By default, s6-rc-set-install will delete the old live database after
