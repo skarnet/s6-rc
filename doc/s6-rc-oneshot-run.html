@@ -31,7 +31,7 @@ in internal scripts created by
 <a href="s6-rc.html">s6-rc</a> execution.
 </p>
 
-<h2> Interface </h2>
+<h2 id="interface"> Interface </h2>
 
 <pre>
      s6-rc-oneshot-run [ -l <em>live</em> ] [ -b ] up|down <em>n</em>
@@ -42,9 +42,11 @@ in internal scripts created by
 of the <em>n</em>th oneshot service defined
 in the current compiled service database (i.e. the compiled linked from the
 live directory). </li>
+ <li> <tt>up</tt> or <tt>down</tt> are run with the <tt>RC_NAME</tt>
+environment variable set to the name of the service. </li>
 </ul>
 
-<h2> Options </h2>
+<h2 id="options"> Options </h2>
 
 <ul>
  <li> <tt>-l&nbsp;<em>live</em></tt>&nbsp;: use the live directory in
@@ -57,7 +59,7 @@ By default, s6-rc-oneshot-run fails with an error message if the database
 is currently in use. </li>
 </ul>
 
-<h2> Exit codes </h2>
+<h2 id="exitcodes"> Exit codes </h2>
 
 <ul>
  <li> 3: invalid service number </li>

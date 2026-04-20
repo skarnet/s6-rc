@@ -370,6 +370,11 @@ tree, instead of children of the s6-rc process.
 </p>
 
 <p>
+ The <em>up</em> and <em>down</em> scripts are run with the <tt>RC_NAME</tt>
+environment variable set to the name of the service.
+</p>
+
+<p>
  Transitions should be ideally transactional, or at the very least
 idempotent. If a
 transition fails, it should leave the machine in the same state as

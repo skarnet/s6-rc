@@ -5,11 +5,11 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <skalibs/uint64.h>
 #include <skalibs/types.h>
-#include <skalibs/sgetopt.h>
 #include <skalibs/strerr.h>
 #include <skalibs/djbunix.h>
-#include <skalibs/exec.h>
+#include <skalibs/envexec.h>
 
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
@@ -17,44 +17,52 @@
 #define USAGE "s6-rc-oneshot-run [ -l live ] [ -b ] up|down servicenumber"
 #define dieusage() strerr_dieusage(100, USAGE)
 
+enum golb_e
+{
+  GOLB_UP = 0x01,
+  GOLB_BLOCK = 0x02,
+} ;
+
+enum gola_e
+{
+  GOLA_LIVEDIR,
+  GOLA_N
+} ;
+
 int main (int argc, char const *const *argv)
 {
-  char const *live = S6RC_LIVEDIR ;
-  unsigned int number ;
-  int up ;
-  int blocking = 0 ;
-  PROG = "s6-rc-oneshot-run" ;
+  static gol_bool const rgolb[] =
   {
-    subgetopt l = SUBGETOPT_ZERO ;
-    for (;;)
-    {
-      int opt = subgetopt_r(argc, argv, "l:b", &l) ;
-      if (opt == -1) break ;
-      switch (opt)
-      {
-        case 'l' : live = l.arg ; break ;
-        case 'b' : blocking = 1 ; break ;
-        default : dieusage() ;
-      }
-    }
-    argc -= l.ind ; argv += l.ind ;
-  }
+    { .so = 0, .lo = "no-block", .clear = GOLB_BLOCK, .set = 0 },
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
+  } ;
+  uint64_t wgolb = 0 ;
+  char const *wgola[GOLA_N] = { [GOLA_LIVEDIR] = S6RC_LIVEDIR } ;
+  unsigned int number ;
+  PROG = "s6-rc-oneshot-run" ;
 
+  number = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+  argc -= number ; argv += number ;
   if (argc < 2) dieusage() ;
-  if (!strcasecmp(argv[0], "up")) up = 1 ;
-  else if (!strcasecmp(argv[0], "down")) up = 0 ;
+
+  if (!strcasecmp(argv[0], "up")) wgolb |= GOLB_UP ;
+  else if (!strcasecmp(argv[0], "down")) wgolb &= ~GOLB_UP ;
   else dieusage() ;
   if (!uint0_scan(argv[1], &number)) dieusage() ;
 
   {
-    size_t livelen = strlen(live) ;
+    size_t livelen = strlen(wgola[GOLA_LIVEDIR]) ;
     int fdcompiled, compiledlock ;
     s6rc_db_t db ;
     char compiled[livelen + 10] ;
-    memcpy(compiled, live, livelen) ;
+    memcpy(compiled, wgola[GOLA_LIVEDIR], livelen) ;
     memcpy(compiled + livelen, "/compiled", 10) ;
 
-    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock, blocking))
+    if (!s6rc_lock(0, 0, 0, compiled, 1, &compiledlock, !!(wgolb & GOLB_BLOCK)))
       strerr_diefu2sys(111, "take lock on ", compiled) ;
     fdcompiled = open_readb(compiled) ;
     if (fdcompiled < 0)
@@ -98,13 +106,18 @@ int main (int argc, char const *const *argv)
      /* Run the script */
 
       {
-        unsigned int sargc = db.services[number].x.oneshot.argc[up] ;
-        char const *const *sargv = db.argvs + db.services[number].x.oneshot.argv[up] ;
+        s6rc_service_t const *sv = db.services + number ;
+        unsigned int namelen = strlen(db.string + sv->name) ;
+        unsigned int sargc = sv->x.oneshot.argc[!!(wgolb & GOLB_UP)] ;
+        char const *const *sargv = db.argvs + sv->x.oneshot.argv[!!(wgolb & GOLB_UP)] ;
         char const *newargv[sargc + 1] ;
         char const **p = newargv ;
+        char modif[namelen + 9] ;
+        memcpy(modif, "RC_NAME=", 8) ;
+        memcpy(modif + 8, db.string + sv->name, namelen + 1) ;
         while (sargc--) *p++ = *sargv++ ;
         *p = 0 ;
-        xexec0(newargv) ;
+        xmexec0_n(newargv, modif, namelen + 9, 1) ;
       }
     }
   }
