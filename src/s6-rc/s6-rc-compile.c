@@ -1293,6 +1293,23 @@ static int copy_uint (char const *compiled, char const *srcfn, char const *dstfn
   return 0 ;
 }
 
+static int copy_empty (char const *compiled, char const *srcfn, char const *dstfn)
+{
+  if (access(srcfn, F_OK) == -1)
+  {
+    if (errno == ENOENT) return 0 ;
+    cleanup(compiled) ;
+    strerr_diefu2sys(111, "access ", srcfn) ;
+  }
+
+  if (!openwritenclose_unsafe(dstfn, "", 0))
+  {
+    cleanup(compiled) ;
+    strerr_diefu2sys(111, "create ", dstfn) ;
+  }
+  return 1 ;
+}
+
 static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db, char const *const *srcdirs)
 {
   size_t clen = strlen(compiled) ;
@@ -1305,8 +1322,8 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     unsigned int fdnotif = 0 ;
     unsigned int u ;
     int ispipelined = db->services[i].x.longrun.nproducers || db->services[i].x.longrun.consumer < db->nlong ;
-    char srcfn[srcdirlen + len + 18] ;
-    char dstfn[clen + len + 30] ;
+    char srcfn[srcdirlen + len + 22] ;
+    char dstfn[clen + len + 34] ;
     memcpy(dstfn, compiled, clen) ;
     memcpy(dstfn + clen, "/servicedirs/", 13) ;
     memcpy(dstfn + clen + 13, db->string + db->services[i].name, len + 1) ;
@@ -1390,6 +1407,10 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     memcpy(dstfn + clen + 14 + len, "timeout-kill", 13) ;
     copy_uint(compiled, srcfn, dstfn, &u) ;
 
+    memcpy(srcfn + srcdirlen + len + 2, "flag-timeout-killpg", 20) ;
+    memcpy(dstfn + clen + 14 + len, "flag-timeout-killpg", 20) ;
+    copy_empty(compiled, srcfn, dstfn) ;
+
     memcpy(srcfn + srcdirlen + len + 2, "timeout-finish", 15) ;
     memcpy(dstfn + clen + 14 + len, "timeout-finish", 15) ;
     copy_uint(compiled, srcfn, dstfn, &u) ;
@@ -1401,6 +1422,10 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     memcpy(srcfn + srcdirlen + len + 2, "down-signal", 12) ;
     memcpy(dstfn + clen + 14 + len, "down-signal", 12) ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;
+
+    memcpy(srcfn + srcdirlen + len + 2, "flag-newpidns", 14) ;
+    memcpy(dstfn + clen + 14 + len, "flag-newpidns", 14) ;
+    copy_empty(compiled, srcfn, dstfn) ;
 
     memcpy(srcfn + srcdirlen + len + 2, "template", 9) ;
     memcpy(dstfn + clen + 14 + len, "template", 9) ;

@@ -21,6 +21,7 @@ static s6_servicedir_desc const svdir_file_list[] =
   { .name = "notification-fd", .type = S6_FILETYPE_UINT, .options = 0 },
   { .name = "lock-fd", .type = S6_FILETYPE_UINT, .options = 0 },
   { .name = "timeout-kill", .type = S6_FILETYPE_UINT, .options = 0 },
+  { .name = "flag-timeout-killpg", .type = S6_FILETYPE_EMPTY, .options = 0 },
   { .name = "timeout-finish", .type = S6_FILETYPE_UINT, .options = 0 },
   { .name = "max-death-tally", .type = S6_FILETYPE_UINT, .options = 0 },
   { .name = "down-signal", .type = S6_FILETYPE_NORMAL, .options = 0 },
