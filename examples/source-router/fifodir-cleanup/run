@@ -2,8 +2,7 @@
 fdmove -c 2 1
 if
 {
-  forbacktickx -ep -0 i { s6-ls -0 /run/service }
-  importas -u i i
+  forbacktickx -Ep -0 i { s6-ls -0 /run/service }
   foreground
   {
     if { eltest -d /run/service/${i}/log }

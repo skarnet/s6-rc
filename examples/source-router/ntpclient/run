@@ -11,8 +11,7 @@ fdmove -c 2 1
 pipeline
 {
   s6-setuidgid nobody
-  forx -p I { 0 1 2 }
-    importas -u I I
+  forx -Ep I { 0 1 2 }
     s6-dnsip4 -t 30000 -- ${I}.fr.pool.ntp.org
 }
 importas -u p1 !
@@ -25,8 +24,7 @@ importas -u p1 !
 pipeline
 {
   s6-setuidgid ntp
-  forstdin -p -d"\n" NTPSERVERIP
-    importas -u NTPSERVERIP NTPSERVERIP
+  forstdin -Ep -d"\n" NTPSERVERIP
     s6-sntpclock -T 5000 ${NTPSERVERIP}
 }
 importas -u p2 !
