@@ -149,7 +149,10 @@ int main (int argc, char const *const *argv)
     }
 
     if (chmod(repotmp, 02755) == -1)
+    {
+      cleanup(repotmp) ;
       strerr_diefu2sys(111, "chmod ", repotmp) ;
+    }
 
     if (rename(repotmp, wgola[GOLA_REPODIR]) == -1)
     {
@@ -185,13 +188,20 @@ int main (int argc, char const *const *argv)
 
   lockfd = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
   if (lockfd == -1)
+  {
+    if (!(wgolb & GOLB_UPDATE)) cleanup(wgola[GOLA_REPODIR]) ;
     strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
+  }
 
   char sold[repolen + 16] ;
   memcpy(sold, wgola[GOLA_REPODIR], repolen) ;
   sold[repolen] = '/' ;
 
-  if (!s6rc_repo_makestores(wgola[GOLA_REPODIR], argv, argc, sold + repolen + 1)) _exit(111) ;
+  if (!s6rc_repo_makestores(wgola[GOLA_REPODIR], argv, argc, sold + repolen + 1))
+  {
+    if (!(wgolb & GOLB_UPDATE)) cleanup(wgola[GOLA_REPODIR]) ;
+    _exit(111) ;
+  }
 
   if (!(wgolb & GOLB_BARE))
   {
