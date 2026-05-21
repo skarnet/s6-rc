@@ -16,15 +16,17 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-transactional.h>
 
+#include <s6/supervise.h>
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-init [ -c bootdb ] [ -l livedir ] [ -p prefix ] [ -t timeout ] [ -d ] scandir"
+#define USAGE "s6-rc-init [ -c bootdb ] [ -l livedir ] [ -p prefix ] [ -t timeout ] [ -d ] [ -b ] scandir"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
 {
   GOLB_DEREF = 0x01,
+  GOLB_BLOCK = 0x02,
 } ;
 
 enum gola_e
@@ -43,12 +45,45 @@ static void cleanup (stralloc *sa)
   errno = e ;
 }
 
+static void check_scandir (char const *sdir)
+{
+  int r = s6_svc_writectl(sdir, S6_SVSCAN_CTLDIR, "", 0) ;
+  if (r == -1) strerr_diefusys(111, "check ", sdir) ;
+  if (r == -2) strerr_diefsys(111, "invalid ", sdir, "/" S6_SVSCAN_CTLDIR, " scandir control directory") ;
+  if (!r) strerr_dief(100, "s6-svscan is not running on ", sdir) ;
+}
+
+static int check_existing_s6rc (char const *sdir, char const *prefix, stralloc *sa)
+{
+  size_t sdirlen = strlen(sdir) ;
+  size_t plen = strlen(prefix) ;
+  size_t start = sa->len ;
+  int r ;
+  char fn[sdirlen + plen + S6RC_FDHOLDER_LEN + 2] ;
+  memcpy(fn, sdir, sdirlen) ;
+  fn[sdirlen] = '/' ;
+  memcpy(fn + sdirlen + 1, prefix, plen) ;
+  memcpy(fn + sdirlen + 1 + plen, S6RC_FDHOLDER, S6RC_FDHOLDER_LEN + 1) ;
+  r = s6_svc_ok(fn) ;
+  if (r == -1) strerr_diefusys(111, "check the existence of service ", fn) ;
+  if (!r) return 0 ;
+  if (sarealpath(sa, fn) == -1) strerr_diefusys(111, "realpath ", fn) ;
+  if (sa->len - start < 14 + S6RC_FDHOLDER_LEN || memcmp(sa->s + sa->len - S6RC_FDHOLDER_LEN - 14, "/servicedirs/" S6RC_FDHOLDER, 14 + S6RC_FDHOLDER_LEN))
+    strerr_dief(111, "service ", fn, " exists but is not part of an s6-rc database") ;
+  sa->s[sa->len - S6RC_FDHOLDER_LEN - 14] = 0 ;
+  return 1 ;
+}
+
+
+
 int main (int argc, char const *const *argv)
 {
   static gol_bool const rgolb[] =
   {
     { .so = 0, .lo = "no-dereference", .clear = GOLB_DEREF, .set = 0 },
     { .so = 'd', .lo = "dereference", .clear = 0, .set = GOLB_DEREF },
+    { .so = 0, .lo = "no-block", .clear = GOLB_BLOCK, .set = 0 },
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
   } ;
   static gol_arg const rgola[] =
   {
@@ -102,10 +137,10 @@ int main (int argc, char const *const *argv)
     s6rc_db_t db ;
     int r ;
     int fdcompiled = open_readb(wgola[GOLA_BOOTDB]) ;
-    if (fdcompiled < 0)
+    if (fdcompiled == -1)
       strerr_diefusys(111, "open ", wgola[GOLA_BOOTDB]) ;
     r = s6rc_db_read_sizes(fdcompiled, &db) ;
-    if (r < 0)
+    if (r == -1)
       strerr_diefusys(111, "read database size in ", wgola[GOLA_BOOTDB]) ;
     else if (!r)
       strerr_dief(4, "invalid database size in ", wgola[GOLA_BOOTDB]) ;
