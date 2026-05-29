@@ -148,6 +148,9 @@ without having to change the s6-rc-init invocation in boot scripts. </li>
 "live compiled database", and must not be tampered with or deleted.
 The only way to free it for deletion is to replace it with another
 database, via a call to <a href="s6-rc-update.html">s6-rc-update</a>. </li>
+ <li> <tt>s6-rc-init</tt> is not supposed to be called more than once.
+But if a live s6-rc directory happens to exist, it will attempt to
+reuse it. </li>
 </ul>
 
 </body>
