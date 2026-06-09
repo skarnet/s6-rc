@@ -1,10 +1,11 @@
 Changelog for s6-rc.
 
-In 0.6.1.2
+In 0.6.2.0
 ----------
 
  - Bugfixes.
- - s6-rc-init is now idempotent and behaves better in pathological situations
+ - s6-rc-init is now idempotent and behaves better in pathological situations.
+ - New "s6-rc reload" command.
 
 
 In 0.6.1.1

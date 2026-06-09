@@ -38,6 +38,7 @@ enum what_e
   WHAT_CHANGE,
   WHAT_START,
   WHAT_STOP,
+  WHAT_RELOAD,
 } ;
 
 struct what_s
@@ -182,7 +183,7 @@ static inline pid_t start_oneshot (unsigned int i, int h)
   newargv[m++] = tfmt ;
   newargv[m++] = "--" ;
   newargv[m++] = socketfn ;
-  newargv[m++] = h ? "up" : "down" ;
+  newargv[m++] = h == 3 ? "reload" : h ? "up" : "down" ;
   newargv[m++] = ifmt ;
   if (dryrun[0])
   {
@@ -227,7 +228,7 @@ static inline pid_t start_longrun (unsigned int i, int h)
     newargv[m++] = "--" ;
   }
   newargv[m++] = S6_EXTBINPREFIX "s6-svc" ;
-  newargv[m++] = h ? h == 2 ? "-uwu" : "-uwU" : "-dwD" ;
+  newargv[m++] = h == 3 ? "-l" : h ? h == 2 ? "-uwu" : "-uwU" : "-dwD" ;
   newargv[m++] = "-T" ;
   newargv[m++] = fmt ;
   newargv[m++] = "--" ;
@@ -266,7 +267,7 @@ static inline void success_longrun (unsigned int i, int h)
 
 static inline void failure_longrun (unsigned int i, int h)
 {
-  if (h && !dryrun[0])
+  if (!dryrun[0])
   {
     size_t svdlen = strlen(db->string + db->services[i].name) ;
     char fn[livelen + svdlen + 14] ;
@@ -333,22 +334,25 @@ static void broadcast_success (unsigned int i, int h)
 
 static inline void on_success (unsigned int i, int h)
 {
-  if (i < db->nlong) success_longrun(i, h) ;
-  if (h) state[i] |= 1 ; else state[i] &= 254 ;
-  announce() ;
+  if (h != 3)
+  {
+    if (i < db->nlong) success_longrun(i, h) ;
+    if (h) state[i] |= 1 ; else state[i] &= 254 ;
+    announce() ;
+  }
   if (verbosity >= 2)
-    strerr_warni5x(dryrun[0] ? "dry run: " : "", "service ", db->string + db->services[i].name, " successfully st", h ? "arted" : "opped") ;
-  if (!lameduck) broadcast_success(i, h) ;
+    strerr_warni5x(dryrun[0] ? "dry run: " : "", "service ", db->string + db->services[i].name, " successfully ", h == 3 ? "reloaded" : h ? "started" : "stopped") ;
+  if (!lameduck && h != 3) broadcast_success(i, h) ;
 }
 
 static inline void on_failure (unsigned int i, int h, int crashed, unsigned int code)
 {
-  if (i < db->nlong) failure_longrun(i, h) ;
+  if (h != 3 && i < db->nlong) failure_longrun(i, h) ;
   if (verbosity)
   {
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, code)] = 0 ;
-    strerr_warnwu7x(dryrun[0] ? "(dry run) " : "", h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
+    strerr_warnwu7x(dryrun[0] ? "(dry run) " : "", h == 3 ? "reload" : h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
   }
 }
 
@@ -457,6 +461,38 @@ static void invert_selection (void)
   while (i--) state[i] ^= 2 ;
 }
 
+static int reload (void)
+{
+  iopause_fd x = { .fd = selfpipe_fd(), .events = IOPAUSE_READ } ;
+  int exitcode = 0 ;
+  unsigned int i = n ;
+  pidindex_t pidindexblob[n] ;
+  pidindex = pidindexblob ;
+
+  while (i--) if (state[i] & 2)
+  {
+    pid_t pid ;
+    if (!(state[i] & 1))
+    {
+      if (verbosity) strerr_warnw("service ", db->string + db->services[i].name, " is down - not reloading") ;
+      continue ;
+    }
+    pid = i < db->nlong ? start_longrun(i, 3) : start_oneshot(i, 3) ;
+    if (!pid) strerr_diefusys(111, "send reload command to service ", db->string + db->services[i].name) ;
+    pidindex[npids].pid = pid ;
+    pidindex[npids++].i = i ;
+  }
+
+  while (npids)
+  {
+    int r = iopause_g(&x, 1, &deadline) ;
+    if (r < 0) strerr_diefu1sys(111, "iopause") ;
+    if (!r) strerr_dief(2, "timed out") ;
+    if (!handle_signals(3)) exitcode = 1 ;
+  }
+  return exitcode ;
+}
+
 static inline enum what_e parse_command (char const *command)
 {
   static struct what_s const command_table[] =
@@ -466,6 +502,7 @@ static inline enum what_e parse_command (char const *command)
     { .s = "help", .e = WHAT_HELP },
     { .s = "list", .e = WHAT_LIST },
     { .s = "listall", .e = WHAT_LISTALL },
+    { .s = "reload", .e = WHAT_RELOAD },
     { .s = "start", .e = WHAT_START },
     { .s = "stop", .e = WHAT_STOP },
   } ;
@@ -658,6 +695,15 @@ int main (int argc, char const *const *argv)
         cdb_free(&c) ;
       }
       close(fdcompiled) ;
+
+
+     /* s6-rc reload */
+
+      if (what == WHAT_RELOAD)
+      {
+        if (!argc) strerr_dief(100, "reload: too few arguments") ;
+        _exit(reload()) ;
+      }
 
 
      /* Add live state to selection */

@@ -34,7 +34,7 @@ in internal scripts created by
 <h2 id="interface"> Interface </h2>
 
 <pre>
-     s6-rc-oneshot-run [ -l <em>live</em> ] [ -b ] up|down <em>n</em>
+     s6-rc-oneshot-run [ -l <em>live</em> ] [ -b ] up|down|reload <em>n</em>
 </pre>
 
 <ul>
@@ -44,6 +44,8 @@ in the current compiled service database (i.e. the compiled linked from the
 live directory). </li>
  <li> <tt>up</tt> or <tt>down</tt> are run with the <tt>RC_NAME</tt>
 environment variable set to the name of the service. </li>
+ <li> A <tt>reload</tt> command causes the <tt>up</tt> script to be run, with
+an additional <tt>RC_RELOAD</tt> environment variable containing 1. </li>
 </ul>
 
 <h2 id="options"> Options </h2>

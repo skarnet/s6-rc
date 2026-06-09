@@ -21,6 +21,7 @@ enum golb_e
 {
   GOLB_UP = 0x01,
   GOLB_BLOCK = 0x02,
+  GOLB_RELOAD = 0x04,
 } ;
 
 enum gola_e
@@ -51,6 +52,7 @@ int main (int argc, char const *const *argv)
 
   if (!strcasecmp(argv[0], "up")) wgolb |= GOLB_UP ;
   else if (!strcasecmp(argv[0], "down")) wgolb &= ~GOLB_UP ;
+  else if (!strcasecmp(argv[0], "reload")) wgolb |= GOLB_UP | GOLB_RELOAD ;
   else dieusage() ;
   if (!uint0_scan(argv[1], &number)) dieusage() ;
 
@@ -112,12 +114,13 @@ int main (int argc, char const *const *argv)
         char const *const *sargv = db.argvs + sv->x.oneshot.argv[!!(wgolb & GOLB_UP)] ;
         char const *newargv[sargc + 1] ;
         char const **p = newargv ;
-        char modif[namelen + 9] ;
+        char modif[namelen + 21] ;
         memcpy(modif, "RC_NAME=", 8) ;
         memcpy(modif + 8, db.string + sv->name, namelen + 1) ;
+        if (wgolb & GOLB_RELOAD) memcpy(modif + 9 + namelen, "RC_RELOAD=1", 12) ;
         while (sargc--) *p++ = *sargv++ ;
         *p = 0 ;
-        xmexec0_n(newargv, modif, namelen + 9, 1) ;
+        xmexec0_n(newargv, modif, namelen + (wgolb & GOLB_RELOAD ? 21 : 9), 1 + !!(wgolb & GOLB_RELOAD)) ;
       }
     }
   }

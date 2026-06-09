@@ -244,6 +244,27 @@ below. It will run the engine to start a set of services.
 below. It will run the engine to stop a set of services.
 </p>
 
+<h3> s6-rc reload </h3>
+
+<p>
+ <tt>s6-rc reload</tt> sends a "reload" command to the list of services
+given on the command line, which must all be up. For a longrun,
+<tt>s6-rc reload</tt> sends an <a href="//skarnet.org/software/s6/s6-svc.html">s6-svc -l</a>
+command to the service, which causes it to receive a SIGHUP, or any
+overriding signal configured in the <tt>reload-signal</tt> file.
+For a oneshot, the service's <tt>up</tt> script is executed, with
+an additional <tt>RC_RELOAD</tt> environment variable containing 1.
+</p>
+
+<p>
+ <tt>s6-rc reload</tt> is special in that it does not use the live state
+at all (except to verify that the services the user wants to reload are
+indeed up) and does not involve the dependency engine. It only operates on
+the services given as arguments on the command line. It is implemented at
+the s6-rc level because it is sometimes useful to ask for a <em>oneshot</em>
+to be reloaded.
+</p>
+
 <h3> s6-rc change </h3>
 
 <p>
