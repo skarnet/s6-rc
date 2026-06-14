@@ -18,8 +18,8 @@
 typedef struct s6rc_oneshot_s s6rc_oneshot_t, *s6rc_oneshot_t_ref ;
 struct s6rc_oneshot_s
 {
-  uint32_t argc[2] ;
-  uint32_t argv[2] ;
+  uint32_t argc[3] ;
+  uint32_t argv[3] ;
 } ;
 
 typedef struct s6rc_longrun_s s6rc_longrun_t, *s6rc_longrun_t_ref ;

@@ -31,7 +31,7 @@ minor and bugfix version changes.
 
 <h1> What has changed in s6-rc </h1>
 
-<h2> in 0.6.2.0 </h2>
+<h2> in 0.7.0.0 </h2>
 
 <ul>
  <li> <a href="//skarnet.org/software/skalibs/">skalibs</a>
@@ -39,8 +39,17 @@ dependency bumped to 2.15.0.1. </li>
  <li> <a href="//skarnet.org/software/execline/">execline</a>
 dependency bumped to 2.9.9.2. </li>
  <li> <a href="//skarnet.org/software/s6/">s6</a>
-dependency bumped to 2.15.0.1. </li>
+dependency bumped to 2.15.1.0. </li>
  <li> New <a href="s6-rc.html">s6-rc reload</a> command. </li>
+ <li> The database format has changed! To safely upgrade a running s6-rc installation:
+  <ul>
+   <li> Compile your current live database from the <strong>same source</strong>
+using the latest <a href="s6-rc-compile.html">s6-rc-compile</a> </li>
+   <li> Run the latest <a href="s6-rc-format-upgrade.html">s6-rc-format-upgrade</a> with the
+newly obtained database </li>
+   <li> Run the latest <a href="s6-rc-update.html">s6-rc-update</a> with the same database </li>
+   <li> Your system is now running the latest version of s6-rc; you can delete your old database </li>
+  </ul>
 </ul>
 
 <h2> in 0.6.1.1 </h2>

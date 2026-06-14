@@ -178,6 +178,7 @@ int main (int argc, char const *const *argv)
   if (!argc) dieusage() ;
 
   if (argv[0][0] != '/') strerr_dief(100, "scandir", " must be an absolute path") ;
+  if (wgola[GOLA_LIVEDIR][0] != '/') strerr_dief(100, "livedir", " must be an absolute path") ;
   if (wgola[GOLA_TIMEOUT])
   {
     unsigned int t = 0 ;
@@ -212,7 +213,7 @@ int main (int argc, char const *const *argv)
   {
     size_t llen = strlen(wgola[GOLA_LIVEDIR]) ;
     char *d = strrchr(wgola[GOLA_LIVEDIR], '/') ;
-    if (!d || d == wgola[GOLA_LIVEDIR]) strerr_dief(102, "invalid existing livedir: ", wgola[GOLA_LIVEDIR]) ;
+    if (d == wgola[GOLA_LIVEDIR]) strerr_dief(102, "invalid existing livedir: ", wgola[GOLA_LIVEDIR]) ;
     dirlen = d - wgola[GOLA_LIVEDIR] ;
     if (find_livedir(wgola[GOLA_LIVEDIR], llen, dirlen, argv[0], wgola[GOLA_PREFIX], wgola[GOLA_BOOTDB], &sa))
     {

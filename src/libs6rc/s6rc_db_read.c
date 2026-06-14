@@ -72,7 +72,7 @@ static inline int s6rc_db_read_services (buffer *b, s6rc_db_t *db)
     else
     {
       unsigned int j = 0 ;
-      for (; j < 2 ; j++)
+      for (; j < 3 ; j++)
       {
         uint32_t pos, argc ;
         if (!s6rc_db_read_uint32(b, &argc)) return -1 ;

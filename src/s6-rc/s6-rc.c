@@ -80,6 +80,20 @@ static tain deadline = TAIN_INFINITE_RELATIVE ;
 static int lameduck = 0 ;
 static char dryrun[UINT_FMT] = "" ;
 
+ /*
+    state bits:
+    - exported to state file
+     0x01 - up or down
+     0x02 - explicitly wanted up
+     0x04 - unused
+     0x08 - unused
+    - not exported, reserved for s6-rc internal work
+     0x10 - in the selection
+     0x20 - mark for recursive stuff
+     0x40 - unused
+     0x80 - unused
+ */
+
 static inline void announce (void)
 {
   unsigned int i = n ;
@@ -88,9 +102,9 @@ static inline void announce (void)
   if (dryrun[0]) return ;
   memcpy(fn, live, livelen) ;
   memcpy(fn + livelen, "/state", 7) ;
-  while (i--) tmpstate[i] = !!(state[i] & 1) ;
+  while (i--) tmpstate[i] = state[i] & 0x0f ;
   if (!openwritenclose_suffix(fn, tmpstate, n, ".new"))
-    strerr_diefu2sys(111, "write ", fn) ;
+    strerr_diefusys(111, "write ", fn) ;
 }
 
 static inline int print_services (void)
@@ -98,7 +112,7 @@ static inline int print_services (void)
   for (unsigned int i = 0 ; i < n ; i++)
   {
     if (wgolb & GOLB_HIDEESSENTIALS && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL) continue ;
-    if (state[i] & 2)
+    if (state[i] & 0x10)
     {
       if (buffer_puts(buffer_1, db->string + db->services[i].name) < 0
        || buffer_put(buffer_1, "\n", 1) < 0) goto err ;
@@ -108,7 +122,7 @@ static inline int print_services (void)
   return 0 ;
 
  err:
-  strerr_diefu1sys(111, "write to stdout") ;
+  strerr_diefusys(111, "write to stdout") ;
 }
 
 static inline int print_diff (void)
@@ -124,7 +138,7 @@ static inline int print_diff (void)
     memcpy(fn + livelen, "/servicedirs/", 13) ;
     memcpy(fn + livelen + 13, db->string + db->services[i].name, namelen + 1) ;
     if (!s6_svstatus_read(fn, &status))
-      strerr_diefu2sys(111, "read longrun status for ", fn) ;
+      strerr_diefusys(111, "read longrun status for ", fn) ;
     if ((state[i] & 1) != status.flagwantup)
     {
       e = 1 ;
@@ -137,12 +151,12 @@ static inline int print_diff (void)
   return e ;
 
  err:
-  strerr_diefu1sys(111, "write to stdout") ;
+  strerr_diefusys(111, "write to stdout") ;
 }
 
 static uint32_t compute_timeout (unsigned int i, int h)
 {
-  uint32_t t = db->services[i].timeout[h] ;
+  uint32_t t = db->services[i].timeout[!!h] ;
   int globalt ;
   tain globaltto ;
   tain_sub(&globaltto, &deadline, &STAMP) ;
@@ -151,6 +165,12 @@ static uint32_t compute_timeout (unsigned int i, int h)
   if (globalt > 0 && (!t || (unsigned int)globalt < t))
     t = (uint32_t)globalt ;
   return t ;
+}
+
+static void invert_selection (void)
+{
+  unsigned int i = n ;
+  while (i--) state[i] ^= 0x10 ;
 }
 
 static inline pid_t start_oneshot (unsigned int i, int h)
@@ -183,7 +203,7 @@ static inline pid_t start_oneshot (unsigned int i, int h)
   newargv[m++] = tfmt ;
   newargv[m++] = "--" ;
   newargv[m++] = socketfn ;
-  newargv[m++] = h == 3 ? "reload" : h ? "up" : "down" ;
+  newargv[m++] = h == 2 ? "reload" : h ? "up" : "down" ;
   newargv[m++] = ifmt ;
   if (dryrun[0])
   {
@@ -205,14 +225,14 @@ static inline pid_t start_longrun (unsigned int i, int h)
   memcpy(servicefn, live, livelen) ;
   memcpy(servicefn + livelen, "/servicedirs/", 13) ;
   memcpy(servicefn + livelen + 13, db->string + db->services[i].name, svdlen) ;
-  if (h)
+  if (h == 1)
   {
     memcpy(servicefn + livelen + 13 + svdlen, "/notification-fd", 17) ;
-    if (access(servicefn, F_OK) < 0)
+    if (access(servicefn, F_OK) == -1)
     {
-      h = 2 ;
+      h = 5 ;
       if (verbosity >= 2 && errno != ENOENT)
-        strerr_warnwu2sys("access ", servicefn) ;
+        strerr_warnwusys("access ", servicefn) ;
     }
   }
   servicefn[livelen + 13 + svdlen] = 0 ;
@@ -228,7 +248,7 @@ static inline pid_t start_longrun (unsigned int i, int h)
     newargv[m++] = "--" ;
   }
   newargv[m++] = S6_EXTBINPREFIX "s6-svc" ;
-  newargv[m++] = h == 3 ? "-l" : h ? h == 2 ? "-uwu" : "-uwU" : "-dwD" ;
+  newargv[m++] = h == 2 ? "-l" : h ? h & 4 ? "-uwu" : "-uwU" : "-dwD" ;
   newargv[m++] = "-T" ;
   newargv[m++] = fmt ;
   newargv[m++] = "--" ;
@@ -250,7 +270,7 @@ static inline void success_longrun (unsigned int i, int h)
     if (h)
     {
       if (unlink(fn) == -1 && verbosity)
-        strerr_warnwu2sys("unlink ", fn) ;
+        strerr_warnwusys("unlink ", fn) ;
     }
     else
     {
@@ -258,7 +278,7 @@ static inline void success_longrun (unsigned int i, int h)
       if (fd == -1)
       {
         if (verbosity)
-          strerr_warnwu2sys("touch ", fn) ;
+          strerr_warnwusys("touch ", fn) ;
       }
       else fd_close(fd) ;
     }
@@ -276,7 +296,7 @@ static inline void failure_longrun (unsigned int i, int h)
     memcpy(fn + livelen, "/servicedirs/", 13) ;
     memcpy(fn + livelen + 13, db->string + db->services[i].name, svdlen + 1) ;
     if (!cspawn(newargv[0], newargv, (char const *const *)environ, CSPAWN_FLAGS_SELFPIPE_FINISH, 0, 0))
-      strerr_warnwu2sys("spawn ", newargv[0]) ;
+      strerr_warnwusys("spawn ", newargv[0]) ;
   }
 }
 
@@ -284,20 +304,20 @@ static void broadcast_success (unsigned int, int) ;
 
 static void examine (unsigned int i, int h)
 {
-  if (state[i] & 2 && !pendingdeps[i] && !(state[i] & 4))
+  if (state[i] & 0x10 && !pendingdeps[i] && !(state[i] & 0x20))
   {
     char const *name = db->string + db->services[i].name ;
-    state[i] |= 4 ;
-    if ((state[i] & 1) == h)
+    state[i] |= 0x20 ;
+    if ((state[i] & 0x01) == h)
     {
       if (verbosity >= 3)
-        strerr_warni4x("service ", name, ": already ", h ? "up" : "down") ;
+        strerr_warni("service ", name, ": already ", h ? "up" : "down") ;
       broadcast_success(i, h) ;
     }
     else if (!h && !(wgolb & GOLB_HIDEESSENTIALS) && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL)
     {
       if (verbosity)
-        strerr_warnw3x("service ", name, " is marked as essential, not stopping it") ;
+        strerr_warnw("service ", name, " is marked as essential, not stopping it") ;
     }
     else
     {
@@ -307,15 +327,15 @@ static void examine (unsigned int i, int h)
         pidindex[npids++].i = i ;
         if (verbosity >= 2)
         {
-          strerr_warni5x(dryrun[0] ? "dry run: " : "", "service ", name, ": ", h ? "starting" : "stopping") ;
+          strerr_warni(dryrun[0] ? "dry run: " : "", "service ", name, ": ", h ? "starting" : "stopping") ;
         }
       }
       else
       {
         if (verbosity)
-          strerr_warnwu2sys("spawn subprocess for ", name) ;
+          strerr_warnwusys("spawn subprocess for ", name) ;
         if (verbosity >= 2)
-          strerr_warni4x("service ", name, ": failed to ", h ? "start" : "stop") ;
+          strerr_warni("service ", name, ": failed to ", h ? "start" : "stop") ;
       }
     }
   }
@@ -334,29 +354,28 @@ static void broadcast_success (unsigned int i, int h)
 
 static inline void on_success (unsigned int i, int h)
 {
-  if (h != 3)
+  if (h < 2)
   {
     if (i < db->nlong) success_longrun(i, h) ;
     if (h) state[i] |= 1 ; else state[i] &= 254 ;
     announce() ;
+    if (!lameduck) broadcast_success(i, h) ;
   }
   if (verbosity >= 2)
-    strerr_warni5x(dryrun[0] ? "dry run: " : "", "service ", db->string + db->services[i].name, " successfully ", h == 3 ? "reloaded" : h ? "started" : "stopped") ;
-  if (!lameduck && h != 3) broadcast_success(i, h) ;
+    strerr_warni(dryrun[0] ? "dry run: " : "", "service ", db->string + db->services[i].name, " successfully ", h == 2 ? "reloaded" : h ? "started" : "stopped") ;
 }
 
 static inline void on_failure (unsigned int i, int h, int crashed, unsigned int code)
 {
-  if (h != 3 && i < db->nlong) failure_longrun(i, h) ;
+  if (h < 2 && i < db->nlong) failure_longrun(i, h) ;
   if (verbosity)
   {
     char fmt[UINT_FMT] ;
     fmt[uint_fmt(fmt, code)] = 0 ;
-    strerr_warnwu7x(dryrun[0] ? "(dry run) " : "", h == 3 ? "reload" : h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
+    strerr_warnwu(dryrun[0] ? "(dry run) " : "", h == 2 ? "reload" : h ? "start" : "stop", " service ", db->string + db->services[i].name, ": command ", crashed ? "crashed with signal " : "exited ", fmt) ;
   }
 }
 
-/*
 static inline void kill_oneshots (void)
 {
   char fn[livelen + S6RC_ONESHOT_RUNNER_LEN + 14] ;
@@ -367,7 +386,6 @@ static inline void kill_oneshots (void)
   if (!cspawn(newargv[0], newargv, (char const *const *)environ, CSPAWN_FLAGS_SELFPIPE_FINISH, 0, 0))
     strerr_warnwu2sys("spawn ", newargv[0]) ;
 }
-*/
 
 static inline void kill_longruns (void)
 {
@@ -384,7 +402,7 @@ static inline int handle_signals (int h)
     int sig = selfpipe_read() ;
     switch (sig)
     {
-      case -1 : strerr_diefu1sys(111, "selfpipe_read()") ;
+      case -1 : strerr_diefusys(111, "selfpipe_read()") ;
       case 0 : return ok ;
       case SIGCHLD :
         for (;;)
@@ -392,9 +410,9 @@ static inline int handle_signals (int h)
           unsigned int j = 0 ;
           int wstat ;
           pid_t r = wait_nohang(&wstat) ;
-          if (r < 0)
+          if (r == -1)
             if (errno == ECHILD) break ;
-            else strerr_diefu1sys(111, "wait for children") ;
+            else strerr_diefusys(111, "wait for children") ;
           else if (!r) break ;
           for (; j < npids ; j++) if (pidindex[j].pid == r) break ;
           if (j < npids)
@@ -414,17 +432,44 @@ static inline int handle_signals (int h)
       case SIGTERM :
       case SIGINT :
         if (verbosity >= 2)
-          strerr_warnw3x("received ", sig_name(sig), ", aborting longrun transitions and exiting asap") ;
-        /* kill_oneshots() ; */
+          strerr_warnw("received ", sig_name(sig), ", aborting pending processes and exiting asap") ;
+        if (h == 2) kill_oneshots() ;
         kill_longruns() ;
         lameduck = 1 ;
         break ;
-      default : strerr_dief1x(101, "inconsistent signal state") ;
+      default : strerr_dief(101, "inconsistent signal state") ;
     }
   }
 }
 
-static int doit (int h)
+static inline int reload (void)
+{
+  iopause_fd x = { .fd = selfpipe_fd(), .events = IOPAUSE_READ } ;
+  int exitcode = 0 ;
+  for (unsigned int i = 0 ; i < n ; i++) if (state[i] & 0x10) npids++ ;
+  if (!npids) return 0 ;
+  pidindex_t pidi[npids] ;
+  pidindex = pidi ;
+  npids = 0 ;
+  for (unsigned int i = 0 ; i < n ; i++) if (state[i] & 0x10)
+  {
+    pidi[npids].i = i ;
+    pidi[npids].pid = i < db->nlong ? start_longrun(i, 2) : start_oneshot(i, 2) ;
+    if (!pidi[npids].pid) strerr_diefusys(111, "send reload command to service ", db->string + db->services[i].name) ;
+    npids++ ;
+  }
+
+  while (npids)
+  {
+    int r = iopause_g(&x, 1, &deadline) ;
+    if (r == -1) strerr_diefusys(111, "iopause") ;
+    if (!r) strerr_dief(2, "timed out") ;
+    if (!handle_signals(2)) exitcode = 1 ;
+  }
+  return exitcode ;
+}
+
+static int change (int h)
 {
   iopause_fd x = { .fd = selfpipe_fd(), .events = IOPAUSE_READ } ;
   int exitcode = 0 ;
@@ -435,11 +480,11 @@ static int doit (int h)
   pendingdeps = pendingdepsblob ;
 
   if (verbosity >= 3)
-    strerr_warni2x("bringing selected services ", h ? "up" : "down") ;
+    strerr_warni("bringing selected services ", h ? "up" : "down") ;
  
   while (i--)
   {
-    state[i] &= 251 ;
+    state[i] &= ~0x20 ;
     pendingdeps[i] = db->services[i].ndeps[h] ;
   }
   i = n ;
@@ -448,47 +493,9 @@ static int doit (int h)
   while (npids)
   {
     int r = iopause_g(&x, 1, &deadline) ;
-    if (r < 0) strerr_diefu1sys(111, "iopause") ;
-    if (!r) strerr_dief1x(2, "timed out") ;
-    if (!handle_signals(h)) exitcode = 1 ;
-  }
-  return exitcode ;
-}
-
-static void invert_selection (void)
-{
-  unsigned int i = n ;
-  while (i--) state[i] ^= 2 ;
-}
-
-static int reload (void)
-{
-  iopause_fd x = { .fd = selfpipe_fd(), .events = IOPAUSE_READ } ;
-  int exitcode = 0 ;
-  unsigned int i = n ;
-  pidindex_t pidindexblob[n] ;
-  pidindex = pidindexblob ;
-
-  while (i--) if (state[i] & 2)
-  {
-    pid_t pid ;
-    if (!(state[i] & 1))
-    {
-      if (verbosity) strerr_warnw("service ", db->string + db->services[i].name, " is down - not reloading") ;
-      continue ;
-    }
-    pid = i < db->nlong ? start_longrun(i, 3) : start_oneshot(i, 3) ;
-    if (!pid) strerr_diefusys(111, "send reload command to service ", db->string + db->services[i].name) ;
-    pidindex[npids].pid = pid ;
-    pidindex[npids++].i = i ;
-  }
-
-  while (npids)
-  {
-    int r = iopause_g(&x, 1, &deadline) ;
-    if (r < 0) strerr_diefu1sys(111, "iopause") ;
+    if (r < 0) strerr_diefusys(111, "iopause") ;
     if (!r) strerr_dief(2, "timed out") ;
-    if (!handle_signals(3)) exitcode = 1 ;
+    if (!handle_signals(h)) exitcode = 1 ;
   }
   return exitcode ;
 }
@@ -507,7 +514,7 @@ static inline enum what_e parse_command (char const *command)
     { .s = "stop", .e = WHAT_STOP },
   } ;
   struct what_s const *p = bsearch(command, command_table, sizeof(command_table)/sizeof(struct what_s), sizeof(struct what_s), &stringkey_bcmp) ;
-  if (!p) strerr_dief2x(100, "unknown command: ", command) ;
+  if (!p) strerr_dief(100, "unknown command: ", command) ;
   return p->e ;
 }
 
@@ -520,7 +527,7 @@ static inline void print_help (void)
 "s6-rc [ -l live ] diff\n"
 "s6-rc [ -l live ] [ -a ] [ -u | -d | -D ] [ -p ] [ -v verbosity ] [ -t timeout ] [ -n dryrunthrottle ] change [ servicenames... ]\n" ;
   if (buffer_putsflush(buffer_1, help) < 0)
-    strerr_diefu1sys(111, "write to stdout") ;
+    strerr_diefusys(111, "write to stdout") ;
 }
 
 int main (int argc, char const *const *argv)
@@ -554,19 +561,19 @@ int main (int argc, char const *const *argv)
   }
 
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
-    strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+    strerr_dief(100, "verbosity must be an unsigned integer") ;
   if (wgola[GOLA_DRYRUN])
   {
     unsigned int d ;
     if (!uint0_scan(wgola[GOLA_DRYRUN], &d))
-      strerr_dief1x(100, "dry-run must be an unsigned integer") ;
+      strerr_dief(100, "dry-run must be an unsigned integer") ;
     dryrun[uint_fmt(dryrun, d)] = 0 ;
   }
   if (wgola[GOLA_TIMEOUT])
   {
     unsigned int t ;
     if (!uint0_scan(wgola[GOLA_TIMEOUT], &t))
-      strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+      strerr_dief(100, "verbosity must be an unsigned integer") ;
     if (t) tain_from_millisecs(&deadline, t) ;
   }
   if (wgola[GOLA_LIVEDIR]) live = wgola[GOLA_LIVEDIR] ;
@@ -604,11 +611,11 @@ int main (int argc, char const *const *argv)
     {
       int livelock, compiledlock ;
       if (!s6rc_lock(live, 1 + (what >= 4), &livelock, dbfn, 1, &compiledlock, !!(wgolb & GOLB_BLOCK)))
-        strerr_diefu1sys(111, "take locks") ;
+        strerr_diefusys(111, "take locks") ;
       if (coe(livelock) < 0)
-        strerr_diefu3sys(111, "coe ", live, "/lock") ;
+        strerr_diefusys(111, "coe ", live, "/lock") ;
       if (compiledlock >= 0 && coe(compiledlock) < 0)
-        strerr_diefu4sys(111, "coe ", live, "/compiled", "/lock") ;
+        strerr_diefusys(111, "coe ", live, "/compiled", "/lock") ;
      /* locks leak, but we don't care */
     }
 
@@ -617,7 +624,7 @@ int main (int argc, char const *const *argv)
 
     fdcompiled = open_readb(dbfn) ;
     if (!s6rc_db_read_sizes(fdcompiled, &dbblob))
-      strerr_diefu3sys(111, "read ", dbfn, "/n") ;
+      strerr_diefusys(111, "read ", dbfn, "/n") ;
     n = dbblob.nshort + dbblob.nlong ;
 
 
@@ -639,16 +646,16 @@ int main (int argc, char const *const *argv)
       state = stateblob ;
 
 
-     /* Read live state in bit 0 of state */
+     /* Read live state */
 
       memcpy(dbfn + livelen + 1, "state", 6) ;
       {
         ssize_t r = openreadnclose(dbfn, (char *)state, n) ;
-        if (r == -1) strerr_diefu2sys(111, "read ", dbfn) ;
-        if (r < n) strerr_diefu2x(4, "read valid state in ", dbfn) ;
+        if (r == -1) strerr_diefusys(111, "read ", dbfn) ;
+        if (r < n) strerr_diefu(4, "read valid state in ", dbfn) ;
         {
           unsigned int i = n ;
-          while (i--) state[i] &= 1 ;
+          while (i--) state[i] &= 0x0f ;
         }
       }
       dbfn[livelen] = 0 ;
@@ -658,7 +665,7 @@ int main (int argc, char const *const *argv)
       {
         int r = s6rc_db_read(fdcompiled, &dbblob) ;
         if (r < 0) strerr_diefu3sys(111, "read ", dbfn, "/db") ;
-        if (!r) strerr_dief3x(4, "invalid service database in ", dbfn, "/db") ;
+        if (!r) strerr_dief(4, "invalid service database in ", dbfn, "/db") ;
       }
 
 
@@ -672,24 +679,28 @@ int main (int argc, char const *const *argv)
       {
         cdb c = CDB_ZERO ;
         if (!cdb_init_at(&c, fdcompiled, "resolve.cdb"))
-          strerr_diefu3sys(111, "cdb_init ", dbfn, "/resolve.cdb") ;
+          strerr_diefusys(111, "cdb_init ", dbfn, "/resolve.cdb") ;
         for (; *argv ; argv++)
         {
           cdb_data data ;
           int r = cdb_find(&c, &data, *argv, strlen(*argv)) ;
-          if (r < 0) strerr_dief3x(4, "invalid cdb in ", dbfn, "/resolve.cdb") ;
-          if (!r) strerr_dief4x(3, *argv, " is not a recognized identifier in ", dbfn, "/resolve.cdb") ;
+          if (r < 0) strerr_dief(4, "invalid cdb in ", dbfn, "/resolve.cdb") ;
+          if (!r) strerr_dief(3, *argv, " is not a recognized identifier in ", dbfn, "/resolve.cdb") ;
           if (data.len & 3)
-            strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
+            strerr_dief(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
           if (data.len >> 2 > n)
-            strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
+            strerr_dief(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
           while (data.len)
           {
             uint32_t x ;
             uint32_unpack_big(data.s, &x) ; data.s += 4 ; data.len -= 4 ;
             if (x >= n)
-              strerr_dief3x(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
-            state[x] |= 2 ;
+              strerr_dief(4, "invalid resolve database in ", dbfn, "/resolve.cdb") ;
+            state[x] |= 0x10 ;
+            if (what == WHAT_CHANGE)
+            {
+              if (wgolb & GOLB_DOWN) state[x] &= ~0x02 ; else state[x] |= 0x02 ;
+            }
           }
         }
         cdb_free(&c) ;
@@ -697,21 +708,12 @@ int main (int argc, char const *const *argv)
       close(fdcompiled) ;
 
 
-     /* s6-rc reload */
-
-      if (what == WHAT_RELOAD)
-      {
-        if (!argc) strerr_dief(100, "reload: too few arguments") ;
-        _exit(reload()) ;
-      }
-
-
      /* Add live state to selection */
 
       if (wgolb & GOLB_SELECTLIVE)
       {
         unsigned int i = n ;
-        while (i--) if (state[i] & 1) state[i] |= 2 ;
+        while (i--) if (state[i] & 0x01) state[i] |= 0x10 ;
       }
 
 
@@ -723,7 +725,7 @@ int main (int argc, char const *const *argv)
         _exit(print_services()) ;
       }
 
-      s6rc_graph_closure(db, state, 1, !(wgolb & GOLB_DOWN)) ;
+      if (what != WHAT_RELOAD) s6rc_graph_closure(db, state, 4, !(wgolb & GOLB_DOWN)) ;
 
 
      /* Print the selection after closure */
@@ -734,10 +736,10 @@ int main (int argc, char const *const *argv)
       tain_add_g(&deadline, &deadline) ;
 
 
-     /* Perform a state change */
+     /* Reload or state change: we need a selfpipe */
 
       if (selfpipe_init() == -1)
-        strerr_diefu1sys(111, "init selfpipe") ;
+        strerr_diefusys(111, "init selfpipe") ;
 
       {
         sigset_t set ;
@@ -746,19 +748,21 @@ int main (int argc, char const *const *argv)
         sigaddset(&set, SIGTERM) ;
         sigaddset(&set, SIGINT) ;
         if (!selfpipe_trapset(&set))
-          strerr_diefu1sys(111, "trap signals") ;
+          strerr_diefusys(111, "trap signals") ;
       }
+
+      if (what == WHAT_RELOAD) _exit(reload()) ;
 
       if (wgolb & GOLB_PRUNE)
       {
         int r ;
         if (!(wgolb & GOLB_DOWN)) invert_selection() ;
-        r = doit(0) ;
+        r = change(0) ;
         if (r) return r ;
         invert_selection() ;
-        _exit(doit(1)) ;
+        _exit(change(1)) ;
       }
-      else _exit(doit(!(wgolb & GOLB_DOWN))) ;
+      else _exit(change(!(wgolb & GOLB_DOWN))) ;
     }
   }
 }

@@ -1,10 +1,12 @@
 /* ISC license. */
 
 #include <string.h>
+#include <unistd.h>
 
 #include <skalibs/types.h>
+#include <skalibs/prog.h>
 #include <skalibs/strerr.h>
-#include <skalibs/sgetopt.h>
+#include <skalibs/gol.h>
 #include <skalibs/tai.h>
 #include <skalibs/unix-transactional.h>
 
@@ -13,6 +15,19 @@
 
 #define USAGE "s6-rc-format-upgrade [ -v verbosity ] [ -t timeout ] [ -l live ] [ -b ] newdb"
 #define dieusage() strerr_dieusage(100, USAGE)
+
+enum golb_e
+{
+  GOLB_BLOCK = 0x01,
+} ;
+
+enum gola_e
+{
+  GOLA_VERBOSITY,
+  GOLA_LIVEDIR,
+  GOLA_TIMEOUT,
+  GOLA_N
+} ;
 
 static unsigned int verbosity = 1 ;
 
@@ -26,47 +41,53 @@ static inline void update_livedir (char const *live, char const *newcompiled, ta
   memcpy(cfn, live, livelen) ;
   memcpy(cfn + livelen, "/compiled", 10) ;
   if (!atomic_symlink4(newcompiled, cfn, 0, 0))
-    strerr_diefu4sys(111, "atomic_symlink4 ", cfn, " to ", newcompiled) ;
+    strerr_diefusys(111, "atomic_symlink4 ", cfn, " to ", newcompiled) ;
 }
-
 
 int main (int argc, char const *const *argv, char const *const *envp)
 {
-  tain deadline ;
-  char const *live = S6RC_LIVEDIR ;
-  int blocking = 0 ;
-  int livelock ;
-  PROG = "s6-rc-format-upgrade" ;
+  static gol_bool const rgolb[] =
   {
-    unsigned int t = 0 ;
-    subgetopt l = SUBGETOPT_ZERO ;
-    for (;;)
-    {
-      int opt = subgetopt_r(argc, argv, "v:t:l:b", &l) ;
-      if (opt == -1) break ;
-      switch (opt)
-      {
-        case 'v' : if (!uint0_scan(l.arg, &verbosity)) dieusage() ; break ;
-        case 't' : if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
-        case 'l' : live = l.arg ; break ;
-        case 'b' : blocking = 1 ; break ;
-        default : dieusage() ;
-      }
-    }
-    argc -= l.ind ; argv += l.ind ;
-    if (t) tain_from_millisecs(&deadline, t) ;
-    else deadline = tain_infinite_relative ;
+    { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
+  } ;
+  static gol_arg const rgola[] =
+  {
+    { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
+    { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
+    { .so = 't', .lo = "timeout", .i = GOLA_TIMEOUT },
+  } ;
+  uint64_t wgolb = 0 ;
+  char const *wgola[GOLA_N] = { 0 } ;
+  tain deadline = TAIN_INFINITE_RELATIVE ;
+  int livelock ;
+  wgola[GOLA_LIVEDIR] = S6RC_LIVEDIR ;
+  PROG = "s6-rc-format-upgrade" ;
+
+  {
+    unsigned int golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+    argc -= golc ; argv += golc ;
   }
+
+  if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
+    strerr_dief(100, "verbosity", " must be an unsigned integer") ;
+  if (wgola[GOLA_TIMEOUT])
+  {
+    unsigned int t ;
+    if (!uint0_scan(wgola[GOLA_TIMEOUT], &t))
+      strerr_dief(100, "timeout", " must be an unsigned integer") ;
+    if (t) tain_from_millisecs(&deadline, t) ;
+  }
+
   if (!argc) dieusage() ;
   if (argv[0][0] != '/')
-    strerr_dief2x(100, argv[0], " is not an absolute path") ;
+    strerr_dief(100, argv[0], " is not an absolute path") ;
 
   tain_now_set_stopwatch_g() ;
   tain_add_g(&deadline, &deadline) ;
 
-  if (!s6rc_lock(live, 2, &livelock, 0, 0, 0, blocking))
-    strerr_diefu2sys(111, "take lock on ", live) ;
+  if (!s6rc_lock(wgola[GOLA_LIVEDIR], 2, &livelock, 0, 0, 0, wgolb & GOLB_BLOCK))
+    strerr_diefusys(111, "take lock on ", wgola[GOLA_LIVEDIR]) ;
 
-  update_livedir(live, argv[0], &deadline) ;
-  return 0 ;
+  update_livedir(wgola[GOLA_LIVEDIR], argv[0], &deadline) ;
+  _exit(0) ;
 }

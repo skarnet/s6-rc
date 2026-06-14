@@ -198,30 +198,30 @@ complain and exit 1.
 <h4> For oneshots </h4>
 
 <ul>
- <li> Two regular files named <tt>up</tt> and <tt>down</tt>, which
-must each contain a single Unix command line. The files will be interpreted by the
+ <li> Three regular files named <tt>up</tt>, <tt>down</tt>, and <tt>reload</tt>,
+which must each contain a single Unix command line. The <tt>up</tt> file is
+mandatory, the other two are optional; if they are absent, they are considered
+empty, i.e. nothing happens when the corresponding script is executed and the
+operation is considered a success.
+The files will be interpreted by the
 <a href="//skarnet.org/software/execline/execlineb.html">execlineb</a>
 lexer at compile time and the results will be stored into the
 compiled database in an internal form. <tt>up</tt> will be run when
-the service is started, and <tt>down</tt> will be executed when the service
-is stopped. <tt>up</tt> is mandatory, but <tt>down</tt> is optional;
-if no <tt>down</tt> file is provided in the source definition directory,
-then it is treated as the empty script. If a script is empty,
-then s6-rc will consider that the corresponding transition for this service
-does nothing and always succeeds. </li>
+the service is started, <tt>down</tt> will be executed when the service
+is stopped, and <tt>reload</tt> will be executed when the service is
+reloaded </li>
 </ul>
 
 
 <p>
- <tt>up</tt> and <tt>down</tt> are interpreted by
+ <tt>up</tt>, <tt>down</tt> and <tt>reload</tt> are interpreted by
 <a href="//skarnet.org/software/execline/execlineb.html">execlineb</a>, but
 that does not mean they have to be entirely written in the 
 <a href="//skarnet.org/software/execline/">execline</a> language. The
 <a href="//skarnet.org/software/execline/execlineb.html">execlineb</a>
 lexer is only used because it can compile a Unix command line from a text file
 and store the compiled result, whereas a shell would have to be invoked
-everytime the script is run. There are many ways to write <tt>up</tt> and
-<tt>down</tt> scripts:
+everytime the script is run. There are many ways to write these scripts:
 </p>
 
 <ul>
@@ -239,8 +239,8 @@ while <tt>down</tt> contains <tt>/etc/init.d/<em>service</em> stop</tt>, and
 
 <p>
  Don't think you have to learn all the intricacies of the execline language
-just because the <tt>up</tt> and <tt>down</tt> scripts get lexed by it.
-You don't.
+just because the <tt>up</tt>, <tt>down</tt> and <tt>reload</tt>scripts get
+lexed by it. You don't.
 </p>
 
 <h4> For longruns </h4>

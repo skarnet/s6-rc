@@ -23,7 +23,7 @@
 
 #define USAGE "s6-rc-compile [ -v verbosity ] [ -h fdholder_user ] [ -b ] destdir sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
-#define dienomem() strerr_dief1x(111, "out of memory") ;
+#define dienomem() strerr_dief(111, "out of memory") ;
 
 #define S6RC_INTERNALS "s6-rc-compile internals"
 
@@ -97,8 +97,8 @@ typedef struct oneshot_s oneshot_t, *oneshot_t_ref ;
 struct oneshot_s
 {
   common_t common ;
-  unsigned int argvindex[2] ; /* pos in keep */
-  unsigned int argc[2] ;
+  unsigned int argvindex[3] ; /* pos in keep */
+  unsigned int argc[3] ;
 } ;
 
 typedef struct longrun_s longrun_t, *longrun_t_ref ;
@@ -166,7 +166,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
 {
   uint32_t id ;
   if (verbosity >= 4)
-    strerr_warnt6x("from ", srcdir, ": adding identifier ", name, " of type ", typestr(type)) ;
+    strerr_warnt("from ", srcdir, ": adding identifier ", name, " of type ", typestr(type)) ;
 
   if (avltree_search(&names_map, name, &id))
   {
@@ -174,7 +174,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
     if (type == SVTYPE_UNDEFINED)
     {
       if (verbosity >= 4)
-        strerr_warnt4x("identifier ", name, " was already declared with type ", typestr(info->type)) ;
+        strerr_warnt("identifier ", name, " was already declared with type ", typestr(info->type)) ;
       switch (info->type)
       {
         case SVTYPE_ONESHOT :
@@ -186,7 +186,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
     {
       info->type = type ;
       if (verbosity >= 4)
-        strerr_warnt4x("previously encountered identifier ", name, " now has type ", typestr(type)) ;
+        strerr_warnt("previously encountered identifier ", name, " now has type ", typestr(type)) ;
       switch (type)
       {
         case SVTYPE_UNDEFINED : break ;
@@ -205,7 +205,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
           break ;
       }
     }
-    else strerr_dief6x(1, "duplicate service definition: ", name, " defined in ", srcdir, " is already defined and has type ", typestr(info->type)) ;
+    else strerr_dief(1, "duplicate service definition: ", name, " defined in ", srcdir, " is already defined and has type ", typestr(info->type)) ;
     *pos = info->pos ;
     *kpos = info->kpos ;
     return 1 ;
@@ -238,7 +238,7 @@ static int add_name_nocheck (before_t *be, char const *srcdir, char const *name,
 static void check_identifier (char const *srcdir, char const *s)
 {
   if (!strncmp(s, "s6rc-", 5) || !strncmp(s, "s6-rc-", 6))
-    strerr_dief5x(1, "in ", srcdir, ": identifier ", s, " starts with reserved prefix") ;
+    strerr_dief(1, "in ", srcdir, ": identifier ", s, " starts with reserved prefix") ;
 }
 
 static int add_name (before_t *be, char const *srcdir, char const *name, servicetype_t type, unsigned int *pos, unsigned int *kpos)
@@ -286,7 +286,7 @@ static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *
   if (fd < 0)
   {
     if (errno == ENOENT) return 0 ;
-    strerr_diefu6sys(111, "open ", srcdir, "/", name, "/", list) ;
+    strerr_diefusys(111, "open ", srcdir, "/", name, "/", list) ;
   }
   buffer_init(&b, &buffer_read, fd, buf, 2048) ;
   *listindex = genalloc_len(unsigned int, &be->indices) ;
@@ -299,7 +299,7 @@ static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *
       size_t i = start ;
       if (r < 0)
       {
-        if (errno != EPIPE) strerr_diefu6sys(111, "read ", srcdir, "/", name, "/", list) ;
+        if (errno != EPIPE) strerr_diefusys(111, "read ", srcdir, "/", name, "/", list) ;
         if (!stralloc_0(&satmp)) dienomem() ;
         cont = 0 ;
       }
@@ -315,7 +315,7 @@ static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *
             dienomem() ;
         }
         else if (verbosity >= 2)
-          strerr_warnw8x("in ", srcdir, "/", name, "/", list, ": name listed more than once: ", satmp.s + i) ;
+          strerr_warnw("in ", srcdir, "/", name, "/", list, ": name listed more than once: ", satmp.s + i) ;
       }
       satmp.len = start ;
     }
@@ -331,7 +331,7 @@ static int add_namelistd (before_t *be, int dfd, char const *srcdir, char const 
   if (!dir)
   {
     if (errno == ENOENT) return 0 ;
-    strerr_diefu6sys(111, "opendir ", srcdir, "/", name, "/", list) ;
+    strerr_diefusys(111, "opendir ", srcdir, "/", name, "/", list) ;
   }
   *listindex = genalloc_len(unsigned int, &be->indices) ;
   for (;;)
@@ -346,7 +346,7 @@ static int add_namelistd (before_t *be, int dfd, char const *srcdir, char const 
     if (!genalloc_append(unsigned int, &be->indices, &pos)) dienomem() ;
   }
   dir_close(dir) ;
-  if (errno) strerr_diefu4sys(111, "readdir ", srcdir, "/", list) ;
+  if (errno) strerr_diefusys(111, "readdir ", srcdir, "/", list) ;
   *n = genalloc_len(unsigned int, &be->indices) - *listindex ;
   return 1 ;
 }
@@ -356,10 +356,10 @@ static void read_script (before_t *be, int dfd, char const *srcdir, char const *
   int r = 0 ;
   int fd = open_readatb(dfd, script) ;
   *argvindex = keep.len ;
-  if (fd < 0)
+  if (fd == -1)
   {
     if (errno != ENOENT || mandatory)
-      strerr_diefu6sys(111, "open ", srcdir, "/", name, "/", script) ;
+      strerr_diefusys(111, "open ", srcdir, "/", name, "/", script) ;
   }
   else
   {
@@ -368,10 +368,10 @@ static void read_script (before_t *be, int dfd, char const *srcdir, char const *
     r = el_parse_from_buffer(&keep, &b) ;
     switch (r)
     {
-      case -4 : strerr_dief8x(1, "syntax error in ", srcdir, "/", name, "/", script, ": unmatched ", "}");
-      case -3 : strerr_dief8x(1, "syntax error in ", srcdir, "/", name, "/", script, ": unmatched ", "{");
-      case -2 : strerr_dief6x(1, "syntax error in ", srcdir, "/", name, "/", script) ;
-      case -1 : strerr_diefu6sys(111, "parse ", srcdir, "/", name, "/", script) ;
+      case -4 : strerr_dief(1, "syntax error in ", srcdir, "/", name, "/", script, ": unmatched ", "}");
+      case -3 : strerr_dief(1, "syntax error in ", srcdir, "/", name, "/", script, ": unmatched ", "{");
+      case -2 : strerr_dief(1, "syntax error in ", srcdir, "/", name, "/", script) ;
+      case -1 : strerr_diefusys(111, "parse ", srcdir, "/", name, "/", script) ;
     }
     close(fd) ;
   }
@@ -387,7 +387,7 @@ static uint32_t read_timeout (int dfd, char const *srcdir, char const *name, cha
   if (r == -1)
   {
     if (errno && errno != ENOENT)
-      strerr_diefu6sys(111, "read ", srcdir, "/", name, "/", tname) ;
+      strerr_diefusys(111, "read ", srcdir, "/", name, "/", tname) ;
   }
   else
   {
@@ -414,7 +414,7 @@ static uint32_t read_flags (int dfd, char const *srcdir, char const *name)
     if (access_at(dfd, files[i], F_OK, 0) < 0)
     {
       if (errno != ENOENT)
-        strerr_diefu6sys(111, "read ", srcdir, "/", name, "/", files[i]) ;
+        strerr_diefusys(111, "read ", srcdir, "/", name, "/", files[i]) ;
     }
     else flags |= 1 << i ;
   }
@@ -439,8 +439,9 @@ static void add_common (before_t *be, int dfd, char const *srcdir, char const *n
 static inline void add_oneshot (before_t *be, int dfd, char const *srcdir, char const *name)
 {
   oneshot_t service ;
-  if (verbosity >= 3) strerr_warni3x(name, " has type ", "oneshot") ;
+  if (verbosity >= 3) strerr_warni(name, " has type ", "oneshot") ;
   add_common(be, dfd, srcdir, name, &service.common, SVTYPE_ONESHOT) ;
+  read_script(be, dfd, srcdir, name, "reload", &service.argvindex[2], &service.argc[2], 0) ;
   read_script(be, dfd, srcdir, name, "up", &service.argvindex[1], &service.argc[1], 1) ;
   read_script(be, dfd, srcdir, name, "down", &service.argvindex[0], &service.argc[0], 0) ;
   if (!genalloc_append(unsigned int, &be->indices, &be->specialdeps[0])) dienomem() ;
@@ -453,7 +454,7 @@ static inline void add_oneshot (before_t *be, int dfd, char const *srcdir, char 
     while (i--)
     {
       fmt[uint_fmt(fmt, *p)] = 0 ;
-      strerr_warnt7x("dependency from ", name, " to ", data.s + *p, " (", fmt, ")") ;
+      strerr_warnt("dependency from ", name, " to ", data.s + *p, " (", fmt, ")") ;
       p++ ;
     }
   }
@@ -465,34 +466,34 @@ static inline void add_longrun (before_t *be, int dfd, char const *srcdir, char 
   longrun_t service = { .srcdir = srcdir, .nproducers = 0, .prodindex = 0, .consumer = 0, .pipelinename = 0 } ;
   unsigned int relatedindex, n ;
   int fd ;
-  if (verbosity >= 3) strerr_warni3x(name, " has type ", "longrun") ;
+  if (verbosity >= 3) strerr_warni(name, " has type ", "longrun") ;
   add_common(be, dfd, srcdir, name, &service.common, SVTYPE_LONGRUN) ;
   fd = open_readat(dfd, "run") ;
-  if (fd < 0)
+  if (fd == -1)
   {
     if (errno == ENOENT)
-      strerr_diefu5x(1, "find a run script in ", srcdir, "/", name, "/run") ;
-    else strerr_diefu5sys(111, "open ", srcdir, "/", name, "/run") ;
+      strerr_diefu(1, "find a run script in ", srcdir, "/", name, "/run") ;
+    else strerr_diefusys(111, "open ", srcdir, "/", name, "/run") ;
   }
   else
   {
     struct stat st ;
     if (fstat(fd, &st) < 0)
-      strerr_diefu5sys(111, "stat ", srcdir, "/", name, "/run") ;
+      strerr_diefusys(111, "stat ", srcdir, "/", name, "/run") ;
     if (!S_ISREG(st.st_mode))
-      strerr_dief4x(1, srcdir, "/", name, "/run is not a regular file") ;
+      strerr_dief(1, srcdir, "/", name, "/run is not a regular file") ;
   }
   close(fd) ;
   fd = 0 ;
   if (add_namelist(be, dfd, srcdir, name, "producer-for", &relatedindex, &n))
   {
     if (n != 1)
-      strerr_dief5x(1, srcdir, "/", name, "/producer-for", " should only contain one service name") ;
+      strerr_dief(1, srcdir, "/", name, "/producer-for", " should only contain one service name") ;
     service.consumer = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
     if (!genalloc_append(unsigned int, &be->indices, &be->specialdeps[1])) dienomem() ;
     service.common.ndeps += 2 ;
     if (verbosity >= 3)
-      strerr_warni3x(name, " is a producer for ", data.s + service.consumer) ;
+      strerr_warni(name, " is a producer for ", data.s + service.consumer) ;
     fd = 1 ;
   }
   if (add_namelist(be, dfd, srcdir, name, "consumer-for", &service.prodindex, &service.nproducers) && service.nproducers)
@@ -508,14 +509,14 @@ static inline void add_longrun (before_t *be, int dfd, char const *srcdir, char 
     }
     if (verbosity >= 3)
       for (unsigned int i = 0 ; i < service.nproducers ; i++)
-        strerr_warni3x(name, " is a consumer for ", data.s + genalloc_s(unsigned int, &be->indices)[service.prodindex + i]) ;
+        strerr_warni(name, " is a consumer for ", data.s + genalloc_s(unsigned int, &be->indices)[service.prodindex + i]) ;
   }
   if (fd == 2)
   {
     if (add_namelist(be, dfd, srcdir, name, "pipeline-name", &relatedindex, &n))
     {
       if (n != 1)
-        strerr_dief5x(1, srcdir, "/", name, "/pipeline-name", " should only contain one name") ;
+        strerr_dief(1, srcdir, "/", name, "/pipeline-name", " should only contain one name") ;
       service.pipelinename = genalloc_s(unsigned int, &be->indices)[relatedindex] ;
       genalloc_setlen(unsigned int, &be->indices, relatedindex) ;
     }
@@ -523,10 +524,10 @@ static inline void add_longrun (before_t *be, int dfd, char const *srcdir, char 
   else if (access_at(dfd, "pipeline-name", F_OK, 0) < 0)
   {
     if (errno != ENOENT)
-      strerr_diefu5sys(111, "access ", srcdir, "/", name, "/pipeline-name") ;
+      strerr_diefusys(111, "access ", srcdir, "/", name, "/pipeline-name") ;
   }
   else if (verbosity)
-    strerr_warnw4x(srcdir, "/", name, " contains a pipeline-name file despite not being a last consumer; this file will be ignored") ;
+    strerr_warnw(srcdir, "/", name, " contains a pipeline-name file despite not being a last consumer; this file will be ignored") ;
   if (!genalloc_append(longrun_t, &be->longruns, &service)) dienomem() ;
 }
 
@@ -534,25 +535,25 @@ static inline void add_bundle (before_t *be, int dfd, char const *srcdir, char c
 {
   bundle_t bundle ;
   unsigned int dummy ;
-  if (verbosity >= 3) strerr_warni3x(name, " has type ", "bundle") ;
+  if (verbosity >= 3) strerr_warni(name, " has type ", "bundle") ;
   add_name(be, srcdir, name, SVTYPE_BUNDLE, &bundle.name, &dummy) ;
   if (!add_namelistd(be, dfd, srcdir, name, "contents.d", &bundle.listindex, &bundle.n)
    && !add_namelist(be, dfd, srcdir, name, "contents", &bundle.listindex, &bundle.n))
-      strerr_diefu5sys(111, "open ", srcdir, "/", name, "/contents") ;
+      strerr_diefusys(111, "open ", srcdir, "/", name, "/contents") ;
   bundle.annotation_flags = read_flags(dfd, srcdir, name) ;
   if (!genalloc_append(bundle_t, &be->bundles, &bundle)) dienomem() ;
 }
 
 static inline void add_source (before_t *be, int dfd, char const *srcdir, char const *name)
 {
-  if (verbosity >= 3) strerr_warni4x("parsing ", srcdir, "/", name) ;
+  if (verbosity >= 3) strerr_warni("parsing ", srcdir, "/", name) ;
   switch (type_check(dfd))
   {
-    case 0 : strerr_dief6x(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
+    case 0 : strerr_dief(1, "invalid ", srcdir, "/", name, "/type", ": must be oneshot, longrun, or bundle") ;
     case 1 : add_longrun(be, dfd, srcdir, name) ; break ;
     case 2 : add_oneshot(be, dfd, srcdir, name) ; break ;
     case 3 : add_bundle(be, dfd, srcdir, name) ; break ;
-    default : strerr_diefu5sys(111, "read ", srcdir, "/", name, "/type") ;
+    default : strerr_diefusys(111, "read ", srcdir, "/", name, "/type") ;
   }
 }
 
@@ -561,7 +562,7 @@ static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
   unsigned int n = 0 ;
   int fdsrc ;
   DIR *dir = opendir(srcdir) ;
-  if (!dir) strerr_diefu2sys(111, "opendir ", srcdir) ;
+  if (!dir) strerr_diefusys(111, "opendir ", srcdir) ;
   if (verbosity >= 2) strerr_warni("adding sources from ", srcdir) ;
   fdsrc = dir_fd(dir) ;
   for (;;)
@@ -573,15 +574,15 @@ static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
     if (strchr(d->d_name, '\n'))
-      strerr_dief3x(1, "subdirectory of ", srcdir, " contains a newline character") ;
+      strerr_dief(1, "subdirectory of ", srcdir, " contains a newline character") ;
     check_identifier(srcdir, d->d_name) ;
     if (stat_at(fdsrc, d->d_name, &st) < 0)
-      strerr_diefu4sys(111, "stat ", srcdir, "/", d->d_name) ;
+      strerr_diefusys(111, "stat ", srcdir, "/", d->d_name) ;
     if (!S_ISDIR(st.st_mode)) continue ;
     n++ ;
     if (!stralloc_catb(sa, d->d_name, strlen(d->d_name)+1)) dienomem() ;
   }
-  if (errno) strerr_diefu2sys(111, "readdir ", srcdir) ;
+  if (errno) strerr_diefusys(111, "readdir ", srcdir) ;
   if (n)
   {
     size_t pos = 0 ;
@@ -595,13 +596,13 @@ static inline void add_sources (before_t *be, char const *srcdir, stralloc *sa)
     for (unsigned int i = 0 ; i < n ; i++)
     {
       int fd = open_readatb(fdsrc, names[i]) ;
-      if (fd < 0) strerr_diefu4sys(111, "open ", srcdir, "/", names[i]) ;
+      if (fd < 0) strerr_diefusys(111, "open ", srcdir, "/", names[i]) ;
       add_source(be, fd, srcdir, names[i]) ;
       close(fd) ;
     }
     sa->len = 0 ;
   }
-  else if (verbosity) strerr_warnw3x("source ", srcdir, " is empty") ;
+  else if (verbosity) strerr_warnw("source ", srcdir, " is empty") ;
   dir_close(dir) ;
 }
 
@@ -624,16 +625,16 @@ static servicetype_t add_tree_to_bundle_rec (struct pipeline_recinfo_s *recinfo,
   }
   if (info->type != SVTYPE_LONGRUN) return info->type ;
   if (recinfo->bundle.n++ >= recinfo->nlong)
-    strerr_dief4x(1, "pipeline ", data.s + recinfo->pipelinename, " is too long: possible loop involving ", name) ;
+    strerr_dief(1, "pipeline ", data.s + recinfo->pipelinename, " is too long: possible loop involving ", name) ;
   if (verbosity >= 4)
-    strerr_warni4x("adding ", name, " to pipeline ", data.s + recinfo->pipelinename) ;
+    strerr_warni("adding ", name, " to pipeline ", data.s + recinfo->pipelinename) ;
   if (!genalloc_append(unsigned int, &recinfo->be->indices, &info->pos)) dienomem() ;
   for (unsigned int i = 0 ; i < recinfo->longruns[info->i].nproducers ; i++)
   {
     char *prodname = data.s + genalloc_s(unsigned int, &recinfo->be->indices)[recinfo->longruns[info->i].prodindex + i] ;
     servicetype_t type = add_tree_to_bundle_rec(recinfo, prodname) ;
     if (type != SVTYPE_LONGRUN)
-      strerr_dief6x(1, "longrun ", name, " declares a producer ", prodname, " of type ", typestr(type))  ;
+      strerr_dief(1, "longrun ", name, " declares a producer ", prodname, " of type ", typestr(type))  ;
   }
   return SVTYPE_LONGRUN ;
 }
@@ -642,7 +643,7 @@ static inline void add_pipeline_bundles (before_t *be)
 {
   longrun_t const *longruns = genalloc_s(longrun_t, &be->longruns) ;
   unsigned int i = genalloc_len(longrun_t, &be->longruns) ;
-  if (verbosity >= 2) strerr_warni1x("making bundles for pipelines") ;
+  if (verbosity >= 2) strerr_warni("making bundles for pipelines") ;
   while (i--) if (longruns[i].pipelinename)
   {
     struct pipeline_recinfo_s recinfo =
@@ -654,7 +655,7 @@ static inline void add_pipeline_bundles (before_t *be)
       .pipelinename = longruns[i].pipelinename
     } ;
     if (verbosity >= 3)
-      strerr_warni2x("creating bundle for pipeline ", data.s + recinfo.pipelinename) ;
+      strerr_warni("creating bundle for pipeline ", data.s + recinfo.pipelinename) ;
     {
       uint32_t dummy ;
       add_name(be, S6RC_INTERNALS, data.s + recinfo.pipelinename, SVTYPE_BUNDLE, &recinfo.bundle.name, &dummy) ;
@@ -690,7 +691,7 @@ static void resolve_bundle_rec (bundle_recinfo_t *recinfo, unsigned int i)
     unsigned int const *listindex = recinfo->indices + me->listindex ;
     unsigned int j = 0 ;
     if (recinfo->mark[i] & 1)
-      strerr_dief4x(1, "cyclic bundle definition: resolution of ", data.s + recinfo->oldb[recinfo->source].name, " encountered a cycle involving ", data.s + me->name) ;
+      strerr_dief(1, "cyclic bundle definition: resolution of ", data.s + recinfo->oldb[recinfo->source].name, " encountered a cycle involving ", data.s + me->name) ;
     recinfo->mark[i] |= 1 ;
     for (; j < me->n ; j++)
     {
@@ -711,7 +712,7 @@ static void resolve_bundle_rec (bundle_recinfo_t *recinfo, unsigned int i)
           bitarray_or(recinfo->barray + i * recinfo->nbits, recinfo->barray + i * recinfo->nbits, recinfo->barray + p->i * recinfo->nbits, recinfo->n) ;
           break ;
         default :
-          strerr_dief4x(1, "during resolution of bundle ", data.s + me->name, ": undefined service name ", data.s + p->pos) ;
+          strerr_dief(1, "during resolution of bundle ", data.s + me->name, ": undefined service name ", data.s + p->pos) ;
       }
     }    
     recinfo->mark[i] |= 2 ;
@@ -723,7 +724,7 @@ static inline unsigned int resolve_bundles (bundle_t const *oldb, bundle_t *newb
   unsigned int total = 0, i = 0 ;
   unsigned char mark[nbundles] ;
   bundle_recinfo_t recinfo = { .oldb = oldb, .newb = newb, .n = nshort + nlong, .nlong = nlong, .nbits = bitarray_div8(nshort + nlong), .indices = indices, .barray = barray, .mark = mark } ;
-  if (verbosity >= 2) strerr_warni1x("resolving bundle names") ;
+  if (verbosity >= 2) strerr_warni("resolving bundle names") ;
   memset(barray, 0, recinfo.nbits * nbundles) ;
   memset(mark, 0, nbundles) ;
   for (; i < nbundles ; i++)
@@ -745,7 +746,7 @@ static inline unsigned int resolve_bundles (bundle_t const *oldb, bundle_t *newb
 static inline void flatlist_bundles (bundle_t *bundles, unsigned int nbundles, unsigned int nbits, unsigned char const *barray, uint32_t *bdeps)
 {
   unsigned int i = 0 ;
-  if (verbosity >= 3) strerr_warni1x("converting bundle array") ;
+  if (verbosity >= 3) strerr_warni("converting bundle array") ;
   for (; i < nbundles ; i++)
   {
     unsigned char const *mybits = barray + i * nbits ;
@@ -773,7 +774,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, nlong + p->i)] = 0 ;
-          strerr_warnt6x(keep.s + me->kname, " depends on oneshot ", data.s + p->pos, " (", fmt, ")") ;
+          strerr_warnt(keep.s + me->kname, " depends on oneshot ", data.s + p->pos, " (", fmt, ")") ;
         }
         break ;
       case SVTYPE_LONGRUN :
@@ -782,7 +783,7 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, p->i)] = 0 ;
-          strerr_warnt6x(keep.s + me->kname, " depends on longrun ", data.s + p->pos, " (", fmt, ")") ;
+          strerr_warnt(keep.s + me->kname, " depends on longrun ", data.s + p->pos, " (", fmt, ")") ;
         }
         break ;
       case SVTYPE_BUNDLE :
@@ -791,11 +792,11 @@ static void resolve_deps (common_t const *me, unsigned int nlong, unsigned int n
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, nlong + p->i)] = 0 ;
-          strerr_warnt3x(keep.s + me->kname, " depends on bundle ", data.s + p->pos) ;
+          strerr_warnt(keep.s + me->kname, " depends on bundle ", data.s + p->pos) ;
         }
         break ;
       default :
-        strerr_dief4x(1, "during dependency resolution for service ", keep.s + me->kname, ": undefined service name ", data.s + p->pos) ;
+        strerr_dief(1, "during dependency resolution for service ", keep.s + me->kname, ": undefined service name ", data.s + p->pos) ;
     }
   }
 }
@@ -810,7 +811,7 @@ static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *lon
     avltree_search(&names_map, data.s + longruns[n].consumer, &j) ;
     p = genalloc_s(nameinfo_t, &nameinfo) + j ;
     if (p->type != SVTYPE_LONGRUN)
-      strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " of type ", typestr(p->type)) ;
+      strerr_dief(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " of type ", typestr(p->type)) ;
     for (; i < longruns[p->i].nproducers ; i++)
     {
       uint32_t k ;
@@ -818,11 +819,11 @@ static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *lon
       avltree_search(&names_map, data.s + indices[longruns[p->i].prodindex + i], &k) ;
       q = genalloc_s(nameinfo_t, &nameinfo) + k ;
       if (q->type != SVTYPE_LONGRUN)
-        strerr_dief6x(1, "longrun service ", data.s + p->pos, " declares a consumer ", data.s + q->pos, " of type ", typestr(q->type)) ;
+        strerr_dief(1, "longrun service ", data.s + p->pos, " declares a consumer ", data.s + q->pos, " of type ", typestr(q->type)) ;
       if (q->i == n) break ;
     }
     if (i == longruns[p->i].nproducers)
-      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " that does not declare it back") ;
+      strerr_dief(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being a producer for a service named ", data.s + p->pos, " that does not declare it back") ;
     l->consumer = p->i ; 
   }
   else l->consumer = nlong ;
@@ -835,13 +836,13 @@ static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *lon
     avltree_search(&names_map, data.s + indices[longruns[n].prodindex + i], &j) ;
     p = genalloc_s(nameinfo_t, &nameinfo) + j ;
     if (p->type != SVTYPE_LONGRUN)
-        strerr_dief6x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being the consumer for a service named ", data.s + p->pos, " of type ", typestr(p->type)) ;
+        strerr_dief(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being the consumer for a service named ", data.s + p->pos, " of type ", typestr(p->type)) ;
     avltree_search(&names_map, data.s + longruns[p->i].consumer, &k) ;
     q = genalloc_s(nameinfo_t, &nameinfo) + k ;
     if (q->type != SVTYPE_LONGRUN)
-      strerr_dief6x(1, "longrun service ", data.s + p->pos, " declares a producer ", data.s + q->pos, " of type ", typestr(q->type)) ;
+      strerr_dief(1, "longrun service ", data.s + p->pos, " declares a producer ", data.s + q->pos, " of type ", typestr(q->type)) ;
     if (q->i != n)
-      strerr_dief5x(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being the consumer for a service named ", data.s + p->pos, " that does not declare it back") ;
+      strerr_dief(1, "longrun service ", keep.s + longruns[n].common.kname, " declares being the consumer for a service named ", data.s + p->pos, " that does not declare it back") ;
     prodlist[prodindex + i] = p->i ;
   }
   l->producers = prodindex ;
@@ -852,8 +853,7 @@ static inline uint32_t resolve_prodcons (s6rc_longrun_t *l, longrun_t const *lon
 static inline unsigned int ugly_bitarray_vertical_countones (unsigned char const *sarray, unsigned int n, unsigned int i)
 {
   unsigned int m = 0, j = 0, nbits = bitarray_div8(n) ;
-  for (; j < n ; j++)
-    if (bitarray_peek(sarray + j * nbits, i)) m++ ;
+  for (; j < n ; j++) if (bitarray_peek(sarray + j * nbits, i)) m++ ;
   return m ;
 }
 
@@ -867,7 +867,7 @@ static inline void resolve_services (s6rc_db_t *db, before_t const *be, char con
   uint32_t prodindex = 0 ;
   uint32_t i = 0 ;
   uint32_t total[2] = { 0, 0 } ;
-  if (verbosity >= 2) strerr_warni1x("resolving service names") ;
+  if (verbosity >= 2) strerr_warni("resolving service names") ;
   memset(sarray, 0, nbits * n) ;
   for (; i < db->nlong ; i++)
   {
@@ -889,6 +889,8 @@ static inline void resolve_services (s6rc_db_t *db, before_t const *be, char con
     db->services[db->nlong + i].x.oneshot.argv[0] = oneshots[i].argvindex[0] ;
     db->services[db->nlong + i].x.oneshot.argc[1] = oneshots[i].argc[1] ;
     db->services[db->nlong + i].x.oneshot.argv[1] = oneshots[i].argvindex[1] ;
+    db->services[db->nlong + i].x.oneshot.argc[2] = oneshots[i].argc[2] ;
+    db->services[db->nlong + i].x.oneshot.argv[2] = oneshots[i].argvindex[2] ;
     resolve_deps(&oneshots[i].common, db->nlong, n, nbits, indices, sarray + (db->nlong + i) * nbits, barray) ;
   }
 
@@ -903,7 +905,7 @@ static inline void resolve_services (s6rc_db_t *db, before_t const *be, char con
   }
 
   if (total[0] != total[1])
-    strerr_dief1x(101, "database inconsistency: dependencies and reverse dependencies do not match. Please submit a bug-report.") ;
+    strerr_dief(101, "database inconsistency: dependencies and reverse dependencies do not match. Please submit a bug-report.") ;
   db->ndeps = total[1] ;
 }
 
@@ -914,7 +916,7 @@ static inline void flatlist_services (s6rc_db_t *db, unsigned char const *sarray
   diuint32 problem ;
   unsigned int i = 0 ;
   int r ;
-  if (verbosity >= 3) strerr_warni1x("converting service dependency array") ;
+  if (verbosity >= 3) strerr_warni("converting service dependency array") ;
   for (; i < n ; i++)
   {
     uint32_t *mydeps = db->deps + db->services[i].deps[0] ;
@@ -927,16 +929,16 @@ static inline void flatlist_services (s6rc_db_t *db, unsigned char const *sarray
       if (bitarray_peek(sarray + i * nbits, j)) mydeps[k++] = j ;
   }
 
-  if (verbosity >= 3) strerr_warni1x("checking database correctness") ;
+  if (verbosity >= 3) strerr_warni("checking database correctness") ;
   if (s6rc_db_check_depcycles(db, 1, &problem))
-    strerr_dief5x(1, "cyclic service dependency", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
+    strerr_dief(1, "cyclic service dependency", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
   r = s6rc_db_check_pipelines(db, &problem) ;
   if (r)
   {
     if (r == 1)
-      strerr_dief5x(1, "cyclic longrun pipeline", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
+      strerr_dief(1, "cyclic longrun pipeline", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
     else
-      strerr_dief5x(1, "longrun pipeline collision", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
+      strerr_dief(1, "longrun pipeline collision", " reached from ", db->string + db->services[problem.left].name, " and involving ", db->string + db->services[problem.right].name) ;
   }
 }
 
@@ -969,7 +971,7 @@ static void auto_dir (char const *compiled, char const *dir)
   if (mkdir(fn, 0755) < 0)
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "mkdir ", fn) ;
+    strerr_diefusys(111, "mkdir ", fn) ;
   }
 }
 
@@ -984,7 +986,7 @@ static void auto_file (char const *compiled, char const *file, char const *s, un
   if (!openwritenclose_unsafe(fn, s, n))
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "write to ", fn) ;
+    strerr_diefusys(111, "write to ", fn) ;
   }
 }
 
@@ -999,7 +1001,7 @@ static void auto_symlink (char const *compiled, char const *name, char const *ta
   if (symlink(target, fn) < 0)
   {
     cleanup(compiled) ;
-    strerr_diefu4sys(111, "symlink ", target, " to ", fn) ;
+    strerr_diefusys(111, "symlink ", target, " to ", fn) ;
   }
 }
 
@@ -1014,7 +1016,7 @@ static void auto_rights (char const *compiled, char const *file, mode_t mode)
   if (chmod(fn, mode) < 0)
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "chmod ", fn) ;
+    strerr_diefusys(111, "chmod ", fn) ;
   }
 }
 
@@ -1022,16 +1024,16 @@ static inline void init_compiled (char const *compiled)
 {
   int compiledlock ;
   if (mkdir(compiled, 0755) < 0)
-    strerr_diefu2sys(111, "mkdir ", compiled) ;
+    strerr_diefusys(111, "mkdir ", compiled) ;
   if (!s6rc_lock(0, 0, 0, compiled, 2, &compiledlock, 0))
-    strerr_diefu2sys(111, "take lock on ", compiled) ;
+    strerr_diefusys(111, "take lock on ", compiled) ;
   auto_dir(compiled, "servicedirs") ;
 }
 
 static inline void write_sizes (char const *compiled, s6rc_db_t const *db)
 {
   char pack[24] ;
-  if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/n") ;
+  if (verbosity >= 3) strerr_warni("writing ", compiled, "/n") ;
   uint32_pack_big(pack, (uint32_t)db->nshort) ;
   uint32_pack_big(pack + 4, (uint32_t)db->nlong) ;
   uint32_pack_big(pack + 8, (uint32_t)db->stringlen) ;
@@ -1078,7 +1080,7 @@ static inline void write_oneshot_runner (char const *compiled, int blocking)
   size_t base = satmp.len ;
   make_skel(compiled, S6RC_ONESHOT_RUNNER, 3) ;
   if (!stralloc_cats(&satmp, "#!"
-    EXECLINE_SHEBANGPREFIX "execlineb -P\n"
+    EXECLINE_SHEBANGPREFIX "execlineb -s1\n"
     EXECLINE_EXTBINPREFIX "fdmove -c 2 1\n"
     EXECLINE_EXTBINPREFIX "fdmove 1 3\n"
     S6_EXTBINPREFIX "s6-ipcserver-socketbinder -- s\n"
@@ -1087,7 +1089,11 @@ static inline void write_oneshot_runner (char const *compiled, int blocking)
     S6_EXTBINPREFIX "s6-sudod -t 30000 --\n"
     S6RC_EXTLIBEXECPREFIX "s6-rc-oneshot-run -l ../.. ")
    || (blocking && !stralloc_cats(&satmp, "-b "))
-   || !stralloc_cats(&satmp, "--\n")) dienomem() ;
+   || !stralloc_cats(&satmp, "--\n"))
+  {
+    cleanup(compiled) ;
+    dienomem() ;
+  }
   auto_file(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", satmp.s + base, satmp.len - base) ;
   satmp.len = base ;
   auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
@@ -1117,7 +1123,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
     if (db->services[j].x.longrun.nproducers)
     {
       if (!stralloc_cats(&satmp, db->string + db->services[j].name)
-       || !stralloc_catb(&satmp, "\n", 1)) dienomem() ;
+       || !stralloc_catb(&satmp, "\n", 1)) goto err ;
       nfds += 2 ;
     }
   if (nfds < 240) nfds = 256 ; else nfds += (nfds >> 4) + 2 ;
@@ -1126,7 +1132,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
   satmp.len = base ;
 
   if (!stralloc_cats(&satmp,
-    "#!" EXECLINE_SHEBANGPREFIX "execlineb -P\n"
+    "#!" EXECLINE_SHEBANGPREFIX "execlineb -s1\n"
     EXECLINE_EXTBINPREFIX "pipeline -dw --\n{\n  "
     EXECLINE_EXTBINPREFIX "if --\n  {\n    "
     EXECLINE_EXTBINPREFIX "forstdin -x0 -- i\n      "
@@ -1135,28 +1141,33 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
     EXECLINE_EXTBINPREFIX "redirfd -r 0 ./data/autofilled\n    "
     S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
     S6RC_EXTLIBEXECPREFIX "s6-rc-fdholder-filler -1 --\n  }\n  "
-    S6_EXTBINPREFIX "s6-svc -t .\n}\n")) dienomem() ;
+    S6_EXTBINPREFIX "s6-svc -t .\n}\n")) goto err ;
   if (fdhuser)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-envuidgid -i -- ")
      || !string_quote(&satmp, fdhuser, strlen(fdhuser))
-     || !stralloc_catb(&satmp, "\n", 1)) dienomem() ;
+     || !stralloc_catb(&satmp, "\n", 1)) goto err ;
   }
-  if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-daemon -1 -n ")) dienomem() ;
+  if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-daemon -1 -n ")) goto err ;
   {
     char fmt[UINT_FMT] ;
     size_t len = uint_fmt(fmt, nfds) ;
     fmt[len++] = ' ' ;
-    if (!stralloc_catb(&satmp, fmt, len)) dienomem() ;
+    if (!stralloc_catb(&satmp, fmt, len)) goto err ;
   }
   if (fdhuser)
   {
-    if (!stralloc_cats(&satmp, "-U ")) dienomem() ;
+    if (!stralloc_cats(&satmp, "-U ")) goto err ;
   }
-  if (!stralloc_cats(&satmp, "-i data/rules -- s\n")) dienomem() ;
+  if (!stralloc_cats(&satmp, "-i data/rules -- s\n")) goto err ;
   auto_file(compiled, "servicedirs/" S6RC_FDHOLDER "/run", satmp.s + base, satmp.len - base) ;
   satmp.len = base ;
   auto_rights(compiled, "servicedirs/" S6RC_FDHOLDER "/run", 0755) ;
+  return ;
+
+ err:
+  cleanup(compiled) ;
+  dienomem() ;
 }
 
 static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bundle_t const *bundles, unsigned int nbundles, uint32_t const *bdeps)
@@ -1166,19 +1177,19 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
   cdbmaker c = CDBMAKER_ZERO ;
   unsigned int i = db->nshort + db->nlong ;
   char fn[clen + 13] ;
-  if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/resolve.cdb") ;
+  if (verbosity >= 3) strerr_warni("writing ", compiled, "/resolve.cdb") ;
   memcpy(fn, compiled, clen) ;
   memcpy(fn + clen, "/resolve.cdb", 13) ;
   fd = open_trunc(fn) ;
   if (fd < 0 || ndelay_off(fd) < 0)
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "open_trunc ", fn) ;
+    strerr_diefusys(111, "open_trunc ", fn) ;
   }
   if (!cdbmake_start(&c, fd))
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "cdbmake_start on ", fn) ;
+    strerr_diefusys(111, "cdbmake_start on ", fn) ;
   }
 
  /* atomic services */
@@ -1189,7 +1200,7 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
     if (!cdbmake_add(&c, db->string + db->services[i].name, strlen(db->string + db->services[i].name), pack, 4))
     {
       cleanup(compiled) ;
-      strerr_diefu1sys(111, "cdbmake_add") ;
+      strerr_diefusys(111, "cdbmake_add") ;
     }
   }
 
@@ -1204,14 +1215,14 @@ static inline void write_resolve (char const *compiled, s6rc_db_t const *db, bun
     if (!cdbmake_add(&c, data.s + bundles[i].name, strlen(data.s + bundles[i].name), pack, bundles[i].n << 2))
     {
       cleanup(compiled) ;
-      strerr_diefu1sys(111, "cdbmake_add") ;
+      strerr_diefusys(111, "cdbmake_add") ;
     }
   }
 
   if (!cdbmake_finish(&c))
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "write to ", fn) ;
+    strerr_diefusys(111, "write to ", fn) ;
   }
   close(fd) ;
 }
@@ -1223,17 +1234,17 @@ static int dircopy (char const *compiled, char const *srcfn, char const *dstfn)
   {
     if (errno == ENOENT) return 0 ;
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "stat ", srcfn) ;
+    strerr_diefusys(111, "stat ", srcfn) ;
   }
   if (!S_ISDIR(st.st_mode))
   {
     cleanup(compiled) ;
-    strerr_dief2x(1, srcfn, " is not a directory") ;
+    strerr_dief(1, srcfn, " is not a directory") ;
   }
   if (!hiercopy(srcfn, dstfn))
   {
     cleanup(compiled) ;
-    strerr_diefu4sys(111, "recursively copy ", srcfn, " to ", dstfn) ;
+    strerr_diefusys(111, "recursively copy ", srcfn, " to ", dstfn) ;
   }
   return 1 ;
 }
@@ -1241,12 +1252,12 @@ static int dircopy (char const *compiled, char const *srcfn, char const *dstfn)
 static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t const *db, unsigned int i, char const *exe)
 {
   size_t base = satmp.len ;
-  if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -S0\n")) dienomem() ;
+  if (!stralloc_cats(&satmp, "#!" EXECLINE_SHEBANGPREFIX "execlineb -S0\n")) goto err ;
   if (db->services[i].x.longrun.nproducers)
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-r-")
      || !string_quote_nodelim(&satmp, db->string + db->services[i].name, strlen(db->string + db->services[i].name))
-     || !stralloc_cats(&satmp, "\"\n")) dienomem() ;
+     || !stralloc_cats(&satmp, "\"\n")) goto err ;
   }
   if (db->services[i].x.longrun.consumer < db->nlong)
   {
@@ -1255,23 +1266,28 @@ static void write_exe_wrapper (char const *compiled, char const *fn, s6rc_db_t c
       S6_EXTBINPREFIX "s6-fdholder-retrieve ../s6rc-fdholder/s \"pipe:s6rc-w-")
      || !string_quote_nodelim(&satmp, consumername, strlen(consumername))
      || !stralloc_cats(&satmp, "\"\n"
-      EXECLINE_EXTBINPREFIX "fdswap 0 1\n")) dienomem() ;
+      EXECLINE_EXTBINPREFIX "fdswap 0 1\n")) goto err ;
   }
   if (!stralloc_cats(&satmp, "./")
    || !stralloc_cats(&satmp, exe)
-   || !stralloc_cats(&satmp, ".user $@\n")) dienomem() ;
+   || !stralloc_cats(&satmp, ".user $@\n")) goto err ;
   auto_file(compiled, fn, satmp.s + base, satmp.len - base) ;
   satmp.len = base ;
   auto_rights(compiled, fn, 0755) ;
+  return ;
+
+ err:
+  cleanup(compiled) ;
+  dienomem() ;
 }
 
 static int copy_uint (char const *compiled, char const *srcfn, char const *dstfn, unsigned int *u)
 {
   int r = s6rc_read_uint(srcfn, u) ;
-  if (r < 0)
+  if (r == -1)
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "read ", srcfn) ;
+    strerr_diefusys(111, "read ", srcfn) ;
   }
   if (r)
   {
@@ -1281,12 +1297,12 @@ static int copy_uint (char const *compiled, char const *srcfn, char const *dstfn
     if (!openwritenclose_unsafe(dstfn, fmt, len))
     {
       cleanup(compiled) ;
-      strerr_diefu2sys(111, "write to ", dstfn) ;
+      strerr_diefusys(111, "write to ", dstfn) ;
     }
     if (chmod(dstfn, 0644) == -1)
     {
       cleanup(compiled) ;
-      strerr_diefu2sys(111, "set permissions on ", dstfn) ;
+      strerr_diefusys(111, "set permissions on ", dstfn) ;
     }
     return 1 ;
   }
@@ -1299,13 +1315,13 @@ static int copy_empty (char const *compiled, char const *srcfn, char const *dstf
   {
     if (errno == ENOENT) return 0 ;
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "access ", srcfn) ;
+    strerr_diefusys(111, "access ", srcfn) ;
   }
 
   if (!openwritenclose_unsafe(dstfn, "", 0))
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "create ", dstfn) ;
+    strerr_diefusys(111, "create ", dstfn) ;
   }
   return 1 ;
 }
@@ -1314,7 +1330,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
 {
   size_t clen = strlen(compiled) ;
   unsigned int i = 2 ;
-  if (verbosity >= 3) strerr_warni3x("writing ", compiled, "/servicedirs") ;
+  if (verbosity >= 3) strerr_warni("writing ", compiled, "/servicedirs") ;
   for (; i < db->nlong ; i++)
   {
     size_t srcdirlen = strlen(srcdirs[i]) ;
@@ -1330,7 +1346,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     if (mkdir(dstfn, 0755) < 0)
     {
       cleanup(compiled) ;
-      strerr_diefu2sys(111, "mkdir ", dstfn) ;
+      strerr_diefusys(111, "mkdir ", dstfn) ;
     }
     dstfn[clen + len + 13] = '/' ;
     memcpy(srcfn, srcdirs[i], srcdirlen) ;
@@ -1350,7 +1366,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       if (!filecopy_unsafe(srcfn, dstfn, 0755))
       {
         cleanup(compiled) ;
-        strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
+        strerr_diefusys(111, "copy ", srcfn, " to ", dstfn) ;
       }
     }
 
@@ -1364,7 +1380,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     if (!filecopy_unsafe(srcfn, dstfn, 0755))
     {
       cleanup(compiled) ;
-      strerr_diefu4sys(111, "copy ", srcfn, " to ", dstfn) ;
+      strerr_diefusys(111, "copy ", srcfn, " to ", dstfn) ;
     }
 
     memcpy(srcfn + srcdirlen + len + 2, "notification-fd", 16) ;
@@ -1377,7 +1393,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, u)] = 0 ;
-          strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
+          strerr_warnw("longrun ", db->string + db->services[i].name, " has a notification-fd of ", fmt) ;
         }
       }
       else fdnotif = u ;
@@ -1393,7 +1409,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
         {
           char fmt[UINT_FMT] ;
           fmt[uint_fmt(fmt, u)] = 0 ;
-          strerr_warnw4x("longrun ", db->string + db->services[i].name, " has a lock-fd of ", fmt) ;
+          strerr_warnw("longrun ", db->string + db->services[i].name, " has a lock-fd of ", fmt) ;
         }
       }
       else if (fdnotif == u)
@@ -1423,6 +1439,10 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
     memcpy(dstfn + clen + 14 + len, "down-signal", 12) ;
     filecopy_unsafe(srcfn, dstfn, 0644) ;
 
+    memcpy(srcfn + srcdirlen + len + 2, "reload-signal", 14) ;
+    memcpy(dstfn + clen + 14 + len, "reload-signal", 14) ;
+    filecopy_unsafe(srcfn, dstfn, 0644) ;
+
     memcpy(srcfn + srcdirlen + len + 2, "flag-newpidns", 14) ;
     memcpy(dstfn + clen + 14 + len, "flag-newpidns", 14) ;
     copy_empty(compiled, srcfn, dstfn) ;
@@ -1435,13 +1455,13 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
       if (mkdir(dstfn, 0755) == -1)
       {
         cleanup(compiled) ;
-        strerr_diefu2sys(111, "mkdir ", dstfn) ;
+        strerr_diefusys(111, "mkdir ", dstfn) ;
       }
       dstfn[clen + 22 + len] = 0 ;
       if (mkdir(dstfn, 0755) == -1)
       {
         cleanup(compiled) ;
-        strerr_diefu2sys(111, "mkdir ", dstfn) ;
+        strerr_diefusys(111, "mkdir ", dstfn) ;
       }
     }
 
@@ -1457,7 +1477,7 @@ static inline void write_servicedirs (char const *compiled, s6rc_db_t const *db,
 
 static int write_service (buffer *b, s6rc_service_t const *sv, int type)
 {
-  char pack[49] ;
+  char pack[57] ;
   unsigned int m ;
   uint32_pack_big(pack, sv->name) ;
   uint32_pack_big(pack + 4, sv->flags) ;
@@ -1480,7 +1500,9 @@ static int write_service (buffer *b, s6rc_service_t const *sv, int type)
     uint32_pack_big(pack + 36, sv->x.oneshot.argv[0]) ;
     uint32_pack_big(pack + 40, sv->x.oneshot.argc[1]) ;
     uint32_pack_big(pack + 44, sv->x.oneshot.argv[1]) ;
-    m = 48 ;
+    uint32_pack_big(pack + 48, sv->x.oneshot.argc[2]) ;
+    uint32_pack_big(pack + 52, sv->x.oneshot.argv[2]) ;
+    m = 56 ;
   }
   pack[m++] = '\376' ;
   return (buffer_put(b, pack, m) == m) ;
@@ -1495,24 +1517,24 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
   char dbfn[clen + 4] ;
   memcpy(dbfn, compiled, clen) ;
   memcpy(dbfn + clen, "/db", 4) ;
-  if (verbosity >= 3) strerr_warni2x("writing ", dbfn) ;
+  if (verbosity >= 3) strerr_warni("writing ", dbfn) ;
   fd = open_trunc(dbfn) ;
-  if (fd < 0)
+  if (fd == -1)
   {
     cleanup(compiled) ;
-    strerr_diefu3sys(111, "open ", dbfn, " for writing") ;
+    strerr_diefusys(111, "open ", dbfn, " for writing") ;
   }
-  if (ndelay_off(fd) < 0)
+  if (ndelay_off(fd) == -1)
   {
     cleanup(compiled) ;
-    strerr_diefu2sys(111, "ndelay_off ", dbfn) ;
+    strerr_diefusys(111, "ndelay_off ", dbfn) ;
   }
   buffer_init(&b, &buffer_write, fd, buf, 4096) ;
 
-  if (buffer_put(&b, S6RC_DB_BANNER_START, S6RC_DB_BANNER_START_LEN) < 0)
+  if (buffer_put(&b, S6RC_DB_BANNER_START, S6RC_DB_BANNER_START_LEN) < S6RC_DB_BANNER_START_LEN)
     goto err ;
 
-  if (buffer_put(&b, db->string, db->stringlen) < 0) goto err ;
+  if (buffer_put(&b, db->string, db->stringlen) < db->stringlen) goto err ;
 
   {
     unsigned int i = db->ndeps << 1 ;
@@ -1540,14 +1562,15 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
     while (i--) if (!write_service(&b, sv++, 0)) goto err ;
   }
 
-  if (buffer_putflush(&b, S6RC_DB_BANNER_END, S6RC_DB_BANNER_END_LEN) < 0)
+  if (buffer_putflush(&b, S6RC_DB_BANNER_END, S6RC_DB_BANNER_END_LEN) < S6RC_DB_BANNER_END_LEN)
     goto err ;
 
   close(fd) ;
   return ;
+
  err:
   cleanup(compiled) ;
-  strerr_diefu2sys(111, "write to ", dbfn) ;
+  strerr_diefusys(111, "write to ", dbfn) ;
 }
 
 static inline void write_compiled (
@@ -1560,7 +1583,7 @@ static inline void write_compiled (
   char const *fdhuser,
   int blocking)
 {
-  if (verbosity >= 2) strerr_warni2x("writing compiled information to ", compiled) ;
+  if (verbosity >= 2) strerr_warni("writing compiled information to ", compiled) ;
   init_compiled(compiled) ;
   write_sizes(compiled, db) ;
   write_resolve(compiled, db, bundles, nbundles, bdeps) ;
@@ -1595,7 +1618,7 @@ int main (int argc, char const *const *argv)
   if (wgola[GOLA_VERBOSITY])
   {
     if (!uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
-      strerr_dief1x(100, "verbosity must be an unsigned integer") ;
+      strerr_dief(100, "verbosity must be an unsigned integer") ;
   }
   compiled = *argv++ ;
 

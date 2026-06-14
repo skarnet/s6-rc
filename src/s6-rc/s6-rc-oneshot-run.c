@@ -14,14 +14,12 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-oneshot-run [ -l live ] [ -b ] up|down servicenumber"
+#define USAGE "s6-rc-oneshot-run [ -l live ] [ -b ] up|down|reload servicenumber"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
 {
-  GOLB_UP = 0x01,
-  GOLB_BLOCK = 0x02,
-  GOLB_RELOAD = 0x04,
+  GOLB_BLOCK = 0x01,
 } ;
 
 enum gola_e
@@ -41,19 +39,19 @@ int main (int argc, char const *const *argv)
   {
     { .so = 'l', .lo = "livedir", .i = GOLA_LIVEDIR },
   } ;
+  static char const *const whatstr[3] = { "down", "up", "reload" } ;
   uint64_t wgolb = 0 ;
   char const *wgola[GOLA_N] = { [GOLA_LIVEDIR] = S6RC_LIVEDIR } ;
   unsigned int number ;
+  unsigned int what = 0 ;
   PROG = "s6-rc-oneshot-run" ;
 
   number = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= number ; argv += number ;
   if (argc < 2) dieusage() ;
 
-  if (!strcasecmp(argv[0], "up")) wgolb |= GOLB_UP ;
-  else if (!strcasecmp(argv[0], "down")) wgolb &= ~GOLB_UP ;
-  else if (!strcasecmp(argv[0], "reload")) wgolb |= GOLB_UP | GOLB_RELOAD ;
-  else dieusage() ;
+  for (; what < 3 ; what++) if (!strcmp(argv[0], whatstr[what])) break ;
+  if (what >= 3) dieusage() ;
   if (!uint0_scan(argv[1], &number)) dieusage() ;
 
   {
@@ -105,23 +103,15 @@ int main (int argc, char const *const *argv)
       close(fdcompiled) ;
       close(compiledlock) ;
 
+
      /* Run the script */
 
-      {
-        s6rc_service_t const *sv = db.services + number ;
-        unsigned int namelen = strlen(db.string + sv->name) ;
-        unsigned int sargc = sv->x.oneshot.argc[!!(wgolb & GOLB_UP)] ;
-        char const *const *sargv = db.argvs + sv->x.oneshot.argv[!!(wgolb & GOLB_UP)] ;
-        char const *newargv[sargc + 1] ;
-        char const **p = newargv ;
-        char modif[namelen + 21] ;
-        memcpy(modif, "RC_NAME=", 8) ;
-        memcpy(modif + 8, db.string + sv->name, namelen + 1) ;
-        if (wgolb & GOLB_RELOAD) memcpy(modif + 9 + namelen, "RC_RELOAD=1", 12) ;
-        while (sargc--) *p++ = *sargv++ ;
-        *p = 0 ;
-        xmexec0_n(newargv, modif, namelen + (wgolb & GOLB_RELOAD ? 21 : 9), 1 + !!(wgolb & GOLB_RELOAD)) ;
-      }
+      s6rc_service_t const *sv = db.services + number ;
+      size_t namelen = strlen(db.string + sv->name) ;
+      char modif[namelen + 9] ;
+      memcpy(modif, "RC_NAME=", 8) ;
+      memcpy(modif + 8, db.string + sv->name, namelen + 1) ;
+      xmexec0_n(db.argvs + sv->x.oneshot.argv[what], modif, namelen + 9, 1) ;
     }
   }
 }

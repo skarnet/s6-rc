@@ -27,7 +27,7 @@ static s6_servicedir_desc const svdir_file_list[] =
   { .name = "down-signal", .type = S6_FILETYPE_NORMAL, .options = 0 },
   { .name = "reload-signal", .type = S6_FILETYPE_NORMAL, .options = 0 },
   { .name = "flag-newpidns", .type = S6_FILETYPE_EMPTY, .options = 0 },
-  { .name = "template", .type = S6_FILETYPE_DIR, .options = 0 },
+  { .name = "template", .type = S6_FILETYPE_TEMPLATE, .options = 0 },
   { .name = "data", .type = S6_FILETYPE_DIR, .options = 0 },
   { .name = "env", .type = S6_FILETYPE_DIR, .options = 0 },
   { .name = 0, .options = 0 }
@@ -61,7 +61,7 @@ int s6rc_servicedir_copy_one (char const *src, char const *dst, s6_servicedir_de
       break ;
     }
     case S6_FILETYPE_EMPTY :
-      if (access(srcfn, F_OK) < 0)
+      if (access(srcfn, F_OK) == -1)
       {
         if (errno != ENOENT || p->options & S6_SVFILE_MANDATORY) return 0 ;
       }
@@ -81,16 +81,17 @@ int s6rc_servicedir_copy_one (char const *src, char const *dst, s6_servicedir_de
       }
       break ;
     }
+    case S6_FILETYPE_TEMPLATE :
     case S6_FILETYPE_DIR :
       if (!hiercopy(srcfn, dstfn))
       {
-        if (errno != ENOENT || p->options & S6_SVFILE_MANDATORY) return 0 ;
+        if (errno != ENOENT) return 0 ;
+        if (p->options & S6_SVFILE_MANDATORY) return 0 ;
+        break ;
       }
-      if (!strcmp(p->name, "template"))
-      {
-        memcpy(dstfn + dstlen + 1, "instance", 9) ;
-        if (mkdir(dstfn, 0755) == -1 && errno != EEXIST) return 0 ;
-      }
+      if (p->type != S6_FILETYPE_TEMPLATE) break ;
+      memcpy(dstfn + dstlen + 1, "instance", 9) ;
+      if (mkdir(dstfn, 0755) == -1 && errno != EEXIST) return 0 ;
       break ;
     default : return (errno = EDOM, 0) ;
   }

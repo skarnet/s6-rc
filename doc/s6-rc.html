@@ -252,8 +252,7 @@ given on the command line, which must all be up. For a longrun,
 <tt>s6-rc reload</tt> sends an <a href="//skarnet.org/software/s6/s6-svc.html">s6-svc -l</a>
 command to the service, which causes it to receive a SIGHUP, or any
 overriding signal configured in the <tt>reload-signal</tt> file.
-For a oneshot, the service's <tt>up</tt> script is executed, with
-an additional <tt>RC_RELOAD</tt> environment variable containing 1.
+For a oneshot, the service's <tt>reload</tt> script is executed.
 </p>
 
 <p>
