@@ -4,8 +4,11 @@ In 0.7.0.0
 ----------
 
  - Bugfixes.
+ - s6-rc-bundle deleted.
  - s6-rc-init is now idempotent and behaves better in pathological situations.
- - New "s6-rc reload" command.
+ - New "s6-rc reload" command. And new "reload" file for oneshots.
+ - s6-rc-set-change has -I|-i and -P|-p options, replacing -I fail|warn|pull.
+The redundant -f option is gone entirely.
 
 
 In 0.6.1.1

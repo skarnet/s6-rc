@@ -18,14 +18,15 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] set newrx services..."
+#define USAGE "s6-rc-set-change [ -v verbosity ] [ -r repo ] [ -E | -e ] [ -n ] [ -I | -i ] [ -P | -p ] set newrx services..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
 {
   GOLB_FORCE_ESSENTIAL = 0x01,
-  GOLB_IGNORE_DEPENDENCIES = 0x02,
-  GOLB_DRYRUN = 0x04
+  GOLB_DRYRUN = 0x02,
+  GOLB_FAIL_ON_DEPS = 0x04,
+  GOLB_PULL_DEPS = 0x08,
 } ;
 
 enum gola_e
@@ -53,20 +54,17 @@ int main (int argc, char const *const *argv)
   {
     { .so = 'E', .lo = "no-force-essential", .clear = GOLB_FORCE_ESSENTIAL, .set = 0 },
     { .so = 'e', .lo = "force-essential", .clear = 0, .set = GOLB_FORCE_ESSENTIAL },
-    { .so = 'f', .lo = "ignore-dependencies", .clear = 0, .set = GOLB_IGNORE_DEPENDENCIES },
-    { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN }
+    { .so = 0, .lo = "no-dry-run", .clear = GOLB_DRYRUN, .set = 0 },
+    { .so = 'n', .lo = "dry-run", .clear = 0, .set = GOLB_DRYRUN },
+    { .so = 'I', .lo = "no-fail-on-dependencies", .clear = GOLB_FAIL_ON_DEPS, .set = 0 },
+    { .so = 'i', .lo = "fail-on-dependencies", .clear = 0, .set = GOLB_FAIL_ON_DEPS },
+    { .so = 'P', .lo = "no-pull-dependencies", .clear = GOLB_PULL_DEPS, .set = 0 },
+    { .so = 'p', .lo = "pull-dependencies", .clear = 0, .set = GOLB_PULL_DEPS },
   } ;
   static gol_arg const rgola[] =
   {
     { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
     { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
-    { .so = 'I', .lo = "if-dependencies-found", .i = GOLA_FORCELEVEL }
-  } ;
-  static struct rxname_s const accepted_forcelevels[] =
-  {
-    { .name = "fail", .rx = 0 },
-    { .name = "pull", .rx = 2 },
-    { .name = "warn", .rx = 1 }
   } ;
   static struct rxname_s const accepted_rxs[] =
   {
@@ -96,10 +94,8 @@ int main (int argc, char const *const *argv)
   genalloc gatmp = GENALLOC_ZERO ;  /* size_t whatever */
   int fdlock ;
   unsigned int verbosity = 1 ;
-  unsigned int forcelevel = 1 ;
   char const *wgola[GOLA_N] = { 0 } ;
   uint64_t wgolb = 0 ;
-  unsigned int golc ;
   struct rxname_s *newrx ;
   size_t max = 0, sabase ;
   s6rc_repo_sv *list ;
@@ -108,27 +104,22 @@ int main (int argc, char const *const *argv)
   PROG = "s6-rc-set-change" ;
   wgola[GOLA_REPODIR] = S6RC_REPODIR ;
 
-  golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+  unsigned int golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
+
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
-    strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
-  if (wgola[GOLA_FORCELEVEL])
-  {
-    struct rxname_s *p = bsearch(wgola[GOLA_FORCELEVEL], accepted_forcelevels, sizeof(accepted_forcelevels)/sizeof(struct rxname_s), sizeof(struct rxname_s), &rxname_cmp) ;
-    if (!p) strerr_dief1x(100, "if-dependencies-found needs to be fail, warn or pull") ;
-    forcelevel = p->rx ;
-  }
+    strerr_dief(100, "verbosity needs to be an unsigned integer") ;
   if (argc < 3) dieusage() ;
   s6rc_repo_sanitize_setname(argv[0]) ;
   newrx = bsearch(argv[1], accepted_rxs, sizeof(accepted_rxs)/sizeof(struct rxname_s), sizeof(struct rxname_s), &rxname_cmp) ;
-  if (!newrx) strerr_dief2x(100, "unrecognized state change directive: ", argv[1]) ;
+  if (!newrx) strerr_dief(100, "unrecognized state change directive: ", argv[1]) ;
   if (newrx->rx == 3 && !(wgolb & GOLB_FORCE_ESSENTIAL))
-    strerr_diefu1x(100, "artificially mark a service as essential without --force-essential") ;
+    strerr_diefu(100, "artificially mark a service as essential without --force-essential") ;
   for (unsigned int i = 2 ; i < argc ; i++) s6rc_repo_sanitize_svname(argv[i]) ;
 
   tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
-  if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
+  if (fdlock == -1) strerr_diefusys(111, "lock ", wgola[GOLA_REPODIR]) ;
   if (!s6rc_repo_makesvlist_byname(wgola[GOLA_REPODIR], argv[0], &storage, &svlist)) _exit(111) ;
   list = genalloc_s(s6rc_repo_sv, &svlist) ;
   listn = genalloc_len(s6rc_repo_sv, &svlist) ;
@@ -138,7 +129,7 @@ int main (int argc, char const *const *argv)
     if (e) _exit(e) ;
   }
   n = genalloc_len(size_t, &indices) ;
-  if (!n) strerr_dief1x(101, "can't happen: 0 services in flattened list!") ;
+  if (!n) strerr_dief(101, "can't happen: 0 services in flattened list!") ;
 
   s6rc_repo_sv starting[n] ;
   uint32_t ind[n] ;
@@ -147,7 +138,7 @@ int main (int argc, char const *const *argv)
   {
     char const *s = storage.s + genalloc_s(size_t, &indices)[i] ;
     s6rc_repo_sv *p = bsearchr(s, list, listn, sizeof(s6rc_repo_sv), &s6rc_repo_sv_bcmpr, storage.s) ;
-    if (!p) strerr_dief7x(102, "inconsistent view in set ", argv[0], " of repository ", wgola[GOLA_REPODIR], ": service ", s, " is defined in the reference database but not in the textual representation of the set") ;
+    if (!p) strerr_dief(102, "inconsistent view in set ", argv[0], " of repository ", wgola[GOLA_REPODIR], ": service ", s, " is defined in the reference database but not in the textual representation of the set") ;
     starting[i] = *p ;
     ind[i] = p - list ;
     max += strlen(s) + 1 ;
@@ -156,7 +147,6 @@ int main (int argc, char const *const *argv)
   storage.len = sabase ;
   genalloc_setlen(size_t, &indices, 0) ;
 
-  if (!(wgolb & GOLB_IGNORE_DEPENDENCIES))
   {
     size_t m = 0 ;
     char const *tmpstart[n] ;
@@ -177,16 +167,16 @@ int main (int argc, char const *const *argv)
     {
       uint32_t const *bads = genalloc_s(uint32_t, &indices) ;
       uint32_t badn = genalloc_len(uint32_t, &indices) ;
-      if (verbosity || !forcelevel)
+      if (wgolb & GOLB_FAIL_ON_DEPS || verbosity > !!(wgolb & GOLB_PULL_DEPS))
       {
         char const *arg[10 + (badn << 1)] ;
         arg[0] = PROG ;
         arg[1] = ": " ;
-        arg[2] = !forcelevel ? "fatal" : "warning" ;
+        arg[2] = wgolb & GOLB_FAIL_ON_DEPS ? "fatal" : wgolb & GOLB_PULL_DEPS ? "info" : "warning" ;
         arg[3] = ": the following services (" ;
         arg[4] = newrx->rx >= 2 ? "dependencies of" : "depending on" ;
         arg[5] = " the ones given as arguments, or part of the same pipeline) " ;
-        arg[6] = forcelevel == 2 ? "are also being" : "also need to be" ;
+        arg[6] = wgolb & GOLB_PULL_DEPS ? "are also being" : "also need to be" ;
         arg[7] = " changed to \"" ;
         arg[8] = s6rc_repo_rxnames[newrx->rx] ;
         arg[9] = "\": " ;
@@ -197,9 +187,9 @@ int main (int argc, char const *const *argv)
         }
         strerr_warnv(arg, 10 + (badn << 1)) ;
       }
-      if (!forcelevel) _exit(1) ;
+      if (wgolb & GOLB_FAIL_ON_DEPS) _exit(1) ;
       if (wgolb & GOLB_DRYRUN) _exit(0) ;
-      if (forcelevel == 2)
+      if (wgolb & GOLB_PULL_DEPS)
       {
         s6rc_repo_sv full[n + badn] ;
         for (uint32_t i = 0 ; i < n ; i++) full[i] = starting[i] ;

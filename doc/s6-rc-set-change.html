@@ -27,7 +27,7 @@ the <a href="repodefs.html#rx">rx</a> of some services.
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-set-change [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -f | -I fail|pull|warn ] [ -n ] <em>set</em> <em>newrx</em> <em>services...</em>
+     s6-rc-set-change [ -v <em>verbosity</em> ] [ -r <em>repo</em> ] [ -E | -e ] [ -n ] [ -f ] [ -I | -i ] [ -P | -p ] <em>set</em> <em>newrx</em> <em>services...</em>
 </pre>
 
 <ul>
@@ -39,60 +39,58 @@ the <a href="repodefs.html#rx">rx</a> of some services.
 <h2> Options </h2>
 
 <dl>
- <dt> -v <em>verbosity</em>, --verbosity=<em>verbosity</em> </dt>
+ <dt> <tt>-v <em>verbosity</em></tt>, <tt>--verbosity=<em>verbosity</em></tt> </dt>
  <dd> Be more or less verbose. The default is <strong>1</strong>, which means
 that error messages and warnings will be written to stderr. 0 means that only
 error messages will be written, and 2 or more adds informational messages. </dd>
 
- <dt> -r <em>repo</em>, --repository=<em>repo</em> </dt>
+ <dt> <tt>-r <em>repo</em></tt>, <tt>--repository=<em>repo</em></tt> </dt>
  <dd> Use the repository in <em>repo</em>, which must exist. Default is
 <strong>/var/lib/s6-rc/repository</strong>.
  </dd>
 
- <dt> -E, --no-force-essential </dt>
+ <dt> <tt>-E</tt>, <tt>--no-force-essential</tt> </dt>
  <dd> If a service needs to be moved to/from the <tt>always</tt> rx, fail and report
 an error. This is the default. Services marked as <em>always</em> are normally defined
 in the stores with <tt>flag-essential</tt>, and inconsistencies between essential
 services should be resolved in the stores. </dd>
 
- <dt> -e, --force-essential </dt>
+ <dt> <tt>-e</tt>, <tt>--force-essential</tt> </dt>
  <dd> Move services to/from the <tt>always</tt> rx if they need to be. This option
 should only be used temporarily until the store inconsistency is fixed. Be aware that
 moving a service from <em>always</em> to <em>usable</em> or <em>masked</em> may
 result in an unbootable set. </dd>
 
- <dt> -f, --ignore-dependencies </dt>
- <dd> Change <em>services...</em> to <em>newrx</em>, but do not change any other
-services, even if the dependency graph would normally mandate it. This may result
-in an inconsistent set that you cannot commit. </dd>
-</dl>
-
- <dt> -I <em>action</em>, --if-dependencies-found=<em>action</em> </dt>
- <dd> Determine what to do if a dependency would make the set inconsistent.
-For instance, if service <tt>A</tt> depends on service <tt>B</tt>, they are both
-in the <tt>latent</tt> rx, and you are trying to change <tt>A</tt> to <tt>active</tt>
-without mentioning <tt>B</tt>, this would not work: in order to be brought up at
-boot time, <tt>A</tt> would first need <tt>B</tt> to also be brought up at boot time,
-so <tt>A</tt> can only be <tt>active</tt> if <tt>B</tt> also is. In that situation,
-what s6-rc-set-change does depends on the value of <em>action</em>:
-  <ul>
-   <li> <tt>fail</tt>: print an error message and exit 1. </li>
-   <li> <tt>warn</tt>: print a warning message and proceed. This is the default. </li>
-   <li> <tt>pull</tt>: print a warning message and pull the dependencies of
-<em>services...</em> into <em>newrx</em>. (Or the reverse dependencies, if
-you're trying to disable or mask services. </li>
-  </ul>
- The warning messages are not printed if <em>verbosity</em> is 0. </dd>
-
  <dt> -n, --dry-run </dt>
  <dd> Check whether the command would succeed, print warning or error messages if
 appropriate, but do not perform the actual modifications. </dd>
+
+ <dt> <tt>-I</tt>, <tt>--no-fail-on-dependencies</tt> </dt>
+ <dd> Do not fail if a dependency is found. Depending on the <tt>-P</tt> or <tt>-p</tt>
+flag, either print a warning message and proceed to make an inconsistent set, or pull the
+dependency into the change. This is the default. </dd>
+
+ <dt> <tt>-i</tt>, <tt>--fail-on-dependencies</tt> </dt>
+ <dd> If a dependency is found that would create an inconsistent set if the change was
+applied, print an error message and exit 1. </dd>
+
+ <dt> <tt>-P</tt>, <tt>--no-pull-dependencies</tt> </dt>
+ <dd> If a dependency is found that would create an inconsistent set if the change was
+applied, print a warning message (if verbosity is not 0) listing the services that
+also need to change prescriptions; then apply the change anyway. This is the default. </dd>
+
+ <dt> <tt>-p</tt>, <tt>--pull-dependencies</tt> </dt>
+ <dd> If a dependency is found that would create an inconsistent set, automatically
+extend the change to the dependencies as well so the set remain consistent. Print an
+informational message (if verbosity is 2 or more) listing the services that are being
+pulled into the change, then apply the change. </dd>
+</dl>
 
 <h2> Exit codes </h2>
 
 <dl>
  <dt> 0 </dt> <dd> Success. </dd>
- <dt> 1 </dt> <dd> <tt>-I fail</tt> was given and dependencies prevented <em>services...</em>
+ <dt> 1 </dt> <dd> The <tt>-I</tt> option was given and dependencies prevented <em>services...</em>
 from being changed to <em>newrx</em>. </dd>
  <dt> 3 </dt> <dd> A service in <em>services...</em> was not found in the reference database. </dt>
  <dt> 4 </dt> <dd> Invalid or corrupted reference database. </dd>
