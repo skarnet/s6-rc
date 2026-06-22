@@ -758,7 +758,7 @@ int main (int argc, char const *const *argv)
         int r ;
         if (!(wgolb & GOLB_DOWN)) invert_selection() ;
         r = change(0) ;
-        if (r) return r ;
+        if (r) _exit(r) ;
         invert_selection() ;
         _exit(change(1)) ;
       }
