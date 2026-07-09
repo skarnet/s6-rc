@@ -19,7 +19,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -b ] [ -E | -e ] [ -u | -d | -D ] [ -p ] [ -a ] help|list|listall|diff|start|stop|change [ servicenames... ]"
+#define USAGE "s6-rc [ -v verbosity ] [ -n dryrunthrottle ] [ -t timeout ] [ -l live ] [ -b ] [ -E | -e ] [ -u | -d | -D ] [ -p ] [ -a ] [ -c ] help|list|listall|diff|start|stop|change [ servicenames... ]"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 typedef struct pidindex_s pidindex_t ;
@@ -54,6 +54,7 @@ enum golb_e
   GOLB_PRUNE = 0x04,
   GOLB_SELECTLIVE = 0x08,
   GOLB_BLOCK = 0x10,
+  GOLB_CLEAN = 0x20,
   GOLB_NOLOCK = 0x80
 } ;
 
@@ -112,10 +113,17 @@ static inline int print_services (void)
   for (unsigned int i = 0 ; i < n ; i++)
   {
     if (wgolb & GOLB_HIDEESSENTIALS && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL) continue ;
-    if (state[i] & 0x10)
+    if (wgolb & GOLB_CLEAN || state[i] & 0x10)
     {
-      if (buffer_puts(buffer_1, db->string + db->services[i].name) < 0
-       || buffer_put(buffer_1, "\n", 1) < 0) goto err ;
+      if (buffer_puts(buffer_1, db->string + db->services[i].name) < 0) goto err ;
+      if (wgolb & GOLB_CLEAN)
+      {
+        if (buffer_puts(buffer_1, i < db->nlong ? "/longrun" : "/oneshot") < 0
+         || buffer_puts(buffer_1, state[i] & 0x01 ? state[i] & 0x02 ? "/up/explicit" : "/up/pulled" : "/down/ ") < 0
+         || buffer_puts(buffer_1, db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL ? "/essential" : db->services[i].flags & S6RC_DB_FLAG_RECOMMENDED ? "/recommended" : "/ ") < 0)
+          goto err ;
+      }
+      if (buffer_put(buffer_1, "\n", 1) < 0) goto err ;
     }
   }
   if (!buffer_flush(buffer_1)) goto err ;
@@ -522,10 +530,10 @@ static inline void print_help (void)
 {
   static char const *help =
 "s6-rc help\n"
-"s6-rc [ -l live ] [ -a ] list [ servicenames... ]\n"
+"s6-rc [ -l live ] [ -a ] [ -c ] list [ servicenames... ]\n"
 "s6-rc [ -l live ] [ -a ] [ -u | -d ] listall [ servicenames... ]\n"
 "s6-rc [ -l live ] diff\n"
-"s6-rc [ -l live ] [ -a ] [ -u | -d | -D ] [ -p ] [ -v verbosity ] [ -t timeout ] [ -n dryrunthrottle ] change [ servicenames... ]\n" ;
+"s6-rc [ -l live ] [ -a ] [ -c ] [ -u | -d | -D ] [ -p ] [ -v verbosity ] [ -t timeout ] [ -n dryrunthrottle ] change [ servicenames... ]\n" ;
   if (buffer_putsflush(buffer_1, help) < 0)
     strerr_diefusys(111, "write to stdout") ;
 }
@@ -542,6 +550,7 @@ int main (int argc, char const *const *argv)
     { .so = 'b', .lo = "block", .clear = 0, .set = GOLB_BLOCK },
     { .so = 'E', .lo = "with-essentials", .clear = GOLB_HIDEESSENTIALS, .set = 0 },
     { .so = 'e', .lo = "without-essentials", .clear = 0, .set = GOLB_HIDEESSENTIALS },
+    { .so = 'c', .lo = "clean", .clear = 0, .set = GOLB_CLEAN },
     { .so = 0, .lo = "no-lock", .clear = 0, .set = GOLB_NOLOCK },
   } ;
   static gol_arg const rgola[] =
@@ -587,7 +596,7 @@ int main (int argc, char const *const *argv)
   }
   if (what == WHAT_START)
   {
-    what = WHAT_CHANGE ; wgolb &= ~(GOLB_DOWN | GOLB_PRUNE) ;
+    what = WHAT_CHANGE ; wgolb &= ~(GOLB_DOWN | GOLB_PRUNE | GOLB_CLEAN) ;
   }
   else if (what == WHAT_STOP)
   {
@@ -721,6 +730,7 @@ int main (int argc, char const *const *argv)
 
       if (what == WHAT_LIST)
       {
+        if (wgolb & GOLB_CLEAN) s6rc_graph_clean(db, state, 0, 1, 4) ;
         if (wgolb & GOLB_DOWN) invert_selection() ;
         _exit(print_services()) ;
       }
@@ -760,9 +770,25 @@ int main (int argc, char const *const *argv)
         r = change(0) ;
         if (r) _exit(r) ;
         invert_selection() ;
-        _exit(change(1)) ;
+        r = change(1) ;
+        if (r) _exit(r) ;
       }
-      else _exit(change(!(wgolb & GOLB_DOWN))) ;
+      else
+      {
+        int r = change(!(wgolb & GOLB_DOWN)) ;
+        if (r) _exit(r) ;
+      }
+
+      if (wgolb & GOLB_CLEAN)
+      {
+        int r ;
+        if (verbosity >= 2)
+          strerr_warni("stopping non-explicitly started services") ;
+        s6rc_graph_clean(db, state, 0, 1, 4) ;
+        r = change(0) ;
+        if (r) _exit(r) ;
+      }
     }
   }
+  _exit(0) ;
 }
