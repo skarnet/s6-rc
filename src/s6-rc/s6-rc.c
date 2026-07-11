@@ -112,19 +112,16 @@ static inline int print_services (void)
 {
   for (unsigned int i = 0 ; i < n ; i++)
   {
-    if (wgolb & GOLB_HIDEESSENTIALS && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL) continue ;
-    if (wgolb & GOLB_CLEAN || state[i] & 0x10)
+    if (!(state[i] & 0x10) || (wgolb & GOLB_HIDEESSENTIALS && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL)) continue ;
+    if (buffer_puts(buffer_1, db->string + db->services[i].name) < 0) goto err ;
+    if (wgolb & GOLB_CLEAN)
     {
-      if (buffer_puts(buffer_1, db->string + db->services[i].name) < 0) goto err ;
-      if (wgolb & GOLB_CLEAN)
-      {
-        if (buffer_puts(buffer_1, i < db->nlong ? "/longrun" : "/oneshot") < 0
-         || buffer_puts(buffer_1, state[i] & 0x01 ? state[i] & 0x02 ? "/up/explicit" : "/up/pulled" : "/down/ ") < 0
-         || buffer_puts(buffer_1, db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL ? "/essential" : db->services[i].flags & S6RC_DB_FLAG_RECOMMENDED ? "/recommended" : "/ ") < 0)
-          goto err ;
-      }
-      if (buffer_put(buffer_1, "\n", 1) < 0) goto err ;
+      if (buffer_puts(buffer_1, i < db->nlong ? "/longrun" : "/oneshot") < 0
+       || buffer_puts(buffer_1, state[i] & 0x01 ? state[i] & 0x02 ? "/up/explicit" : "/up/pulled" : "/down/ ") < 0
+       || buffer_puts(buffer_1, db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL ? "/essential" : db->services[i].flags & S6RC_DB_FLAG_RECOMMENDED ? "/recommended" : "/ ") < 0)
+        goto err ;
     }
+    if (buffer_put(buffer_1, "\n", 1) < 0) goto err ;
   }
   if (!buffer_flush(buffer_1)) goto err ;
   return 0 ;
@@ -587,7 +584,7 @@ int main (int argc, char const *const *argv)
   }
   if (wgola[GOLA_LIVEDIR]) live = wgola[GOLA_LIVEDIR] ;
 
-  if (!argc) dieusage() ;
+  if (!argc--) dieusage() ;
   what = parse_command(*argv++) ;
   if (what == WHAT_HELP)
   {
@@ -720,10 +717,7 @@ int main (int argc, char const *const *argv)
      /* Add live state to selection */
 
       if (wgolb & GOLB_SELECTLIVE)
-      {
-        unsigned int i = n ;
-        while (i--) if (state[i] & 0x01) state[i] |= 0x10 ;
-      }
+        for (uint32_t i = 0 ; i < n ; i++) if (state[i] & 0x01) state[i] |= 0x10 ;
 
 
      /* Print the selection before closure */
@@ -732,6 +726,8 @@ int main (int argc, char const *const *argv)
       {
         if (wgolb & GOLB_CLEAN) s6rc_graph_clean(db, state, 0, 1, 4) ;
         if (wgolb & GOLB_DOWN) invert_selection() ;
+        if (!argc && !(wgolb & GOLB_SELECTLIVE))
+          for (uint32_t i = 0 ; i < n ; i++) state[i] |= 0x10 ;
         _exit(print_services()) ;
       }
 
