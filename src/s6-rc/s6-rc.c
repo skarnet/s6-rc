@@ -117,8 +117,8 @@ static inline int print_services (void)
     if (wgolb & GOLB_CLEAN)
     {
       if (buffer_puts(buffer_1, i < db->nlong ? "/longrun" : "/oneshot") < 0
-       || buffer_puts(buffer_1, state[i] & 0x01 ? state[i] & 0x02 ? "/up/explicit" : "/up/pulled" : "/down/ ") < 0
-       || buffer_puts(buffer_1, db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL ? "/essential" : db->services[i].flags & S6RC_DB_FLAG_RECOMMENDED ? "/recommended" : "/ ") < 0)
+       || buffer_puts(buffer_1, db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL ? "/essential" : db->services[i].flags & S6RC_DB_FLAG_RECOMMENDED ? "/recommended" : "/") < 0
+       || buffer_puts(buffer_1, state[i] & 0x01 ? state[i] & 0x02 ? "/up/explicit" : "/up/pulled" : "/down/") < 0)
         goto err ;
     }
     if (buffer_put(buffer_1, "\n", 1) < 0) goto err ;
@@ -321,8 +321,8 @@ static void examine (unsigned int i, int h)
     }
     else if (!h && !(wgolb & GOLB_HIDEESSENTIALS) && db->services[i].flags & S6RC_DB_FLAG_ESSENTIAL)
     {
-      if (verbosity)
-        strerr_warnw("service ", name, " is marked as essential, not stopping it") ;
+      if (verbosity >= 2)
+        strerr_warni("service ", name, " is marked as essential, not stopping it") ;
     }
     else
     {
@@ -724,7 +724,6 @@ int main (int argc, char const *const *argv)
 
       if (what == WHAT_LIST)
       {
-        if (wgolb & GOLB_CLEAN) s6rc_graph_clean(db, state, 0, 1, 4) ;
         if (wgolb & GOLB_DOWN) invert_selection() ;
         if (!argc && !(wgolb & GOLB_SELECTLIVE))
           for (uint32_t i = 0 ; i < n ; i++) state[i] |= 0x10 ;
@@ -759,6 +758,7 @@ int main (int argc, char const *const *argv)
 
       if (what == WHAT_RELOAD) _exit(reload()) ;
 
+      announce() ;
       if (wgolb & GOLB_PRUNE)
       {
         int r ;
@@ -779,8 +779,9 @@ int main (int argc, char const *const *argv)
       {
         int r ;
         if (verbosity >= 2)
-          strerr_warni("stopping non-explicitly started services") ;
+          strerr_warni("stopping pulled services") ;
         s6rc_graph_clean(db, state, 0, 1, 4) ;
+        s6rc_graph_closure(db, state, 4, 0) ;
         r = change(0) ;
         if (r) _exit(r) ;
       }

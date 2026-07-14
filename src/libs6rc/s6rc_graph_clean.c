@@ -23,7 +23,10 @@ static void s6rc_graph_clean_rec (recinfo_t *info, uint32_t i)
   {
     uint32_t j = 0 ;
     for (; j < info->db->services[i].ndeps[0] ; j++)
-      if (info->bits[j] & info->statemask && !(info->bits[j] & info->resmask)) break ;
+    {
+      uint32_t k = info->db->deps[info->db->services[i].deps[0] + j] ;
+      if (info->bits[k] & info->statemask && !(info->bits[k] & info->resmask)) break ;
+    }
     if (j >= info->db->services[i].ndeps[0])
     {
       info->bits[i] |= info->resmask ;
