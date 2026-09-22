@@ -391,7 +391,7 @@ static inline void make_new_livedir (unsigned char const *oldstate, s6rc_db_t co
     sa->len = newlen ;
     sa->s[sa->len++] = 0 ;
     rollback_servicedirs(sa->s + pos, newstate, invimage, olddb, newdb, i) ;
-    rm_rf_in_tmp(sa, 0) ;
+    rm_rf_in_tmp(sa, pos) ;
     errno = e ;
   }
   strerr_diefu2sys(111, "make new live directory in ", sa->s) ;
