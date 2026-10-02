@@ -18,38 +18,18 @@
 #define USAGE "s6-rc-set-delete [ -v verbosity ] [ -r repo ] setname..."
 #define dieusage() strerr_dieusage(100, USAGE)
 
-static inline void dodelete (char const *repo, char const *set)
+static void dodelete_compiled (char const *repo, char const *set)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
   char fn[repolen + setlen + 11] ;
   memcpy(fn, repo, repolen) ;
-  memcpy(fn + repolen, "/sources/", 9) ;
-  memcpy(fn + repolen + 9, set, setlen + 1) ;
-  if (access(fn, W_OK) == -1)
-  {
-    if (errno != ENOENT) strerr_diefu2sys(111, "access ", fn) ;
-  }
-  else
-  {
-    ssize_t r ;
-    char real[repolen + setlen + 18] ;
-    memcpy(real, repo, repolen) ;
-    memcpy(real + repolen, "/sources/", 9) ;
-    r = readlink(fn, real + repolen + 9, setlen + 9) ;
-    if (r == -1) strerr_diefu2sys(111, "readlink ", fn) ;
-    else if (r != setlen + 8) strerr_dief3x(102, "symlink ", fn, " points to an invalid name") ;
-    real[repolen + setlen + 17] = 0 ;
-    unlink_void(fn) ;
-    rm_rf(real) ;
-  }
-
-  memcpy(fn + repolen + 1, "compiled/", 9) ;
+  memcpy(fn + repolen, "/compiled/", 10) ;
   memcpy(fn + repolen + 10, set, setlen + 1) ;
   unlink_void(fn) ;
   fn[repolen + 9] = 0 ;
   DIR *dir = opendir(fn) ;
-  if (!dir) strerr_diefu2sys(111, "opendir ", fn) ;
+  if (!dir) return ;
   for (;;)
   {
     direntry *d ;
@@ -66,7 +46,6 @@ static inline void dodelete (char const *repo, char const *set)
       rm_rf(tmp) ;
     }
   }
-  if (errno) strerr_diefu2sys(111, "readdir ", fn) ;
   dir_close(dir) ;
 }
 
@@ -105,6 +84,9 @@ int main (int argc, char const *const *argv)
   if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
 
   for (unsigned int i = 0 ; i < argc ; i++)
-    dodelete(wgola[GOLA_REPODIR], argv[i]) ;
+  {
+    s6rc_repo_setdelete(wgola[GOLA_REPODIR], argv[i]) ;
+    dodelete_compiled(wgola[GOLA_REPODIR], argv[i]) ;
+  }
   _exit(0) ;
 }

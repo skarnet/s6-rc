@@ -41,6 +41,8 @@ extern int s6rc_repo_touch (char const *) ;
 extern int s6rc_repo_touchset (char const *, char const *) ;
 extern int s6rc_repo_checkset (char const *, char const *) ;
 extern int s6rc_repo_setuptodate (char const *, char const *) ;
+extern int s6rc_repo_setcopy (char const *, char const *, char const *, unsigned int) ;
+extern void s6rc_repo_setdelete (char const *, char const *) ;
 
 extern int s6rc_repo_makesetbundles (char const *, char const *, unsigned int) ;
 extern int s6rc_repo_makedefbundle (char const *, char const *, char const *) ;

@@ -26,6 +26,8 @@ s6rc_repo_rxnames.o
 s6rc_repo_sanitize_setname.o
 s6rc_repo_sanitize_svname.o
 s6rc_repo_setcompile.o
+s6rc_repo_setcopy.o
+s6rc_repo_setdelete.o
 s6rc_repo_setuptodate.o
 s6rc_repo_sv_bcmpr.o
 s6rc_repo_sv_cmpr.o
