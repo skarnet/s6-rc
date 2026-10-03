@@ -1,5 +1,12 @@
 Changelog for s6-rc.
 
+In 0.7.1.0
+----------
+
+ - Bugfixes.
+ - Databases now embed the major version they were built with
+
+
 In 0.7.0.0
 ----------
 

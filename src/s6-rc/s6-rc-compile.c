@@ -1573,6 +1573,21 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
   strerr_diefusys(111, "write to ", dbfn) ;
 }
 
+static inline void write_major (char const *compiled)
+{
+  uint32_t version = s6rc_get_major(S6RC_VERSION) ;
+  size_t len ;
+  char fmt[UINT32_FMT] ;
+  if (!version)
+  {
+    cleanup(compiled) ;
+    strerr_dief(101, "invalid software version: ", S6RC_VERSION) ;
+  }
+  len = uint32_fmt(fmt, version) ;
+  fmt[len++] = '\n' ;
+  auto_file(compiled, "major", fmt, len) ;
+}
+
 static inline void write_compiled (
   char const *compiled,
   s6rc_db_t const *db,
@@ -1585,6 +1600,7 @@ static inline void write_compiled (
 {
   if (verbosity >= 2) strerr_warni("writing compiled information to ", compiled) ;
   init_compiled(compiled) ;
+  write_major(compiled) ;
   write_sizes(compiled, db) ;
   write_resolve(compiled, db, bundles, nbundles, bdeps) ;
   stralloc_free(&data) ;

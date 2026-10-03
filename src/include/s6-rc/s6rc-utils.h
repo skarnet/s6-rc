@@ -24,4 +24,7 @@ extern int s6rc_livedir_canon (char const **) ;
 extern int s6rc_live_state_size (char const *, uint32_t *, uint32_t *) ;
 extern int s6rc_live_state_read (char const *, unsigned char *, uint32_t) ;
 
+extern uint32_t s6rc_get_major (char const *) ;  /* always pass S6RC_VERSION */
+extern uint32_t s6rc_read_major (char const *) ; /* the major a db was compiled with */
+
 #endif
