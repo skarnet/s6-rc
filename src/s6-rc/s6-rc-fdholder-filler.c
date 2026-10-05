@@ -6,19 +6,35 @@
 #include <errno.h>
 
 #include <skalibs/types.h>
-#include <skalibs/sgetopt.h>
+#include <skalibs/gol.h>
+#include <skalibs/prog.h>
 #include <skalibs/strerr.h>
 #include <skalibs/allreadwrite.h>
 #include <skalibs/tai.h>
 #include <skalibs/buffer.h>
+#include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
 #include <skalibs/genalloc.h>
 
 #include <s6/fdholder.h>
 
-#define USAGE "s6-rc-fdholder-filler [ -1 ] [ -t timeout ] < autofilled-filename"
+#include <s6-rc/config.h>
+
+#define USAGE "s6-rc-fdholder-filler [ -1 ] [ -t timeout ] [ -L catchall-logger ] < autofilled-filename"
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_diefu1sys(111, "stralloc_catb")
+
+enum golb_e
+{
+  GOLB_1 = 0x1,
+} ;
+
+enum gola_e
+{
+  GOLA_TIMEOUT,
+  GOLA_CATCHALL,
+  GOLA_N,
+} ;
 
 static inline uint8_t cclass (char c)
 {
@@ -64,71 +80,97 @@ static inline void parse_servicenames (stralloc *sa, genalloc *g)
 
 int main (int argc, char const *const *argv)
 {
+  static gol_bool const rgolb[1] =
+  {
+    { .so = '1', .lo = "notify-stdout", .clear = 0, .set = GOLB_1 },
+  } ;
+  static gol_arg const rgola[GOLA_N] =
+  {
+    { .so = 't', .lo = "timeout", .i = GOLA_TIMEOUT },
+    { .so = 'L', .lo = "catchall-logger", .i = GOLA_CATCHALL },
+  } ;
   s6_fdholder_t a = S6_FDHOLDER_ZERO ;
   stralloc sa = STRALLOC_ZERO ;
   genalloc ga = GENALLOC_ZERO ; /* size_t */
   size_t n ;
   size_t const *indices ;
-  tain deadline ;
-  int notif = 0 ;
+  tain deadline = TAIN_INFINITE_RELATIVE ;
+  uint64_t wgolb = 0 ;
+  char const *wgola[GOLA_N] = { 0 } ;
+  tain offset = { .sec = TAI_ZERO } ;
+  int p[2] ;
+  size_t m = 0 ;
   PROG = "s6-rc-fdholder-filler" ;
+
+  {
+    unsigned int golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
+    argc -= golc ; argv += golc ;
+  }
+  if (wgola[GOLA_TIMEOUT])
   {
     unsigned int t = 0 ;
-    subgetopt l = SUBGETOPT_ZERO ;
-    for (;;)
-    {
-      int opt = subgetopt_r(argc, argv, "1t:", &l) ;
-      if (opt == -1) break ;
-      switch (opt)
-      {
-        case '1': notif = 1 ; break ;
-        case 't': if (!uint0_scan(l.arg, &t)) dieusage() ; break ;
-        default : dieusage() ;
-      }
-    }
-    argc -= l.ind ; argv += l.ind ;
+    if (!uint0_scan(wgola[GOLA_TIMEOUT], &t))
+      strerr_dief(100, "timeout must be an unsigned integer") ;
     if (t) tain_from_millisecs(&deadline, t) ;
-    else deadline = tain_infinite_relative ;
+  }
+  if (wgola[GOLA_CATCHALL])
+  {
+    if (wgola[GOLA_CATCHALL][0] != '/')
+      strerr_dief(100, "catchall-logger must be an absolute path") ;
   }
 
   parse_servicenames(&sa, &ga) ;
   n = genalloc_len(size_t, &ga) ;
   indices = genalloc_s(size_t, &ga) ;
-  if (n)
+
+  s6_fdholder_fd_t dump[1 + (n<<1)] ;
+
+  close(0) ;
+  s6_fdholder_init(&a, 6) ;
+  tain_now_set_stopwatch_g() ;
+  tain_add_g(&deadline, &deadline) ;
+
+  if (wgola[GOLA_CATCHALL])
   {
-    tain offset = { .sec = TAI_ZERO } ;
-    int p[2] ;
-    size_t i = 0 ;
-    s6_fdholder_fd_t dump[n<<1] ;
-    close(0) ;
-    s6_fdholder_init(&a, 6) ;
-    tain_now_set_stopwatch_g() ;
-    tain_add_g(&deadline, &deadline) ;
-    for (; i < n ; i++)
+    size_t len = strlen(wgola[GOLA_CATCHALL]) ;
+    char fn[len + 6] ;
+    memcpy(fn, wgola[GOLA_CATCHALL], len) ;
+    memcpy(fn + len, "/fifo", 6) ;
+    dump[m].fd = open_read(fn) ;
+    if (dump[m].fd >= 0)
     {
-      size_t len = strlen(sa.s + indices[i]) ;
-      if (len + 12 > S6_FDHOLDER_ID_SIZE)
-      {
-        errno = ENAMETOOLONG ;
-        strerr_diefu2sys(111, "create identifier for ", sa.s + indices[i]) ;
-      }
-      if (pipe(p) < 0)
-        strerr_diefu1sys(111, "create pipe") ;
-      dump[i<<1].fd = p[0] ;
-      tain_add_g(&dump[i<<1].limit, &tain_infinite_relative) ;
-      offset.nano = i << 1 ;
-      tain_add(&dump[i<<1].limit, &dump[i<<1].limit, &offset) ;
-      memcpy(dump[i<<1].id, "pipe:s6rc-r-", 12) ;
-      memcpy(dump[i<<1].id + 12, sa.s + indices[i], len + 1) ;
-      dump[(i<<1)+1].fd = p[1] ;
-      offset.nano = 1 ;
-      tain_add(&dump[(i<<1)+1].limit, &dump[i<<1].limit, &offset) ;
-      memcpy(dump[(i<<1)+1].id, dump[i<<1].id, 13 + len) ;
-      dump[(i<<1)+1].id[10] = 'w' ;
+      tain_add_g(&dump[m].limit, &tain_infinite_relative) ;
+      memcpy(dump[m].id, "pipe:s6-rc-r/s6-svscan-log", 27) ;
+      m++ ;
     }
-    if (!s6_fdholder_setdump_g(&a, dump, n << 1, &deadline))
-      strerr_diefu1sys(111, "transfer pipes") ;
   }
-  if (notif) write(1, "\n", 1) ;
+  for (size_t i = 0 ; i < n ; i++)
+  {
+    size_t len = strlen(sa.s + indices[i]) ;
+    if (len + 12 > S6_FDHOLDER_ID_SIZE)
+    {
+      errno = ENAMETOOLONG ;
+      strerr_diefusys(111, "create identifier for ", sa.s + indices[i]) ;
+    }
+    if (pipe(p) == -1) strerr_diefu1sys(111, "create pipe") ;
+    dump[m].fd = p[0] ;
+    tain_add_g(&dump[m].limit, &tain_infinite_relative) ;
+    offset.nano = m ;
+    tain_add(&dump[m].limit, &dump[m].limit, &offset) ;
+    memcpy(dump[m].id, "pipe:s6rc-r-", 12) ;
+    memcpy(dump[m].id + 12, sa.s + indices[i], len + 1) ;
+    m++ ;
+    dump[m].fd = p[1] ;
+    offset.nano = 1 ;
+    tain_add(&dump[m].limit, &dump[m-1].limit, &offset) ;
+    memcpy(dump[m].id, dump[m-1].id, 13 + len) ;
+    dump[m].id[10] = 'w' ;
+    m++ ;
+  }
+
+  if (!s6_fdholder_setdump_g(&a, dump, m, &deadline))
+    strerr_diefusys(111, "transfer pipes") ;
+
+  if (wgolb & GOLB_1) write(1, "\n", 1) ;
   return 0 ;
 }

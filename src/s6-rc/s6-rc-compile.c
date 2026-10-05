@@ -21,7 +21,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-compile [ -v verbosity ] [ -h fdholder_user ] [ -b ] destdir sources..."
+#define USAGE "s6-rc-compile [ -v verbosity ] [ -h fdholder-user ] [ -L catchall-logger ] [ -b ] destdir sources..."
 #define dieusage() strerr_dieusage(100, USAGE)
 #define dienomem() strerr_dief(111, "out of memory") ;
 
@@ -36,6 +36,7 @@ enum gola_e
 {
   GOLA_VERBOSITY,
   GOLA_FDHUSER,
+  GOLA_CATCHALL,
   GOLA_N
 } ;
 
@@ -1122,7 +1123,7 @@ static inline void write_oneshot_runner (char const *compiled, int blocking)
   auto_rights(compiled, "servicedirs/" S6RC_ONESHOT_RUNNER "/run", 0755) ;
 }
 
-static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, char const *fdhuser)
+static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, char const *fdhuser, char const *catchall)
 {
   unsigned int nfds = 0 ;
   size_t base = satmp.len ;
@@ -1163,7 +1164,14 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
     EXECLINE_EXTBINPREFIX "if -nt --\n  {\n    "
     EXECLINE_EXTBINPREFIX "redirfd -r 0 ./data/autofilled\n    "
     S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
-    S6RC_EXTLIBEXECPREFIX "s6-rc-fdholder-filler -1 --\n  }\n  "
+    S6RC_EXTLIBEXECPREFIX "s6-rc-fdholder-filler -1 ")) goto err ;
+  if (catchall)
+  {
+    if (!stralloc_cats(&satmp, "-L ")
+     || !string_quote(&satmp, catchall, strlen(catchall))
+     || !stralloc_catb(&satmp, " ", 1)) goto err ;
+  }
+  if (!stralloc_cats(&satmp, "--\n  }\n  "
     S6_EXTBINPREFIX "s6-svc -t .\n}\n")) goto err ;
   if (fdhuser)
   {
@@ -1619,6 +1627,7 @@ static inline void write_compiled (
   unsigned int nbundles,
   uint32_t const *bdeps,
   char const *fdhuser,
+  char const *catchall,
   int blocking)
 {
   if (verbosity >= 2) strerr_warni("writing compiled information to ", compiled) ;
@@ -1629,7 +1638,7 @@ static inline void write_compiled (
   stralloc_free(&data) ;
   write_db(compiled, db) ;
   write_oneshot_runner(compiled, blocking) ;
-  write_fdholder(compiled, db, fdhuser) ;
+  write_fdholder(compiled, db, fdhuser, catchall) ;
   write_servicedirs(compiled, db, srcdirs) ;
 }
 
@@ -1643,6 +1652,7 @@ int main (int argc, char const *const *argv)
   {
     { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
     { .so = 'h', .lo = "fdholder-user", .i = GOLA_FDHUSER },
+    { .so = 'L', .lo = "catchall-logger", .i = GOLA_CATCHALL },
   } ;
   before_t before = BEFORE_ZERO ;
   uint64_t wgolb = 0 ;
@@ -1658,6 +1668,11 @@ int main (int argc, char const *const *argv)
   {
     if (!uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
       strerr_dief(100, "verbosity must be an unsigned integer") ;
+  }
+  if (wgola[GOLA_CATCHALL])
+  {
+    if (wgola[GOLA_CATCHALL][0] != '/')
+      strerr_dief(100, "catchall-logger must be an absolute path") ;
   }
   compiled = *argv++ ;
 
@@ -1707,7 +1722,7 @@ int main (int argc, char const *const *argv)
       db.deps = deps ;
       flatlist_services(&db, sarray) ;
       propagate_bundle_flags(&db, bundles, nbundles, bdeps) ;
-      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, wgola[GOLA_FDHUSER], wgolb & GOLB_BLOCK) ;
+      write_compiled(compiled, &db, srcdirs, bundles, nbundles, bdeps, wgola[GOLA_FDHUSER], wgola[GOLA_CATCHALL], wgolb & GOLB_BLOCK) ;
     }
   }
 

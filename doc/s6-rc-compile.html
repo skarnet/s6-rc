@@ -37,7 +37,7 @@ the current service database via
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-compile [ -v <em>verbosity</em> ] [ -h <em>fdhuser</em> ]  [ -b ] <em>compiled</em> <em>source...</em>
+     s6-rc-compile [ -v <em>verbosity</em> ] [ -h <em>fdhuser</em> ] [ -L <em>catchall</em> ] [ -b ] <em>compiled</em> <em>source...</em>
 </pre>
 
 <ul>
@@ -70,6 +70,11 @@ what s6-rc-compile is doing. 3 or more is heavy debug output. </li>
 program, which maintains the pipes for the longrun pipelines, to run
 as user <em>fdhuser</em>. By default, it runs as the user owning
 the supervision tree, i.e. most likely <tt>root</tt>. </li>
+ <li> <tt>-L&nbsp;<em>catchall</em></tt>&nbsp;: assume that a catch-all
+logger service will be running on <em>catchall</em> and ensure that its
+fifo is properly held in the fdholder (which avoids services getting killed
+by SIGPIPE if they're writing uncaught logs while the catch-all logger is
+restarting). </li>
  <li> <tt>-b</tt>&nbsp;: make
 <a href="s6-rc-oneshot-run.html">s6-rc-oneshot-run</a>
 invocations wait instead of fail on lock contention. This

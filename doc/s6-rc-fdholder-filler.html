@@ -35,7 +35,7 @@ in internal scripts created by
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-fdholder-filler [ -1 ] [ -t <em>timeout</em> ] &lt; <em>longrunnamesfile</em>
+     s6-rc-fdholder-filler [ -1 ] [ -t <em>timeout</em> ] [ -L <em>catchall</em> ] &lt; <em>longrunnamesfile</em>
 </pre>
 
 <ul>
@@ -63,6 +63,8 @@ successful operation. This is used as a notification mechanism. </li>
  <li> <tt>-t&nbsp;<em>timeout</em></tt>&nbsp;: if the operation cannot be
 achieved in <em>timeout</em> milliseconds, abort and report failure. By
 default, <em>timeout</em> is 0, meaning infinite. </li>
+ <li> <tt>-L&nbsp;<em>catchall</em></tt>&nbsp;: also store the fifo for
+the catch-all logger whose service directory is <em>catchall</em>. </li>
 </ul>
 
 <h2> Exit codes </h2>
