@@ -276,7 +276,7 @@ static inline int uint_uniq (unsigned int const *list, unsigned int n, unsigned 
   return 1 ;
 }
 
-static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+static int add_namelist_maycheck (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n, int docheck)
 {
   buffer b ;
   size_t start = satmp.len ;
@@ -308,7 +308,8 @@ static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *
       if (satmp.s[i] && satmp.s[i] != '#')
       {
         unsigned int pos, kpos ;
-        add_name(be, name, satmp.s + i, SVTYPE_UNDEFINED, &pos, &kpos) ;
+        if (docheck) check_identifier(name, satmp.s + i) ;
+        add_name_nocheck(be, name, satmp.s + i, SVTYPE_UNDEFINED, &pos, &kpos) ;
         if (uint_uniq(genalloc_s(unsigned int, &be->indices) + *listindex, genalloc_len(unsigned int, &be->indices) - *listindex, pos))
         {
           if (!genalloc_append(unsigned int, &be->indices, &pos))
@@ -325,7 +326,17 @@ static int add_namelist (before_t *be, int dfd, char const *srcdir, char const *
   return 1 ;
 }
 
-static int add_namelistd (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+static inline int add_namelist (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+{
+  return add_namelist_maycheck(be, dfd, srcdir, name, list, listindex, n, 1) ;
+}
+
+static inline int add_namelist_nocheck (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+{
+  return add_namelist_maycheck(be, dfd, srcdir, name, list, listindex, n, 0) ;
+}
+
+static int add_namelistd_maycheck (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n, int docheck)
 {
   DIR *dir = opendir_at(dfd, list) ;
   if (!dir)
@@ -342,7 +353,8 @@ static int add_namelistd (before_t *be, int dfd, char const *srcdir, char const 
     d = readdir(dir) ;
     if (!d) break ;
     if (d->d_name[0] == '.') continue ;
-    add_name(be, name, d->d_name, SVTYPE_UNDEFINED, &pos, &kpos) ;
+    if (docheck) check_identifier(name, d->d_name) ;
+    add_name_nocheck(be, name, d->d_name, SVTYPE_UNDEFINED, &pos, &kpos) ;
     if (!genalloc_append(unsigned int, &be->indices, &pos)) dienomem() ;
   }
   dir_close(dir) ;
@@ -350,6 +362,17 @@ static int add_namelistd (before_t *be, int dfd, char const *srcdir, char const 
   *n = genalloc_len(unsigned int, &be->indices) - *listindex ;
   return 1 ;
 }
+
+static int add_namelistd (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+{
+  return add_namelistd_maycheck(be, dfd, srcdir, name, list, listindex, n, 1) ;
+}
+
+static int add_namelistd_nocheck (before_t *be, int dfd, char const *srcdir, char const *name, char const *list, unsigned int *listindex, unsigned int *n)
+{
+  return add_namelistd_maycheck(be, dfd, srcdir, name, list, listindex, n, 0) ;
+}
+
 
 static void read_script (before_t *be, int dfd, char const *srcdir, char const *name, char const *script, unsigned int *argvindex, unsigned int *argc, int mandatory)
 {
@@ -425,8 +448,8 @@ static void add_common (before_t *be, int dfd, char const *srcdir, char const *n
 {
   unsigned int dummy ;
   add_name(be, srcdir, name, svtype, &dummy, &common->kname) ;
-  if (!add_namelistd(be, dfd, srcdir, name, "dependencies.d", &common->depindex, &common->ndeps)
-   && !add_namelist(be, dfd, srcdir, name, "dependencies", &common->depindex, &common->ndeps))
+  if (!add_namelistd_nocheck(be, dfd, srcdir, name, "dependencies.d", &common->depindex, &common->ndeps)
+   && !add_namelist_nocheck(be, dfd, srcdir, name, "dependencies", &common->depindex, &common->ndeps))
   {
     common->depindex = genalloc_len(unsigned int, &be->indices) ;
     common->ndeps = 0 ;
