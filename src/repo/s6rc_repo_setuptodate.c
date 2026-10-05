@@ -4,11 +4,14 @@
 #include <skalibs/nonposix.h>
 
 #include <string.h>
+#include <stdint.h>
 #include <errno.h>
 
 #include <skalibs/stat.h>
 #include <skalibs/strerr.h>
 
+#include <s6-rc/config.h>
+#include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
 int s6rc_repo_setuptodate (char const *repo, char const *set)
@@ -28,14 +31,23 @@ int s6rc_repo_setuptodate (char const *repo, char const *set)
   memcpy(dstfn + repolen + 10, set, setlen + 1) ;
   if (stat(srcfn, &stsource) == -1)
   {
-    strerr_warnfu2sys("stat ", srcfn) ;
+    strerr_warnfusys("stat ", srcfn) ;
     return -1 ;
   }
   if (stat(dstfn, &stcompiled) == -1)
   {
     if (errno == ENOENT) return 0 ;
-    strerr_warnfu2sys("stat ", dstfn) ;
+    strerr_warnfusys("stat ", dstfn) ;
     return -1 ;
+  }
+  {
+    uint32_t version = s6rc_read_major(dstfn) ;
+    if (!version)
+    {
+      strerr_warnfusys("read major version from ", dstfn) ;
+      return -1 ;
+    }
+    if (version < s6rc_get_major(S6RC_VERSION)) return 0 ;
   }
   return
     stsource.st_mtim.tv_sec < stcompiled.st_mtim.tv_sec ? 1 :

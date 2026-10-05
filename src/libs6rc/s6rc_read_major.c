@@ -21,7 +21,7 @@ uint32_t s6rc_read_major (char const *compiled)
   memcpy(fn, compiled, clen) ;
   memcpy(fn + clen, "/major", 7) ;
   r = openreadnclose(fn, tmp, UINT32_FMT) ;
-  if (r == -1) return errno == ENOENT ? 6 : 0 ; /* up to 0.6.x.y doesn't have db/major */
+  if (r == -1) return errno == ENOENT ? 7 : 0 ; /* up to 0.7.0.0 doesn't have db/major */
   if (!r) return 0 ;
   if (tmp[r] != '\n') return (errno = EPROTO, 0) ;
   tmp[r] = 0 ;

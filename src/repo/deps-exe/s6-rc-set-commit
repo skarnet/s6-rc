@@ -1,3 +1,4 @@
 ${LIBS6RCREPO}
+${LIBS6RC}
 -lskarnet
 ${SPAWN_LIB}

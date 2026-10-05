@@ -20,7 +20,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/s6rc.h>
 
-#define USAGE "s6-rc-set-commit [ -v verbosity ] [ -r repo ] [ -D defaultbundle ] [ -h fdhuser ] [ -K ] [ -f ] set"
+#define USAGE "s6-rc-set-commit [ -v verbosity ] [ -r repodir ] [ -D default-bundle ] [ -h fdholder-user ] [ -L catchall-logger ] [ -K ] [ -f ] set"
 #define dieusage() strerr_dieusage(100, USAGE)
 
 enum golb_e
@@ -35,6 +35,7 @@ enum gola_e
   GOLA_REPODIR,
   GOLA_DEFBUNDLE,
   GOLA_FDHUSER,
+  GOLA_CATCHALL,
   GOLA_N
 } ;
 
@@ -49,7 +50,8 @@ static gol_arg const rgola[] =
   { .so = 'v', .lo = "verbosity", .i = GOLA_VERBOSITY },
   { .so = 'r', .lo = "repodir", .i = GOLA_REPODIR },
   { .so = 'D', .lo = "default-bundle", .i = GOLA_DEFBUNDLE },
-  { .so = 'h', .lo = "fdholder-user", .i = GOLA_FDHUSER }
+  { .so = 'h', .lo = "fdholder-user", .i = GOLA_FDHUSER },
+  { .so = 'L', .lo = "catchall-logger", .i = GOLA_CATCHALL },
 } ;
 
 int main (int argc, char const *const *argv)
@@ -69,6 +71,11 @@ int main (int argc, char const *const *argv)
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
     strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
+  if (wgola[GOLA_CATCHALL])
+  {
+    if (wgola[GOLA_CATCHALL][0] != '/')
+      strerr_dief(100, "catchall-logger needs to be an absolute path") ;
+  }
   if (!argc) dieusage() ;
   s6rc_repo_sanitize_setname(argv[0]) ;
 
@@ -105,7 +112,7 @@ int main (int argc, char const *const *argv)
   size_t oldclen = S6RC_REPO_COMPILE_BUFLEN(strlen(wgola[GOLA_REPODIR]), strlen(argv[0])) ;
   char oldc[oldclen] ;
 
-  r = s6rc_repo_setcompile(wgola[GOLA_REPODIR], argv[0], wgola[GOLA_DEFBUNDLE], oldc, verbosity, wgola[GOLA_FDHUSER]) ;
+  r = s6rc_repo_setcompile(wgola[GOLA_REPODIR], argv[0], wgola[GOLA_DEFBUNDLE], oldc, verbosity, wgola[GOLA_FDHUSER], wgola[GOLA_CATCHALL]) ;
   if (r == -1) _exit(111) ;
   if (!r) _exit(1) ;
   if (r == 2) 

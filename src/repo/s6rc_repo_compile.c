@@ -16,7 +16,7 @@
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs, uint8_t nrxs, char *oldc, unsigned int verbosity, char const *fdhuser)
+int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs, uint8_t nrxs, char *oldc, unsigned int verbosity, char const *fdhuser, char const *catchall)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
@@ -38,7 +38,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
     pid_t pid ;
     size_t m = 0 ;
     int wstat ;
-    char const *argv[9 + nrxs] ;
+    char const *argv[11 + nrxs] ;
     char fmtv[UINT_FMT] ;
     char src[nrxs * (repolen + 10 + (needprefix ? setlen + 1 : 0)) + totrxlen] ;
     char *w = src ;
@@ -51,6 +51,11 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
     {
       argv[m++] = "-h" ;
       argv[m++] = fdhuser ;
+    }
+    if (catchall)
+    {
+      argv[m++] = "-L" ;
+      argv[m++] = catchall ;
     }
     argv[m++] = "--" ;
     argv[m++] = newc ;

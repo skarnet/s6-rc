@@ -48,9 +48,9 @@ extern int s6rc_repo_makesetbundles (char const *, char const *, unsigned int) ;
 extern int s6rc_repo_makedefbundle (char const *, char const *, char const *) ;
 
 #define S6RC_REPO_COMPILE_BUFLEN(repolen, setlen) ((repolen) + (setlen) + 45)
-extern int s6rc_repo_compile (char const *, char const *, char const *const *, uint8_t, char *, unsigned int, char const *) ;
+extern int s6rc_repo_compile (char const *, char const *, char const *const *, uint8_t, char *, unsigned int, char const *, char const *) ;
 extern int s6rc_repo_refcompile (char const *, char *, unsigned int, char const *) ;
-extern int s6rc_repo_setcompile (char const *, char const *, char const *, char *, unsigned int, char const *) ;
+extern int s6rc_repo_setcompile (char const *, char const *, char const *, char *, unsigned int, char const *, char const *) ;
 
 extern int s6rc_repo_list_sets (char const *, stralloc *, genalloc *) ;
 extern int s6rc_repo_listrx (char const *, char const *, char const *, stralloc *, genalloc *) ;

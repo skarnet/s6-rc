@@ -7,13 +7,13 @@
 
 #include <s6-rc/repo.h>
 
-int s6rc_repo_setcompile (char const *repo, char const *set, char const *defbundle, char *oldc, unsigned int verbosity, char const *fdhuser)
+int s6rc_repo_setcompile (char const *repo, char const *set, char const *defbundle, char *oldc, unsigned int verbosity, char const *fdhuser, char const *catchall)
 {
   static char const *const rxs[4] = { "bundle", s6rc_repo_rxnames[1], s6rc_repo_rxnames[2], s6rc_repo_rxnames[3] } ;
   int r ;
   if (!s6rc_repo_makesetbundles(repo, set, verbosity)) return -1 ;
   if (!s6rc_repo_makedefbundle(repo, set, defbundle)) return -1 ;
-  r = s6rc_repo_compile(repo, set, rxs, 4, oldc, verbosity, fdhuser) ;
+  r = s6rc_repo_compile(repo, set, rxs, 4, oldc, verbosity, fdhuser, catchall) ;
 
   {
     int e = errno ;

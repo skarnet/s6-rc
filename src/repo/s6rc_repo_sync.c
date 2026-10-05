@@ -153,7 +153,7 @@ int s6rc_repo_sync (char const *repo, unsigned int verbosity, char const *fdhuse
   {
     char const *rxs[2] = { ato + repolen + 9, bun + repolen + 9 } ;
     char oldc[repolen + 49] ;
-    int r = s6rc_repo_compile(repo, ".ref", rxs, 2, oldc, verbosity, fdhuser) ;
+    int r = s6rc_repo_compile(repo, ".ref", rxs, 2, oldc, verbosity, fdhuser, 0) ;
     if (r < 0) goto err ;
     if (!r) { cleanup(ato, bun) ; return 0 ; }
     if (r == 2) rm_rf(oldc) ;

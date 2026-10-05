@@ -71,7 +71,8 @@ src/repo/s6rc_repo_sanitize_svname.o src/repo/s6rc_repo_sanitize_svname.lo: src/
 src/repo/s6rc_repo_setcompile.o src/repo/s6rc_repo_setcompile.lo: src/repo/s6rc_repo_setcompile.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_setcopy.o src/repo/s6rc_repo_setcopy.lo: src/repo/s6rc_repo_setcopy.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_setdelete.o src/repo/s6rc_repo_setdelete.lo: src/repo/s6rc_repo_setdelete.c src/include/s6-rc/repo.h
-src/repo/s6rc_repo_setuptodate.o src/repo/s6rc_repo_setuptodate.lo: src/repo/s6rc_repo_setuptodate.c src/include/s6-rc/repo.h
+src/repo/s6rc_repo_setuptodate.o src/repo/s6rc_repo_setuptodate.lo: src/repo/s6rc_repo_setuptodate.c src/include/s6-rc/config.h src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
+src/repo/s6rc_repo_snap_from_compiled.o src/repo/s6rc_repo_snap_from_compiled.lo: src/repo/s6rc_repo_snap_from_compiled.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_sv_bcmpr.o src/repo/s6rc_repo_sv_bcmpr.lo: src/repo/s6rc_repo_sv_bcmpr.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_sv_cmpr.o src/repo/s6rc_repo_sv_cmpr.lo: src/repo/s6rc_repo_sv_cmpr.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_sync.o src/repo/s6rc_repo_sync.lo: src/repo/s6rc_repo_sync.c src/include/s6-rc/repo.h
@@ -119,7 +120,7 @@ s6-rc-repo-sync: src/repo/s6-rc-repo-sync.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-change: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-change: src/repo/s6-rc-set-change.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-commit: EXTRA_LIBS := ${SPAWN_LIB}
-s6-rc-set-commit: src/repo/s6-rc-set-commit.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-commit: src/repo/s6-rc-set-commit.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-copy: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-copy: src/repo/s6-rc-set-copy.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-delete: EXTRA_LIBS := ${SPAWN_LIB}
@@ -127,7 +128,7 @@ s6-rc-set-delete: src/repo/s6-rc-set-delete.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-fix: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-fix: src/repo/s6-rc-set-fix.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-install: EXTRA_LIBS := ${SPAWN_LIB}
-s6-rc-set-install: src/repo/s6-rc-set-install.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-install: src/repo/s6-rc-set-install.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-new: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-new: src/repo/s6-rc-set-new.o ${LIBS6RCREPO} -lskarnet
 s6-rc-set-status: EXTRA_LIBS := ${SPAWN_LIB}
