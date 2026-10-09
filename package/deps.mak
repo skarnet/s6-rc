@@ -118,15 +118,15 @@ s6-rc-repo-list: src/repo/s6-rc-repo-list.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-repo-sync: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-repo-sync: src/repo/s6-rc-repo-sync.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-change: EXTRA_LIBS := ${SPAWN_LIB}
-s6-rc-set-change: src/repo/s6-rc-set-change.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-change: src/repo/s6-rc-set-change.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-commit: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-commit: src/repo/s6-rc-set-commit.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-copy: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-copy: src/repo/s6-rc-set-copy.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-delete: EXTRA_LIBS := ${SPAWN_LIB}
-s6-rc-set-delete: src/repo/s6-rc-set-delete.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-delete: src/repo/s6-rc-set-delete.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-fix: EXTRA_LIBS := ${SPAWN_LIB}
-s6-rc-set-fix: src/repo/s6-rc-set-fix.o ${LIBS6RCREPO} -lskarnet
+s6-rc-set-fix: src/repo/s6-rc-set-fix.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-install: EXTRA_LIBS := ${SPAWN_LIB}
 s6-rc-set-install: src/repo/s6-rc-set-install.o ${LIBS6RCREPO} ${LIBS6RC} -lskarnet
 s6-rc-set-new: EXTRA_LIBS := ${SPAWN_LIB}
