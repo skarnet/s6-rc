@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+#include <skalibs/uint16.h>
 #include <skalibs/stralloc.h>
 
 #include <s6-rc/s6rc-db.h>
@@ -24,7 +25,18 @@ extern int s6rc_livedir_canon (char const **) ;
 extern int s6rc_live_state_size (char const *, uint32_t *, uint32_t *) ;
 extern int s6rc_live_state_read (char const *, unsigned char *, uint32_t) ;
 
-extern uint32_t s6rc_get_major (char const *) ;  /* always pass S6RC_VERSION */
-extern uint32_t s6rc_read_major (char const *) ; /* the major a db was compiled with */
+static inline uint32_t s6rc_get_major (char const *s)
+{
+  size_t len = 0, l ;
+  uint32_t acc = 0 ;
+  uint16_t u ;
+  l = uint16_scan(s + len, &u) ;
+  if (!l || s[len + l++] != '.') return 0 ;
+  len += l ; acc = acc << 16 | u ;
+  l = uint16_scan(s + len, &u) ;
+  if (!l || s[len + l++] != '.') return 0 ;
+  len += l ; acc = acc << 16 | u ;
+  return acc ;
+}
 
 #endif

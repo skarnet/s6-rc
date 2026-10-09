@@ -41,7 +41,7 @@ int s6rc_repo_setuptodate (char const *repo, char const *set)
     return -1 ;
   }
   {
-    uint32_t version = s6rc_read_major(dstfn) ;
+    uint32_t version = s6rc_repo_read_major(dstfn) ;
     if (!version)
     {
       strerr_warnfusys("read major version from ", dstfn) ;

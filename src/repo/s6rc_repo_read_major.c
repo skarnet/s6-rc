@@ -7,11 +7,11 @@
 #include <skalibs/uint32.h>
 #include <skalibs/djbunix.h>
 
-#include <s6-rc/s6rc-utils.h>
+#include <s6-rc/repo.h>
 
 #include <skalibs/posixishard.h>
 
-uint32_t s6rc_read_major (char const *compiled)
+uint32_t s6rc_repo_read_major (char const *compiled)
 {
   size_t clen = strlen(compiled) ;
   ssize_t r ;
