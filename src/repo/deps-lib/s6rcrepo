@@ -37,5 +37,7 @@ s6rc_repo_syncset_tmp.o
 s6rc_repo_touch.o
 s6rc_repo_touchset.o
 s6rc_repo_type_check.o
+-ls6rc
+-ls6
 -lskarnet
 ${SPAWN_LIB}
