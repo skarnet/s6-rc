@@ -716,7 +716,7 @@ int main (int argc, char const *const *argv, char const *const *envp)
       {
         ssize_t rr = openreadnclose(dbfn, (char *)oldstate, oldn) ;
         if (rr == -1) strerr_diefu2sys(111, "read ", dbfn) ;
-        if (rr < oldn) strerr_diefu2x(4, "read valid db in ", dbfn) ;
+        if (rr < oldn) strerr_diefu2x(4, "read valid state in ", dbfn) ;
       }
       r = oldn ;
       while (r--) oldstate[r] &= 1 ;
