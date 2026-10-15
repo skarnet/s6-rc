@@ -16,15 +16,12 @@ uint32_t s6rc_repo_read_major (char const *compiled)
   size_t clen = strlen(compiled) ;
   ssize_t r ;
   uint32_t res ;
-  char tmp[UINT32_FMT] ;
-  char fn[clen + 7] ;
+  char pack[5] ;
+  char fn[clen + 16] ;
   memcpy(fn, compiled, clen) ;
-  memcpy(fn + clen, "/major", 7) ;
-  r = openreadnclose(fn, tmp, UINT32_FMT) ;
-  if (r == -1) return errno == ENOENT ? 7 : 0 ; /* up to 0.7.0.0 doesn't have db/major */
-  if (!r) return 0 ;
-  if (tmp[r] != '\n') return (errno = EPROTO, 0) ;
-  tmp[r] = 0 ;
-  if (uint320_scan(tmp, &res) != r) return (errno = EPROTO, 0) ;
+  memcpy(fn + clen, "/metainfo/major", 16) ;
+  r = openreadnclose(fn, pack, 5) ;
+  if (r != 4) return r == -1 && errno == ENOENT ? 7 : 0 ; /* up to 0.7.0.0 doesn't have metainfo */
+  uint32_unpack_big(pack, &res) ;
   return res ;
 }

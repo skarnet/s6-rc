@@ -7,6 +7,7 @@ s6rc_repo_fillset.o
 s6rc_repo_fixset.o
 s6rc_repo_flattenservices.o
 s6rc_repo_getserviceflags.o
+s6rc_repo_install_needs_upgrade.o
 s6rc_repo_list_sets.o
 s6rc_repo_listalldeps.o
 s6rc_repo_listcontents.o

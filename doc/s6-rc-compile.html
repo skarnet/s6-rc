@@ -37,7 +37,7 @@ the current service database via
 <h2> Interface </h2>
 
 <pre>
-     s6-rc-compile [ -v <em>verbosity</em> ] [ -h <em>fdhuser</em> ] [ -L <em>catchall</em> ] [ -b ] <em>compiled</em> <em>source...</em>
+     s6-rc-compile [ -v <em>verbosity</em> ] [ -h <em>fdhuser</em> ] [ -L <em>catchall</em> ] [ -D <em>defbundle</em> ] [ -b ] <em>compiled</em> <em>source...</em>
 </pre>
 
 <ul>
@@ -75,6 +75,10 @@ logger service will be running on <em>catchall</em> and ensure that its
 fifo is properly held in the fdholder (which avoids services getting killed
 by SIGPIPE if they're writing uncaught logs while the catch-all logger is
 restarting). </li>
+ <li> <tt>-D&nbsp;<em>defbundle</em></tt>&nbsp;: register <em>defbundle</em>
+as the default bundle started at boot time. For now it is purely indicative
+and used by the repo commands for consistency purposes; it might become
+semantically important in the future. </li>
  <li> <tt>-b</tt>&nbsp;: make
 <a href="s6-rc-oneshot-run.html">s6-rc-oneshot-run</a>
 invocations wait instead of fail on lock contention. This

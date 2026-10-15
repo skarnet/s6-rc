@@ -26,6 +26,7 @@ extern int s6rc_repo_ls (char const *, stralloc *, genalloc *) ;
 extern char const s6rc_repo_rxnames[4][7] ;
 
 extern uint32_t s6rc_repo_read_major (char const *) ; /* the major a db was compiled with */
+extern int s6rc_repo_install_needs_upgrade (char const *) ;
 
 extern int s6rc_repo_makestores (char const *, char const *const *, uint16_t, char *) ;
 

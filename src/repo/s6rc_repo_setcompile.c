@@ -13,7 +13,7 @@ int s6rc_repo_setcompile (char const *repo, char const *set, char const *defbund
   int r ;
   if (!s6rc_repo_makesetbundles(repo, set, verbosity)) return -1 ;
   if (!s6rc_repo_makedefbundle(repo, set, defbundle)) return -1 ;
-  r = s6rc_repo_compile(repo, set, rxs, 4, oldc, verbosity, fdhuser, catchall) ;
+  r = s6rc_repo_compile(repo, set, rxs, 4, oldc, verbosity, fdhuser, catchall, defbundle) ;
 
   {
     int e = errno ;

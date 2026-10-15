@@ -16,12 +16,13 @@
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs, uint8_t nrxs, char *oldc, unsigned int verbosity, char const *fdhuser, char const *catchall)
+int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs, uint8_t nrxs, char *oldc, unsigned int verbosity, char const *fdhuser, char const *catchall, char const *defbundle)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
   size_t totrxlen = 0 ;
   int needprefix = strcmp(set, ".ref") ;
+  int needsnapshot = needprefix && memcmp(set, ".snapshot.", 10) ;
   char snap[setlen + 44] ;
   char newc[repolen + setlen + 45] ;
   memcpy(newc, repo, repolen) ;
@@ -38,7 +39,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
     pid_t pid ;
     size_t m = 0 ;
     int wstat ;
-    char const *argv[11 + nrxs] ;
+    char const *argv[13 + nrxs] ;
     char fmtv[UINT_FMT] ;
     char src[nrxs * (repolen + 10 + (needprefix ? setlen + 1 : 0)) + totrxlen] ;
     char *w = src ;
@@ -56,6 +57,11 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
     {
       argv[m++] = "-L" ;
       argv[m++] = catchall ;
+    }
+    if (defbundle)
+    {
+      argv[m++] = "-D" ;
+      argv[m++] = defbundle ;
     }
     argv[m++] = "--" ;
     argv[m++] = newc ;
@@ -96,7 +102,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
     }
   }
 
-  if (needprefix)
+  if (needsnapshot)
   {
     int e ;
     memcpy(snap, ".snapshot", 9) ;
@@ -124,7 +130,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
     {
       int e = errno ;
       rm_rf(newc) ;
-      if (needprefix) s6rc_repo_setdelete(repo, snap) ;
+      if (needsnapshot) s6rc_repo_setdelete(repo, snap) ;
       errno = e ;
       strerr_warnfu4sys("atomically symlink ", newc + repolen + 10, " to ", fn) ;
       return -1 ;
