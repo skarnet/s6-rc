@@ -22,7 +22,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
   size_t setlen = strlen(set) ;
   size_t totrxlen = 0 ;
   int needprefix = strcmp(set, ".ref") ;
-  char snap[repolen + setlen + 37] ;
+  char snap[setlen + 44] ;
   char newc[repolen + setlen + 45] ;
   memcpy(newc, repo, repolen) ;
   memcpy(newc + repolen, "/compiled/.", 11) ;
@@ -99,18 +99,19 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
   if (needprefix)
   {
     int e ;
-    memcpy(snap, ".snapshot:", 10) ;
-    memcpy(snap + 10, newc + repolen + 11, setlen + 26) ;
-    snap[repolen + setlen + 36] = 0 ;
+    memcpy(snap, ".snapshot", 9) ;
+    memcpy(snap + 9, newc + repolen + 10, setlen + 35) ;
     e = s6rc_repo_setcopy(repo, set, snap, 1) ;
     switch (e)
     {
       case -2 :
         strerr_warnf("internal layout error while taking a snapshot of set ", set) ;
+        rm_rf(newc) ;
         return (errno = EILSEQ, -1) ;
       case 0 : break ;
       default :
         strerr_warnfusys("take a snapshot of set ", set) ;
+        rm_rf(newc) ;
         return (errno = e, -1) ;
     }
   }
@@ -123,7 +124,7 @@ int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs
     {
       int e = errno ;
       rm_rf(newc) ;
-      s6rc_repo_setdelete(repo, snap) ;
+      if (needprefix) s6rc_repo_setdelete(repo, snap) ;
       errno = e ;
       strerr_warnfu4sys("atomically symlink ", newc + repolen + 10, " to ", fn) ;
       return -1 ;
