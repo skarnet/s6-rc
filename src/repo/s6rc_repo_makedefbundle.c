@@ -1,6 +1,7 @@
 /* ISC license. */
 
 #include <skalibs/bsdsnowflake.h>
+#include <skalibs/nonposix.h>
 
 #include <string.h>
 #include <unistd.h>

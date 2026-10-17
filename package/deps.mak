@@ -71,7 +71,6 @@ src/repo/s6rc_repo_setcompile.o src/repo/s6rc_repo_setcompile.lo: src/repo/s6rc_
 src/repo/s6rc_repo_setcopy.o src/repo/s6rc_repo_setcopy.lo: src/repo/s6rc_repo_setcopy.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_setdelete.o src/repo/s6rc_repo_setdelete.lo: src/repo/s6rc_repo_setdelete.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_setuptodate.o src/repo/s6rc_repo_setuptodate.lo: src/repo/s6rc_repo_setuptodate.c src/include/s6-rc/config.h src/include/s6-rc/repo.h src/include/s6-rc/s6rc-utils.h
-src/repo/s6rc_repo_snap_from_compiled.o src/repo/s6rc_repo_snap_from_compiled.lo: src/repo/s6rc_repo_snap_from_compiled.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_sv_bcmpr.o src/repo/s6rc_repo_sv_bcmpr.lo: src/repo/s6rc_repo_sv_bcmpr.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_sv_cmpr.o src/repo/s6rc_repo_sv_cmpr.lo: src/repo/s6rc_repo_sv_cmpr.c src/include/s6-rc/repo.h
 src/repo/s6rc_repo_sync.o src/repo/s6rc_repo_sync.lo: src/repo/s6rc_repo_sync.c src/include/s6-rc/repo.h

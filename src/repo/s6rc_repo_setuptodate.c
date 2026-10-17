@@ -15,7 +15,7 @@
 #include <s6-rc/s6rc-utils.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_setuptodate (char const *repo, char const *set)
+int s6rc_repo_setuptodate (char const *repo, char const *set, unsigned int flags)
 {
   struct stat stsource ;
   struct stat stcompiled ;
@@ -45,6 +45,7 @@ int s6rc_repo_setuptodate (char const *repo, char const *set)
   }
 
  /* Do we have a snapshot of the source set for the compiled db? */
+  if (!(flags & 1))
   {
     struct stat stsnap ;
     char snap[repolen + 54 + setlen] ;

@@ -26,7 +26,8 @@
 enum golb_e
 {
   GOLB_KEEPOLD = 0x01,
-  GOLB_FORCE = 0x02
+  GOLB_FORCE = 0x02,
+  GOLB_NOSNAP = 0x04,
 } ;
 
 enum gola_e
@@ -42,7 +43,9 @@ enum gola_e
 static gol_bool const rgolb[] =
 {
   { .so = 'K', .lo = "keep-old", .clear = 0, .set = GOLB_KEEPOLD },
-  { .so = 'f', .lo = "force", .clear = 0, .set = GOLB_FORCE }
+  { .so = 'f', .lo = "force", .clear = 0, .set = GOLB_FORCE },
+  { .so = 0, .lo = "snapshot", .clear = GOLB_NOSNAP, .set = 0 },
+  { .so = 0, .lo = "no-snapshot", .clear = 0, .set = GOLB_NOSNAP },
 } ;
 
 static gol_arg const rgola[] =
@@ -86,7 +89,7 @@ int main (int argc, char const *const *argv)
   if (r) _exit(r) ;
   if (!(wgolb & GOLB_FORCE))
   {
-    r = s6rc_repo_setuptodate(wgola[GOLA_REPODIR], argv[0]) ;
+    r = s6rc_repo_setuptodate(wgola[GOLA_REPODIR], argv[0], !!(wgolb & GOLB_NOSNAP)) ;
     if (r == -1) _exit(111) ;
     if (r)
     {
@@ -112,7 +115,7 @@ int main (int argc, char const *const *argv)
   size_t oldclen = S6RC_REPO_COMPILE_BUFLEN(strlen(wgola[GOLA_REPODIR]), strlen(argv[0])) ;
   char oldc[oldclen] ;
 
-  r = s6rc_repo_setcompile(wgola[GOLA_REPODIR], argv[0], wgola[GOLA_DEFBUNDLE], oldc, verbosity, wgola[GOLA_FDHUSER], wgola[GOLA_CATCHALL]) ;
+  r = s6rc_repo_setcompile(wgola[GOLA_REPODIR], argv[0], wgola[GOLA_DEFBUNDLE], oldc, verbosity, wgola[GOLA_FDHUSER], wgola[GOLA_CATCHALL], !!(wgolb & GOLB_NOSNAP)) ;
   if (r == -1) _exit(111) ;
   if (!r) _exit(1) ;
   if (r == 2) 

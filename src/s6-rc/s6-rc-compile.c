@@ -1605,7 +1605,7 @@ static inline void write_db (char const *compiled, s6rc_db_t const *db)
   strerr_diefusys(111, "write to ", dbfn) ;
 }
 
-static inline void write_meta (char const *compiled, char const *fdhuser, char const *catchall)
+static inline void write_meta (char const *compiled, char const *fdhuser, char const *catchall, char const *defbundle)
 {
   char pack[4] ;
   char fn[19] ;

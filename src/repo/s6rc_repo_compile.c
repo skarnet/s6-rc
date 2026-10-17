@@ -16,13 +16,13 @@
 #include <s6-rc/config.h>
 #include <s6-rc/repo.h>
 
-int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs, uint8_t nrxs, char *oldc, unsigned int verbosity, char const *fdhuser, char const *catchall, char const *defbundle)
+int s6rc_repo_compile (char const *repo, char const *set, char const *const *rxs, uint8_t nrxs, char *oldc, unsigned int verbosity, char const *fdhuser, char const *catchall, char const *defbundle, unsigned int flags)
 {
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
   size_t totrxlen = 0 ;
   int needprefix = strcmp(set, ".ref") ;
-  int needsnapshot = needprefix && memcmp(set, ".snapshot.", 10) ;
+  int needsnapshot = needprefix && !(flags & 1) ;
   char snap[setlen + 44] ;
   char newc[repolen + setlen + 45] ;
   memcpy(newc, repo, repolen) ;
