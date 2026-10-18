@@ -4,11 +4,11 @@
 #include <skalibs/nonposix.h>
 
 #include <skalibs/stat.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/wait.h>
 #include <errno.h>
 
 #include <skalibs/uint64.h>
@@ -19,6 +19,7 @@
 #include <skalibs/strerr.h>
 #include <skalibs/gol.h>
 #include <skalibs/stralloc.h>
+#include <skalibs/direntry.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/tai.h>
 #include <skalibs/cspawn.h>
@@ -50,6 +51,29 @@ enum gola_e
 } ;
 
 #define DSTFNLEN(bootdir, set) (strlen(bootdir) + strlen(set) + 36)
+
+static void remove_snapshots_except (char const *repo, char const *snap)
+{
+  DIR *dir ;
+  size_t repolen = strlen(repo) ;
+  char src[repolen + 9] ;
+  memcpy(src, repo, repolen) ;
+  memcpy(src + repolen, "/sources", 9) ;
+  dir = opendir(src) ;
+  if (!dir) strerr_diefusys(111, "opendir ", src) ;
+  for (;;)
+  {
+    direntry *d ;
+    errno = 0 ;
+    d = readdir(dir) ;
+    if (!d) break ;
+    if (strncmp(d->d_name, ".snapshot.", 10)) continue ;
+    if (!strcmp(d->d_name, snap)) continue ;
+    s6rc_repo_setdelete(repo, d->d_name) ;
+  }
+  if (errno) strerr_diefusys(111, "readdir ", src) ;
+  dir_close(dir) ;
+}
 
 static int install_needs_upgrade (char const *livedir)
 {
@@ -373,6 +397,8 @@ int main (int argc, char const *const *argv)
       }
       else rm_rf(olddbsa.s) ;
     }
+
+    remove_snapshots_except(wgola[GOLA_REPODIR], dstfn + bootdirsa.len + 1) ;
   }
   _exit(0) ;
 }

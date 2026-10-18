@@ -38,33 +38,33 @@ static inline void newset (char const *repo, char const *setname)
   mode_t m ;
   char atomics[repolen + 18] ;
   char fn[repolen + 10 + setlen] ;
-  char tmp[repolen + 18 + setlen] ;
-  char rx[repolen + 25 + setlen] ;
+  char tmp[repolen + 22 + setlen] ;
+  char rx[repolen + 29 + setlen] ;
   memcpy(atomics, repo, repolen) ;
   memcpy(atomics + repolen, "/sources/.atomics", 18) ;
   memcpy(fn, atomics, repolen + 9) ;
   memcpy(fn + repolen + 9, setname, setlen + 1) ;
   if (access(fn, F_OK) == -1)
   {
-    if (errno != ENOENT) strerr_diefu2sys(111, "access ", fn) ;
+    if (errno != ENOENT) strerr_diefusys(111, "access ", fn) ;
   }
-  else strerr_dief4x(100, "set ", setname, " already exists in repository ", repo) ;
+  else strerr_dief(100, "set ", setname, " already exists in repository ", repo) ;
   memcpy(tmp, fn, repolen + 9) ;
-  tmp[repolen + 9] = '.' ;
-  memcpy(tmp + repolen + 10, setname, setlen) ;
-  memcpy(tmp + repolen + 10 + setlen, ":XXXXXX", 8) ;
+  memcpy(tmp + repolen + 9, ".real.", 5) ;
+  memcpy(tmp + repolen + 14, setname, setlen) ;
+  memcpy(tmp + repolen + 14 + setlen, ":XXXXXX", 8) ;
   m = umask(0) ;
-  if (!mkdtemp(tmp)) strerr_diefu2sys(111, "mkdtemp ", tmp) ;
-  memcpy(rx, tmp, repolen + 17 + setlen) ;
-  rx[repolen + 17 + setlen] = '/' ;
+  if (!mkdtemp(tmp)) strerr_diefusys(111, "mkdtemp ", tmp) ;
+  memcpy(rx, tmp, repolen + 21 + setlen) ;
+  rx[repolen + 21 + setlen] = '/' ;
   for (size_t i = 0 ; i < 4 ; i++)
   {
-    memcpy(rx + repolen + 18 + setlen, s6rc_repo_rxnames[i], 7) ;
+    memcpy(rx + repolen + 22 + setlen, s6rc_repo_rxnames[i], 7) ;
     if (mkdir(rx, 02755) == -1)
     {
       umask(m) ;
       cleanup(tmp) ;
-      strerr_diefu2sys(111, "mkdir ", rx) ;
+      strerr_diefusys(111, "mkdir ", rx) ;
     }
   }
   umask(m) ;
@@ -78,12 +78,12 @@ static inline void newset (char const *repo, char const *setname)
   if (chmod(tmp, 02755) == -1)
   {
     cleanup(tmp) ;
-    strerr_diefu2sys(111, "chmod ", tmp) ;
+    strerr_diefusys(111, "chmod ", tmp) ;
   }
   if (symlink(tmp + repolen + 9, fn) == -1)
   {
     cleanup(tmp) ;
-    strerr_diefu4sys(111, "symlink ", tmp, " to ", fn) ;
+    strerr_diefusys(111, "symlink ", tmp, " to ", fn) ;
   }
 }
 
@@ -105,21 +105,22 @@ int main (int argc, char const *const *argv)
   int fdlock ;
   unsigned int verbosity = 1 ;
   char const *wgola[GOLA_N] = { 0 } ;
-  unsigned int golc ;
 
   PROG = "s6-rc-set-new" ;
   wgola[GOLA_REPODIR] = S6RC_REPODIR ;
 
-  golc = gol_main(argc, argv, 0, 0, rgola, 2, 0, wgola) ;
-  argc -= golc ; argv += golc ;
+  {
+    unsigned int golc = gol_main(argc, argv, 0, 0, rgola, 2, 0, wgola) ;
+    argc -= golc ; argv += golc ;
+  }
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
-    strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
+    strerr_dief(100, "verbosity needs to be an unsigned integer") ;
   if (!argc) dieusage() ;
   for (unsigned int i = 0 ; i < argc ; i++) s6rc_repo_sanitize_setname(argv[i]) ;
 
   tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 1) ;
-  if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
+  if (fdlock == -1) strerr_diefusys(111, "lock ", wgola[GOLA_REPODIR]) ;
 
   for (unsigned int i = 0 ; i < argc ; i++)
     newset(wgola[GOLA_REPODIR], argv[i]) ;

@@ -14,7 +14,7 @@ void s6rc_repo_setdelete (char const *repo, char const *set)
   size_t repolen = strlen(repo) ;
   size_t setlen = strlen(set) ;
   ssize_t r ;
-  char real[repolen + setlen + 18] ;
+  char real[repolen + setlen + 22] ;
   char fn[repolen + setlen + 11] ;
   memcpy(fn, repo, repolen) ;
   memcpy(fn + repolen, "/sources/", 9) ;
@@ -22,9 +22,9 @@ void s6rc_repo_setdelete (char const *repo, char const *set)
   if (access(fn, W_OK) == -1 && errno != ENOENT) return ;
   memcpy(real, repo, repolen) ;
   memcpy(real + repolen, "/sources/", 9) ;
-  r = readlink(fn, real + repolen + 9, setlen + 9) ;
-  if (r == -1 || r != setlen + 8) return ;
-  real[repolen + setlen + 17] = 0 ;
+  r = readlink(fn, real + repolen + 9, setlen + 13) ;
+  if (r == -1 || r != setlen + 12) return ;
+  real[repolen + setlen + 21] = 0 ;
   unlink_void(fn) ;
   rm_rf(real) ;
 }
