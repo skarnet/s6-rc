@@ -1166,7 +1166,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
     EXECLINE_EXTBINPREFIX "redirfd -r 0 ./data/autofilled\n    "
     S6_EXTBINPREFIX "s6-ipcclient -l0 -- s\n    "
     S6RC_EXTLIBEXECPREFIX "s6-rc-fdholder-filler -1 ")) goto err ;
-  if (catchall)
+  if (catchall && catchall[0])
   {
     if (!stralloc_cats(&satmp, "-L ")
      || !string_quote(&satmp, catchall, strlen(catchall))
@@ -1174,7 +1174,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
   }
   if (!stralloc_cats(&satmp, "--\n  }\n  "
     S6_EXTBINPREFIX "s6-svc -t .\n}\n")) goto err ;
-  if (fdhuser)
+  if (fdhuser && fdhuser[0])
   {
     if (!stralloc_cats(&satmp, S6_EXTBINPREFIX "s6-envuidgid -i -- ")
      || !string_quote(&satmp, fdhuser, strlen(fdhuser))
@@ -1187,7 +1187,7 @@ static inline void write_fdholder (char const *compiled, s6rc_db_t const *db, ch
     fmt[len++] = ' ' ;
     if (!stralloc_catb(&satmp, fmt, len)) goto err ;
   }
-  if (fdhuser)
+  if (fdhuser && fdhuser[0])
   {
     if (!stralloc_cats(&satmp, "-U ")) goto err ;
   }
