@@ -25,9 +25,9 @@ int s6rc_repo_setcopy (char const *repo, char const *srcname, char const *dstnam
   size_t r ;
   char src[repolen + srclen + 10] ;
   char dst[repolen + dstlen + 10] ;
-  char realsrc[repolen + srclen + 22] ;
-  char realdst[repolen + dstlen + 22] ;
-  char olddst[repolen + dstlen + 22] ;
+  char realsrc[repolen + srclen + 23] ;
+  char realdst[repolen + dstlen + 23] ;
+  char olddst[repolen + dstlen + 23] ;
   memcpy(src, repo, repolen) ;
   memcpy(src + repolen, "/sources/", 9) ;
   memcpy(src + repolen + 9, srcname, srclen + 1) ;
@@ -42,14 +42,14 @@ int s6rc_repo_setcopy (char const *repo, char const *srcname, char const *dstnam
   else if (!(flags & 1)) return -1 ;
 
   memcpy(realsrc, src, repolen + 9) ;
-  r = readlink(src, realsrc + repolen + 9, srclen + 13) ;
+  r = readlink(src, realsrc + repolen + 9, srclen + 14) ;
   if (r == -1) return errno ;
-  if (r != srclen + 12) return -2 ;
-  realsrc[repolen + srclen + 21] = 0 ;
+  if (r != srclen + 13) return -2 ;
+  realsrc[repolen + srclen + 22] = 0 ;
   memcpy(realdst, dst, repolen + 9) ;
-  memcpy(realdst + repolen + 9, ".real.", 5) ;
-  memcpy(realdst + repolen + 14, dstname, dstlen) ;
-  memcpy(realdst + repolen + 14 + dstlen, ":XXXXXX", 8) ;
+  memcpy(realdst + repolen + 9, ".real.", 6) ;
+  memcpy(realdst + repolen + 15, dstname, dstlen) ;
+  memcpy(realdst + repolen + 15 + dstlen, ":XXXXXX", 8) ;
   if (mkntemp(realdst) == -1) return errno ;
   if (!hiercopy(realsrc, realdst))
   {
