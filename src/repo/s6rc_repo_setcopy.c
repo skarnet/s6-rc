@@ -42,7 +42,7 @@ int s6rc_repo_setcopy (char const *repo, char const *srcname, char const *dstnam
   else if (!(flags & 1)) return -1 ;
 
   memcpy(realsrc, src, repolen + 9) ;
-  r = readlink(src, realsrc + repolen + 9, srclen + 9) ;
+  r = readlink(src, realsrc + repolen + 9, srclen + 13) ;
   if (r == -1) return errno ;
   if (r != srclen + 12) return -2 ;
   realsrc[repolen + srclen + 21] = 0 ;
