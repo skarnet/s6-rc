@@ -38,7 +38,7 @@ static inline void newset (char const *repo, char const *setname)
   mode_t m ;
   char atomics[repolen + 18] ;
   char fn[repolen + 10 + setlen] ;
-  char tmp[repolen + 22 + setlen] ;
+  char tmp[repolen + 23 + setlen] ;
   char rx[repolen + 29 + setlen] ;
   memcpy(atomics, repo, repolen) ;
   memcpy(atomics + repolen, "/sources/.atomics", 18) ;
@@ -50,16 +50,16 @@ static inline void newset (char const *repo, char const *setname)
   }
   else strerr_dief(100, "set ", setname, " already exists in repository ", repo) ;
   memcpy(tmp, fn, repolen + 9) ;
-  memcpy(tmp + repolen + 9, ".real.", 5) ;
-  memcpy(tmp + repolen + 14, setname, setlen) ;
-  memcpy(tmp + repolen + 14 + setlen, ":XXXXXX", 8) ;
+  memcpy(tmp + repolen + 9, ".real.", 6) ;
+  memcpy(tmp + repolen + 15, setname, setlen) ;
+  memcpy(tmp + repolen + 15 + setlen, ":XXXXXX", 8) ;
   m = umask(0) ;
   if (!mkdtemp(tmp)) strerr_diefusys(111, "mkdtemp ", tmp) ;
-  memcpy(rx, tmp, repolen + 21 + setlen) ;
-  rx[repolen + 21 + setlen] = '/' ;
+  memcpy(rx, tmp, repolen + 22 + setlen) ;
+  rx[repolen + 22 + setlen] = '/' ;
   for (size_t i = 0 ; i < 4 ; i++)
   {
-    memcpy(rx + repolen + 22 + setlen, s6rc_repo_rxnames[i], 7) ;
+    memcpy(rx + repolen + 23 + setlen, s6rc_repo_rxnames[i], 7) ;
     if (mkdir(rx, 02755) == -1)
     {
       umask(m) ;
