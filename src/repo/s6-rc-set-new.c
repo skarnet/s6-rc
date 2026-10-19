@@ -39,7 +39,7 @@ static inline void newset (char const *repo, char const *setname)
   char atomics[repolen + 18] ;
   char fn[repolen + 10 + setlen] ;
   char tmp[repolen + 23 + setlen] ;
-  char rx[repolen + 29 + setlen] ;
+  char rx[repolen + 30 + setlen] ;
   memcpy(atomics, repo, repolen) ;
   memcpy(atomics + repolen, "/sources/.atomics", 18) ;
   memcpy(fn, atomics, repolen + 9) ;
