@@ -50,15 +50,19 @@ enum gola_e
   GOLA_N
 } ;
 
-#define DSTFNLEN(bootdir, set) (strlen(bootdir) + strlen(set) + 36)
+#define DSTFNLEN(bootdirlen, set) (bootdirlen + strlen(set) + 36)
 
-static void remove_snapshots_except (char const *repo, char const *snap)
+static void remove_snapshots_except (char const *repo, char const *compiled)
 {
-  DIR *dir ;
   size_t repolen = strlen(repo) ;
+  size_t clen = strlen(compiled) ;
+  DIR *dir ;
   char src[repolen + 9] ;
+  char snap[clen + 10] ;
   memcpy(src, repo, repolen) ;
   memcpy(src + repolen, "/sources", 9) ;
+  memcpy(snap, ".snapshot", 9) ;
+  memcpy(snap + 9, compiled, clen + 1) ;
   dir = opendir(src) ;
   if (!dir) strerr_diefusys(111, "opendir ", src) ;
   for (;;)
@@ -89,19 +93,28 @@ static void snapcompile (char const *livedir, char const *repo, unsigned int ver
   int r ;
   size_t llen = strlen(livedir) ;
   size_t snappos = sa->len, fdhuserpos, catchallpos, defbundlepos ;
-  char fn[llen + 28] ;
+  char fn[llen + 29] ;
   memcpy(fn, livedir, llen) ;
   memcpy(fn + llen, "/compiled", 10) ;
-  if (!stralloc_catb(sa, ".snapshot.", 10)) strerr_diefusys(111, "stralloc_catb") ;
   if (sareadlink(sa, fn) == -1 || !stralloc_0(sa)) strerr_diefusys(111, "readlink ", fn) ;
+  {
+    size_t len = sa->len - snappos ;
+    char snapfn[len] ;
+    memcpy(snapfn, sa->s + snappos, len) ;
+    sa->len = snappos ;
+    if (!stralloc_catb(sa, ".snapshot", 9))
+      strerr_diefusys(111, "stralloc_catb") ;
+    if (!sabasename(sa, snapfn, len - 1) || !stralloc_0(sa))
+      strerr_diefusys(111, "stralloc_catb") ;
+  }
   fdhuserpos = sa->len ;
-  memcpy(fn + llen + 9, "metainfo/fdhuser", 17) ;
+  memcpy(fn + llen + 9, "/metainfo/fdhuser", 18) ;
   if (!openslurpnclose(fn, sa, 4096) || !stralloc_0(sa)) strerr_diefusys(111, "read ", fn) ;
   catchallpos = sa->len ;
-  memcpy(fn + llen + 18, "catchall", 9) ;
+  memcpy(fn + llen + 19, "catchall", 9) ;
   if (!openslurpnclose(fn, sa, 4096) || !stralloc_0(sa)) strerr_diefusys(111, "read ", fn) ;
   defbundlepos = sa->len ;
-  memcpy(fn + llen + 18, "defbundle", 10) ;
+  memcpy(fn + llen + 19, "defbundle", 10) ;
   if (!openslurpnclose(fn, sa, 4096) || !stralloc_0(sa)) strerr_diefusys(111, "read ", fn) ;
 
   size_t oldclen = S6RC_REPO_COMPILE_BUFLEN(strlen(repo), fdhuserpos - 1) ;
@@ -208,23 +221,23 @@ int main (int argc, char const *const *argv)
   golc = GOL_main(argc, argv, rgolb, rgola, &wgolb, wgola) ;
   argc -= golc ; argv += golc ;
   if (wgola[GOLA_VERBOSITY] && !uint0_scan(wgola[GOLA_VERBOSITY], &verbosity))
-    strerr_dief1x(100, "verbosity needs to be an unsigned integer") ;
+    strerr_dief(100, "verbosity needs to be an unsigned integer") ;
   if (wgola[GOLA_BOOTDB][0] != '/')
-    strerr_dief2x(100, "bootdb", " needs to be an absolute path") ;
+    strerr_dief(100, "bootdb", " needs to be an absolute path") ;
   if (wgola[GOLA_LIVEDIR][0] != '/')
-    strerr_dief2x(100, "livedir", " needs to be an absolute path") ;
+    strerr_dief(100, "livedir", " needs to be an absolute path") ;
   if (!argc) dieusage() ;
   s6rc_repo_sanitize_setname(argv[0]) ;
 
   tain_now_g() ;
   fdlock = s6rc_repo_lock(wgola[GOLA_REPODIR], 0) ;
-  if (fdlock == -1) strerr_diefu2sys(111, "lock ", wgola[GOLA_REPODIR]) ;
+  if (fdlock == -1) strerr_diefusys(111, "lock ", wgola[GOLA_REPODIR]) ;
   r = s6rc_repo_checkset(wgola[GOLA_REPODIR], argv[0]) ;
   if (r) _exit(r) ;
  
   r = s6rc_repo_setuptodate(wgola[GOLA_REPODIR], argv[0], !!(wgolb & GOLB_NOSNAP)) ;
   if (r == -1) _exit(111) ;
-  if (!r) strerr_dief3x(7, "set ", argv[0], " is not up-to-date; commit it first") ;
+  if (!r) strerr_dief(7, "set ", argv[0], " is not up-to-date; commit it first") ;
 
   if (!sadirname(&bootdirsa, wgola[GOLA_BOOTDB], strlen(wgola[GOLA_BOOTDB]))
    || !stralloc_0(&bootdirsa)) strerr_diefu1sys(111, "sadirname") ;
@@ -233,7 +246,7 @@ int main (int argc, char const *const *argv)
   {
     int needupgrade = install_needs_upgrade(wgola[GOLA_LIVEDIR]) ;
     stralloc olddbsa = STRALLOC_ZERO ;
-    char dstfn[DSTFNLEN(bootdirsa.s, argv[0])] ;
+    char dstfn[DSTFNLEN(bootdirsa.len, argv[0])] ;
     char fmtv[UINT_FMT] ;
     fmtv[uint_fmt(fmtv, verbosity)] = 0 ;
 
@@ -245,13 +258,16 @@ int main (int argc, char const *const *argv)
       int wstat ;
       char const *uargv[9] ;
       unsigned int l = 0 ;
-      char snapfn[DSTFNLEN(bootdirsa.s, olddbsa.s)] ;
+
+      if (verbosity >= 2)
+        strerr_warni("s6-rc major version changed, rebuilding current db from its snapshot") ;
 
      /* We find the snapshot corresponding to the current live db and we compile it */
       snapcompile(wgola[GOLA_LIVEDIR], wgola[GOLA_REPODIR], verbosity, &olddbsa) ;
       olddbsa.len = 0 ;
 
      /* We copy the compiled snapshot to the bootdir. It has the correct major. */
+      char snapfn[DSTFNLEN(bootdirsa.len, olddbsa.s)] ;
       copy_compiled_to_bootdir(snapfn, wgola[GOLA_REPODIR], olddbsa.s, bootdirsa.s, wgola[GOLA_LIVEDIR], &olddbsa) ;
 
      /* We perform the format-upgrade */
@@ -295,6 +311,10 @@ int main (int argc, char const *const *argv)
       olddbsa.len = 0 ;
 
      /* The compiled snapshot is now in place and serves as the db to update from. */
+
+      if (verbosity >= 2)
+        strerr_warni("format-upgraded database in place, now proceeding to the update") ;
+
     }
 
    /* We copy the compiled committed set to the bootdir */
