@@ -5,8 +5,14 @@ In 0.8.0.0
 ----------
 
  - Bugfixes.
- - Databases now embed the major version they were built with.
+ - Databases now embed the major version they were built with, as
+well as some other metadata, for the repo commands.
  - New -L option to s6-rc-compile. (and s6-rc-fdholder-filler)
+ - s6-rc-set-install now has a snapshot mechanism to help with
+transparent upgrades across major version bumps. This isn't perfect
+yet because s6-rc-format-upgrade still requires an exact copy of
+the previous database; a more powerful version that can reconstruct
+the live service db from scratch is planned for the future.
 
 
 In 0.7.0.0
